@@ -2,6 +2,10 @@ import { Experiences } from "@/components/experiences/Experiences";
 import { Hero } from "@/components/hero/Hero";
 import { JourneyShell } from "@/components/journey/JourneyShell";
 import { StoryScroll } from "@/components/story/StoryScroll";
+import { StoriesGallery } from "@/components/gallery/StoriesGallery";
+import { CloudTransition } from "@/components/gallery/CloudTransition";
+import { Conservation } from "@/components/gallery/Conservation";
+import { AwardsScroll } from "@/components/awards/AwardsScroll";
 
 export default function HomePage() {
   return (
@@ -9,6 +13,12 @@ export default function HomePage() {
       <Hero />
       <Experiences />
       <StoryScroll />
+      <CloudTransition />
+      <StoriesGallery />
+      {/* Same reusable cloud transition, reversed into the black section. */}
+      <CloudTransition />
+      <Conservation />
+      <AwardsScroll />
     </JourneyShell>
   );
 }

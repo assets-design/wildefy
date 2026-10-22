@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Script from "next/script";
+import { CustomCursor } from "@/components/cursor/CustomCursor";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -24,6 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {stageScript}
         </Script>
         {children}
+        <CustomCursor />
       </body>
     </html>
   );

@@ -11,7 +11,6 @@ gsap.registerPlugin(ScrollTrigger);
 
 const linksLeft = [
   { label: "Home", href: "/", x: 352 },
-  { label: "Our Story", href: "#our-story", x: 470 },
   { label: "Experiences", href: "#experiences", x: 624 },
 ];
 
@@ -297,7 +296,8 @@ export function Hero() {
       }
 
       // Through Section 2: gentle zoom-out backdrop — never mist over content.
-      // Cloud continuity into §3 is handled by .story-cloud-lip only.
+      // The cloud stays settled behind §2 all the way to its bottom edge;
+      // continuity into the story sequence is handed off to .story-cloud-lip.
       if (experiences) {
         // Kill the green hero photo as soon as §2 owns the screen.
         gsap.fromTo(
@@ -341,18 +341,10 @@ export function Hero() {
           },
         );
 
-        // Clear §2 before the join so content isn't misted; lip owns §3 top.
-        gsap.to(cloud, {
-          autoAlpha: 0,
-          ease: "none",
-          immediateRender: false,
-          scrollTrigger: {
-            trigger: experiences,
-            start: "bottom 55%",
-            end: "bottom 15%",
-            scrub: 0.4,
-          },
-        });
+        // No fade-out at the §2 bottom: the same cloud field must still be
+        // behind the last §2 rows at the section's bottom edge. As the
+        // story section enters, its lip (same clouds-section.png) takes
+        // over in the same white register, so the join has no gap.
       }
 
       // Re-assert load state after ScrollTriggers register.
