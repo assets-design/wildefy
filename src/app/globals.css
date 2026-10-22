@@ -1,0 +1,1873 @@
+@font-face {
+  font-family: "Cormorant Garamond";
+  src: url("/fonts/CormorantGaramond-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "DM Sans";
+  src: url("/fonts/DMSans-Variable.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --stage-width: 1920px;
+  --stage-scale: 1;
+  --font-display: "Cormorant Garamond", "Times New Roman", serif;
+  --font-body: "DM Sans", system-ui, sans-serif;
+  --color-accent: #f9a01f;
+  --color-black: #000000;
+  --color-white: #ffffff;
+  --color-bg: #000000;
+  --color-focus: #f9a01f;
+}
+
+html {
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+  background: var(--color-bg);
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--color-bg);
+  overflow-x: hidden;
+  overflow-y: auto;
+  font-synthesis: none;
+}
+
+/* Shared continuous backdrop for hero + experiences. */
+.journey-shell {
+  position: relative;
+  isolation: isolate;
+}
+
+.journey-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  /* Neutral under cloud alpha once the green hero photo fades —
+     cool teal here was reading as the "green overlay" at the join. */
+  background: #f6f8fb;
+}
+
+.journey-backdrop-photo {
+  position: absolute;
+  z-index: 0;
+  width: 130%;
+  height: 170%;
+  left: -15%;
+  top: -12%;
+  max-width: none;
+  object-fit: cover;
+  object-position: 50% 45%;
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+}
+
+/*
+  Single full cloud BACKGROUND — no wash / mist / white-plate overlays.
+  PNG has matching fluffy lips on TOP and BOTTOM; bright mid for content.
+  Section 2 content sits above this in .journey-foreground.
+*/
+.journey-cloud {
+  position: absolute;
+  z-index: 1;
+  left: 50%;
+  top: 0;
+  /*
+    Oversized so when settled, dense mid fills the full viewport.
+    Soft top/bottom lips overhang above/below the fold (enter/exit still fluffy).
+  */
+  width: 170vw;
+  height: 360vh;
+  max-width: none;
+  object-fit: fill;
+  object-position: center center;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  will-change: transform, opacity;
+  background: transparent;
+  /* Parked below the fold at load; GSAP rises it on scroll. */
+  transform: translate3d(-50%, 100%, 0);
+  /* Cleaner white cloud body — more volume, no muddy green/teal cast. */
+  filter: brightness(1.16) contrast(1.12) saturate(0.4);
+}
+
+.journey-backdrop .journey-particles {
+  z-index: 2;
+}
+
+.journey-foreground {
+  position: relative;
+  z-index: 1;
+}
+
+/*
+  Hero is one viewport tall. ScrollTrigger pins it and adds only the
+  scrub distance needed for the exit — no leftover empty swipes.
+*/
+.hero-experience {
+  position: relative;
+  background: transparent;
+}
+
+.hero-experience-sticky {
+  position: relative;
+  z-index: 2;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.stage-frame {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  background: transparent;
+}
+
+.stage {
+  width: var(--stage-width);
+  flex: 0 0 var(--stage-width);
+  height: max-content;
+  transform: scale(var(--stage-scale));
+  transform-origin: top center;
+}
+
+.hero {
+  position: relative;
+  width: 1920px;
+  height: var(--stage-visible, 1000px);
+  overflow: hidden;
+  color: var(--color-white);
+}
+
+/*
+  Layer order:
+  1 background · 2 particles · 3 bird · 4 side content · 5 header / controls
+*/
+.site-header {
+  position: relative;
+  z-index: 5;
+  will-change: transform;
+}
+
+.hero-title,
+.hero-right {
+  z-index: 4;
+  will-change: transform;
+}
+
+/* Never shorter than the 1000px design crop: short windows lose the bottom, tall ones get cover. */
+.hero-media {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1920px;
+  height: max(1000px, var(--stage-visible, 1000px));
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.hero-photo {
+  display: block;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  object-fit: cover;
+  will-change: transform;
+}
+
+/* Transparent bird cutout — visible at load (scroll 0%). */
+.hero-bird {
+  object-fit: contain;
+  object-position: 50% 52%;
+  z-index: 2;
+  transform: translate3d(0, 0, 0);
+}
+
+/* Canvas snowfall — behind bird/text, continuous across the sticky scene. */
+.journey-particles {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+}
+
+.journey-continue {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.nav-pill {
+  position: absolute;
+  top: 30px;
+  width: 577px;
+  height: 76px;
+  clip-path: path("M0 38.7007C0 18.1394 16.6394 1.45598 37.2006 1.40159L567 0L577 76H37.2993C16.6994 76 0 59.3005 0 38.7007Z");
+  -webkit-backdrop-filter: blur(12px) saturate(140%);
+  backdrop-filter: blur(12px) saturate(140%);
+}
+
+.nav-pill svg {
+  display: block;
+}
+
+.nav-pill-fill {
+  fill: #686868;
+  fill-opacity: 0.2;
+}
+
+/* Stroke is centred on the clip edge, so 2px renders as a 1px inner hairline. */
+.nav-pill-edge {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.45);
+  stroke-width: 2;
+}
+
+.nav-pill-left {
+  left: 257px;
+}
+
+.nav-pill-right {
+  left: 1085.813px;
+  transform: scaleX(-1);
+}
+
+.nav-links a {
+  position: absolute;
+  top: 46px;
+  height: 44px;
+  padding-top: 7px;
+  box-sizing: border-box;
+  color: var(--color-white);
+  font-family: var(--font-body);
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 30px;
+  letter-spacing: 0;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.nav-links a:hover {
+  opacity: 0.8;
+}
+
+.nav-links a:focus-visible,
+.logo:focus-visible,
+.cta:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.logo {
+  position: absolute;
+  left: 864px;
+  top: 31px;
+  width: 191.813px;
+  height: 73.248px;
+}
+
+.logo-word,
+.logo-claw {
+  position: absolute;
+  display: block;
+  max-width: none;
+}
+
+.logo-word {
+  left: 0;
+  top: 19.719px;
+}
+
+.logo-claw {
+  left: 77.184px;
+  top: 0;
+}
+
+.hero-title {
+  position: absolute;
+  left: 120px;
+  top: 236px;
+  width: 629px;
+  margin: 0;
+  color: var(--color-white);
+  font-family: var(--font-display);
+  font-size: 72px;
+  font-weight: 400;
+  line-height: 87px;
+  letter-spacing: 0;
+  text-transform: capitalize;
+}
+
+/* Right cluster keeps copy + CTA spacing while they exit together. */
+.hero-right {
+  position: absolute;
+  left: 1405px;
+  bottom: 56px;
+  width: 395px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 60px;
+}
+
+.hero-copy {
+  position: relative;
+  width: 395px;
+  margin: 0;
+  color: var(--color-white);
+  font-family: var(--font-body);
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 26px;
+  letter-spacing: 0;
+  text-transform: capitalize;
+}
+
+.cta {
+  position: relative;
+  width: 319px;
+  height: 56px;
+  text-decoration: none;
+  flex: none;
+}
+
+.cta {
+  --cta-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --cta-speed: 0.4s;
+}
+
+.cta-pill,
+.cta-mark,
+.cta-bird,
+.cta-label {
+  position: absolute;
+  display: block;
+}
+
+.cta-pill {
+  left: 0;
+  top: 0;
+  width: 237px;
+  height: 56px;
+  border-radius: 50px;
+  background: var(--color-white);
+  transition: width var(--cta-speed) var(--cta-ease);
+}
+
+.cta-mark {
+  left: 237px;
+  top: 0;
+  width: 82px;
+  height: 56px;
+  border-radius: 50px;
+  background: var(--color-accent);
+  transition:
+    left var(--cta-speed) var(--cta-ease),
+    top var(--cta-speed) var(--cta-ease),
+    width var(--cta-speed) var(--cta-ease),
+    height var(--cta-speed) var(--cta-ease);
+}
+
+.cta-bird {
+  left: 257px;
+  top: 7px;
+  width: 42px;
+  height: 42px;
+  max-width: none;
+  transform: scaleX(-1);
+  transition:
+    left var(--cta-speed) var(--cta-ease),
+    top var(--cta-speed) var(--cta-ease),
+    width var(--cta-speed) var(--cta-ease),
+    height var(--cta-speed) var(--cta-ease);
+}
+
+.cta-label {
+  left: 29px;
+  top: 15px;
+  color: var(--color-black);
+  font-family: var(--font-body);
+  font-size: 20px;
+  font-weight: 400;
+  line-height: normal;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+/* Figma "Frame 4 / Variant2": the white pill swallows the orange mark. */
+@media (hover: hover) {
+  .cta:hover .cta-pill {
+    width: 292px;
+  }
+
+  .cta:hover .cta-mark {
+    left: 215.12px;
+    top: 3px;
+    width: 71.75px;
+    height: 49px;
+  }
+
+  .cta:hover .cta-bird {
+    left: 232.6px;
+    top: 9.13px;
+    width: 36.75px;
+    height: 36.75px;
+  }
+}
+
+.cta:focus-visible .cta-pill {
+  width: 292px;
+}
+
+.cta:focus-visible .cta-mark {
+  left: 215.12px;
+  top: 3px;
+  width: 71.75px;
+  height: 49px;
+}
+
+.cta:focus-visible .cta-bird {
+  left: 232.6px;
+  top: 9.13px;
+  width: 36.75px;
+  height: 36.75px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cta {
+    --cta-speed: 0s;
+  }
+
+  .hero-experience {
+    height: 100vh;
+    height: 100dvh;
+  }
+
+  .hero-bird,
+  .site-header,
+  .journey-backdrop-photo,
+  .journey-cloud,
+  .hero-title,
+  .hero-right {
+    transform: none !important;
+  }
+
+  .journey-cloud {
+    opacity: 0 !important;
+    visibility: hidden !important;
+  }
+
+  .journey-particles {
+    display: none !important;
+  }
+
+  .experience-left,
+  .experience-mid,
+  .experience-media {
+    transform: none !important;
+  }
+}
+
+.menu-toggle,
+.mobile-menu {
+  display: none;
+}
+
+/* ---------- Phones and tablets: reflowed layout, no stage scaling ---------- */
+@media (max-width: 1023px) {
+  .hero-experience-sticky {
+    height: 100vh;
+    height: 100svh;
+  }
+
+  .stage-frame {
+    height: 100%;
+  }
+
+  .stage {
+    width: 100%;
+    flex: 0 0 100%;
+    transform: none;
+  }
+
+  .hero {
+    width: 100%;
+    height: 100vh;
+    height: 100svh;
+  }
+
+  .hero-media {
+    width: 100%;
+    height: 100%;
+  }
+
+  .hero-bird {
+    object-fit: contain;
+    object-position: 50% 55%;
+  }
+
+  .hero-media::after {
+    content: "";
+    position: absolute;
+    inset: auto 0 0 0;
+    height: 55%;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0));
+  }
+
+  .nav-pill,
+  .nav-links {
+    display: none;
+  }
+
+  .site-header {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    right: 16px;
+    height: 60px;
+    z-index: 10;
+  }
+
+  /* Glass lives on a pseudo-element: backdrop-filter on the header would trap the fixed menu. */
+  .site-header::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 30px;
+    background: rgba(104, 104, 104, 0.2);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.45);
+    -webkit-backdrop-filter: blur(12px) saturate(140%);
+    backdrop-filter: blur(12px) saturate(140%);
+  }
+
+  .logo {
+    left: 22px;
+    top: 50%;
+    transform: translateY(-50%) scale(0.55);
+    transform-origin: left center;
+    z-index: 1;
+  }
+
+  .menu-toggle {
+    position: absolute;
+    right: 8px;
+    top: 8px;
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 7px;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: var(--color-accent);
+    cursor: pointer;
+  }
+
+  .menu-toggle-bar {
+    display: block;
+    width: 20px;
+    height: 2px;
+    border-radius: 1px;
+    background: var(--color-black);
+    transition: transform 0.3s ease;
+  }
+
+  .menu-toggle[aria-expanded="true"] .menu-toggle-bar:first-child {
+    transform: translateY(4.5px) rotate(45deg);
+  }
+
+  .menu-toggle[aria-expanded="true"] .menu-toggle-bar:last-child {
+    transform: translateY(-4.5px) rotate(-45deg);
+  }
+
+  .menu-toggle:focus-visible,
+  .mobile-menu a:focus-visible {
+    outline: 2px solid var(--color-white);
+    outline-offset: 3px;
+  }
+
+  .mobile-menu {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    padding: 96px 32px 48px;
+    box-sizing: border-box;
+    background: rgba(0, 0, 0, 0.45);
+    -webkit-backdrop-filter: blur(24px) saturate(140%);
+    backdrop-filter: blur(24px) saturate(140%);
+  }
+
+  .mobile-menu[hidden] {
+    display: none;
+  }
+
+  .mobile-menu ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .mobile-menu a {
+    display: block;
+    padding: 10px 0;
+    color: var(--color-white);
+    font-family: var(--font-body);
+    font-size: 28px;
+    font-weight: 400;
+    line-height: 36px;
+    text-decoration: none;
+  }
+
+  .hero {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: flex-start;
+    padding: 0 24px max(32px, env(safe-area-inset-bottom));
+    box-sizing: border-box;
+  }
+
+  .hero-title,
+  .hero-right,
+  .hero-copy,
+  .cta {
+    position: relative;
+    inset: auto;
+    left: auto;
+    top: auto;
+    bottom: auto;
+    flex: none;
+  }
+
+  .hero-right {
+    width: auto;
+    gap: 24px;
+  }
+
+  .hero-title {
+    width: auto;
+    margin-bottom: 16px;
+    font-size: clamp(36px, 10vw, 56px);
+    line-height: 1.15;
+  }
+
+  .hero-copy {
+    width: auto;
+    max-width: 395px;
+    margin: 0;
+    font-size: 16px;
+    line-height: 22px;
+  }
+
+  .hero-copy br {
+    display: none;
+  }
+
+}
+
+/* ---------- Experiences (Section 2) ---------- */
+.experiences {
+  position: relative;
+  z-index: 3;
+  /*
+    Pull up by one viewport so when the hero pin releases, Section 2 is
+    already at the top — otherwise you scroll an empty hero panel away first.
+  */
+  margin-top: -100vh;
+  margin-top: -100dvh;
+  /* Short bottom pad — cloud continuity lives on §3, not over §2 content. */
+  padding: 96px 0 72px;
+  /* Content stays clear; journey cloud is backdrop only. */
+  background: transparent;
+  color: #000000;
+  overflow: visible;
+}
+
+.experiences-inner {
+  position: relative;
+  z-index: 2;
+  /* Extra side room so modest entrance translates never clip. */
+  width: min(1440px, calc(100% - 120px));
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.experiences-intro {
+  max-width: 920px;
+  margin: 0 auto 72px;
+  text-align: center;
+}
+
+.experiences-title {
+  margin: 0 0 20px;
+  font-family: var(--font-display);
+  font-size: clamp(36px, 4vw, 64px);
+  font-weight: 400;
+  line-height: 1.15;
+  letter-spacing: 0;
+  text-transform: capitalize;
+  color: #000000;
+}
+
+.experiences-lead {
+  margin: 0 auto;
+  max-width: 860px;
+  font-family: var(--font-body);
+  font-size: clamp(16px, 1.15vw, 20px);
+  font-weight: 400;
+  line-height: 1.4;
+  text-transform: capitalize;
+  color: #000000;
+}
+
+.experiences-list {
+  display: flex;
+  flex-direction: column;
+  gap: 56px;
+}
+
+/* True 3-column editorial grid — left / mid / image */
+.experience-row {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr) minmax(0, 1.35fr);
+  column-gap: 28px;
+  align-items: start;
+  min-width: 0;
+}
+
+.experience-left,
+.experience-mid,
+.experience-media {
+  min-width: 0;
+  will-change: transform;
+}
+
+.experience-left {
+  position: relative;
+  padding-right: 20px;
+}
+
+.experience-left::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 1px;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.22);
+  pointer-events: none;
+}
+
+.experience-heading {
+  margin: 0 0 24px;
+  font-family: var(--font-display);
+  font-size: clamp(26px, 2.2vw, 40px);
+  font-weight: 400;
+  line-height: 1.15;
+  text-transform: capitalize;
+  color: #000000;
+}
+
+.experience-tags {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.experience-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 8px 18px;
+  box-sizing: border-box;
+  border: 1px solid rgba(0, 0, 0, 0.85);
+  border-radius: 50px;
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.25;
+  color: #000000;
+  text-align: center;
+}
+
+.experience-mid {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 24px;
+  padding-top: 4px;
+}
+
+.experience-description {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: clamp(16px, 1.15vw, 20px);
+  font-weight: 400;
+  line-height: 1.4;
+  text-transform: capitalize;
+  color: #000000;
+}
+
+/*
+  Section 2 CTAs — width fits each label.
+  Rest: gap between black pill and orange mark.
+  Icon mark matches hero (.cta-mark): 82×56, radius 50px, always above the black pill.
+  Hover: black expands under the mark (hero swallow); mark stays on top — never behind.
+*/
+.experience-cta {
+  --cta-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --cta-speed: 0.4s;
+  --cta-pad: 28px;
+  --cta-mark-w: 82px;
+  --cta-mark-h: 56px;
+  --cta-gap: 12px;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  height: 56px;
+  gap: var(--cta-gap);
+  text-decoration: none;
+  flex: none;
+}
+
+.experience-cta-body {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 56px;
+  padding: 0 var(--cta-pad);
+  border-radius: 50px;
+  background: #000000;
+  box-sizing: border-box;
+  transition: padding-right var(--cta-speed) var(--cta-ease);
+}
+
+.experience-cta-label {
+  position: relative;
+  z-index: 1;
+  color: #ffffff;
+  font-family: var(--font-body);
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.experience-cta-mark {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--cta-mark-w);
+  height: var(--cta-mark-h);
+  margin-left: 0;
+  /* Same capsule radius as hero .cta-mark — not a circle. */
+  border-radius: 50px;
+  background: var(--color-accent);
+  flex: none;
+  transition:
+    width var(--cta-speed) var(--cta-ease),
+    height var(--cta-speed) var(--cta-ease),
+    margin-left var(--cta-speed) var(--cta-ease),
+    margin-top var(--cta-speed) var(--cta-ease);
+}
+
+.experience-cta-bird {
+  position: relative;
+  z-index: 3;
+  width: 42px;
+  height: 42px;
+  max-width: none;
+  transform: scaleX(-1);
+  pointer-events: none;
+  transition:
+    width var(--cta-speed) var(--cta-ease),
+    height var(--cta-speed) var(--cta-ease);
+}
+
+/* Rest = gap. Hover = black expands under orange mark; mark stays in front. */
+@media (hover: hover) {
+  .experience-cta:hover {
+    gap: 0;
+  }
+
+  .experience-cta:hover .experience-cta-body {
+    padding-right: calc(var(--cta-pad) + 55px + var(--cta-gap));
+  }
+
+  .experience-cta:hover .experience-cta-mark {
+    width: 71.75px;
+    height: 49px;
+    margin-left: calc(-1 * (55px + var(--cta-gap)));
+    margin-top: 0;
+  }
+
+  .experience-cta:hover .experience-cta-bird {
+    width: 36.75px;
+    height: 36.75px;
+  }
+}
+
+.experience-cta:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 3px;
+  gap: 0;
+}
+
+.experience-cta:focus-visible .experience-cta-body {
+  padding-right: calc(var(--cta-pad) + 55px + var(--cta-gap));
+}
+
+.experience-cta:focus-visible .experience-cta-mark {
+  width: 71.75px;
+  height: 49px;
+  margin-left: calc(-1 * (55px + var(--cta-gap)));
+}
+
+.experience-cta:focus-visible .experience-cta-bird {
+  width: 36.75px;
+  height: 36.75px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .experience-cta {
+    --cta-speed: 0s;
+  }
+}
+
+.experience-media {
+  width: 100%;
+}
+
+.experience-media-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.experience-media-frame img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+@media (max-width: 1199px) {
+  .experiences-inner {
+    width: min(1440px, calc(100% - 64px));
+  }
+
+  .experience-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    row-gap: 24px;
+    column-gap: 24px;
+  }
+
+  .experience-media {
+    grid-column: 1 / -1;
+  }
+
+  .experience-left::after {
+    display: none;
+  }
+
+  .experience-media-frame {
+    aspect-ratio: 16 / 10;
+    max-height: 360px;
+  }
+}
+
+@media (max-width: 1023px) {
+  .experiences {
+    padding: 64px 0 88px;
+  }
+
+  .experiences-inner {
+    width: calc(100% - 40px);
+  }
+
+  .experiences-intro {
+    margin-bottom: 40px;
+  }
+
+  .experiences-list {
+    gap: 48px;
+  }
+
+  .experience-row {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  .experience-heading {
+    margin-bottom: 16px;
+  }
+
+  .experience-mid {
+    gap: 18px;
+  }
+
+  .experience-description {
+    font-size: 16px;
+  }
+
+  .experience-tag {
+    font-size: 13px;
+    min-height: 36px;
+    padding: 7px 14px;
+  }
+
+  .experience-cta {
+    height: 52px;
+    --cta-pad: 22px;
+    --cta-mark-w: 72px;
+    --cta-mark-h: 52px;
+    --cta-gap: 10px;
+  }
+
+  .experience-cta-body {
+    height: 52px;
+  }
+
+  .experience-cta-label {
+    font-size: 15px;
+  }
+
+  .experience-cta-bird {
+    width: 36px;
+    height: 36px;
+  }
+
+  .experience-media-frame {
+    aspect-ratio: 4 / 3;
+    max-height: none;
+  }
+}
+
+/* ---------- Story (Section 3 — horizontal scroll, 3 slides) ---------- */
+.story-scroll {
+  position: relative;
+  z-index: 4;
+  background: transparent;
+  color: #000000;
+  overflow: visible;
+  /* Lip sits on §3; tiny kiss into §2 only. */
+  margin-top: -2vh;
+}
+
+/*
+  Warm-neutral under the lip — continuous with story-track-bg (bg.png).
+*/
+.story-sky-bridge {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -2vh;
+  z-index: 0;
+  height: 36vh;
+  background:
+    linear-gradient(
+      to bottom,
+      #ffffff 0%,
+      #fff8ef 35%,
+      transparent 70%
+    ),
+    url("/images/story/bg.png") center top / cover no-repeat;
+  pointer-events: none;
+}
+
+/*
+  Cloud continuity at §3 TOP only — does not cover Corporate Learning content.
+*/
+.story-cloud-lip {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  z-index: 6;
+  width: 145vw;
+  height: 28vh;
+  margin-left: -22.5vw;
+  /* Thin fluffy kiss into §2; body lives in §3. */
+  margin-top: -7vh;
+  pointer-events: none;
+  overflow: hidden;
+  will-change: transform, opacity;
+}
+
+/*
+  White under the silhouette so soft alpha never shows green/teal.
+*/
+.story-cloud-lip-fill {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: linear-gradient(to bottom, #ffffff 0%, #fff6ec 70%, #ffe9d2 100%);
+  -webkit-mask-image: url("/images/clouds-section.png");
+  mask-image: url("/images/clouds-section.png");
+  -webkit-mask-size: 100% 220%;
+  mask-size: 100% 220%;
+  -webkit-mask-position: center bottom;
+  mask-position: center bottom;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+
+.story-cloud-lip img {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 220%;
+  max-width: none;
+  object-fit: cover;
+  object-position: center bottom;
+  filter: brightness(1.22) contrast(1.08) saturate(0.4);
+  user-select: none;
+  /* Keep scalloped BOTTOM into §3; soften only the lowest fringe. */
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    #000 0%,
+    #000 55%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    #000 0%,
+    #000 55%,
+    transparent 100%
+  );
+}
+
+.story-scroll-viewport {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  /* Panel widths use cqw so they match this clip (not 100vw + scrollbar). */
+  container-type: inline-size;
+  /* No top feather — that was flashing green journey bg through the join. */
+}
+
+.story-track {
+  position: relative;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  height: 100%;
+  width: max-content;
+  will-change: transform;
+}
+
+/*
+  One continuous sky across all slides.
+  Width is set in JS to the sum of panel widths (avoids scrollWidth inflation).
+  object-position top keeps the top projection locked while scrolling.
+*/
+.story-track-bg {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  object-fit: cover;
+  object-position: center top;
+  pointer-events: none;
+  user-select: none;
+  /* Intrinsic image size must not expand the flex track. */
+  min-width: 0;
+}
+
+.story-panel {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  height: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
+  background: transparent;
+}
+
+.story-heading {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(36px, 4.2vw, 72px);
+  font-weight: 600;
+  line-height: 1.1;
+  text-transform: capitalize;
+  color: #000000;
+}
+
+.story-heading--center {
+  text-align: center;
+}
+
+/* Always exactly two lines on any screen — never wrap further. */
+.story-heading--two-line {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  /* Sized to the copy column so each line stays nowrap. */
+  font-size: clamp(15px, 7.6cqi, 72px);
+}
+
+.story-heading-line {
+  display: block;
+  white-space: nowrap;
+}
+
+.story-lead {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: clamp(16px, 1.2vw, 22px);
+  font-weight: 400;
+  line-height: 1.35;
+  text-transform: capitalize;
+  color: #000000;
+}
+
+.story-lead--center {
+  text-align: center;
+}
+
+/* Slide 1 — cqw = viewport clip width (avoids vw/scrollbar pin mismatch) */
+.story-panel--ordinary {
+  width: 100vw;
+  min-width: 100vw;
+  width: 100cqw;
+  min-width: 100cqw;
+}
+
+/* Soft warm wash at the top — kills cool/teal cast under the cloud lip. */
+.story-panel--ordinary::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  z-index: 1;
+  height: 32vh;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.72) 0%,
+    rgba(255, 248, 235, 0.4) 40%,
+    transparent 100%
+  );
+}
+
+.story-ordinary-bird {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  /* +30% vs prior min(42vw, 520px) / max-height 78%. */
+  width: min(54.6vw, 676px);
+  height: auto;
+  max-height: 100%;
+  object-fit: contain;
+  object-position: left bottom;
+  pointer-events: none;
+  z-index: 2;
+  will-change: transform, opacity;
+}
+
+.story-ordinary-copy {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  height: 100%;
+  width: min(920px, 58vw);
+  margin-left: auto;
+  margin-right: 6vw;
+  padding: 8vh 2vw 6vh;
+  will-change: transform, opacity;
+  gap: 22px;
+  container-type: inline-size;
+  container-name: ordinary-copy;
+}
+
+.story-pillars {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: clamp(28px, 4vw, 72px);
+  margin: 28px 0 0;
+  padding: 0;
+  list-style: none;
+  width: 100%;
+}
+
+.story-pillar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: min(220px, 100%);
+  gap: 10px;
+}
+
+.story-pillar-icon {
+  width: 107px;
+  height: 107px;
+  object-fit: contain;
+}
+
+.story-pillar-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(28px, 2.2vw, 38px);
+  font-weight: 500;
+  line-height: 1.15;
+  text-transform: capitalize;
+}
+
+.story-pillar-copy {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: clamp(15px, 1.1vw, 20px);
+  line-height: 1.3;
+  text-transform: capitalize;
+}
+
+/*
+  Slide 2 — wider bg frame so one-line title + 3 milestones never overlap;
+  content starts at 2nd silhouette from the left; font sizes unchanged.
+*/
+.story-panel--boardrooms {
+  /* Extra width for bg + room for title and milestone columns. */
+  width: 175vw;
+  min-width: 175vw;
+  width: 175cqw;
+  min-width: 175cqw;
+}
+
+/* Image framing only — no asset edits; 15% smaller. */
+.story-boardrooms-silhouettes {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* Desk left; 2nd person (backpack) under content start. */
+  object-position: 18% bottom;
+  pointer-events: none;
+  z-index: 1;
+  transform: scale(0.85);
+  transform-origin: center bottom;
+}
+
+.story-boardrooms-inner {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  /*
+    Intro column = title width (max-content).
+    Milestones sit in their own column after a hard gap — no paint overlap.
+  */
+  grid-template-columns: max-content minmax(560px, 1fr);
+  column-gap: clamp(72px, 8vw, 140px);
+  align-items: start;
+  box-sizing: border-box;
+  height: 100%;
+  width: 100%;
+  /* Clears desk; content begins at 2nd person from the left. */
+  padding: 8vh 5vw 28vh 26%;
+}
+
+.story-boardrooms-intro {
+  display: grid;
+  grid-template-columns: max-content;
+  justify-items: start;
+  gap: 26px;
+  margin-left: 0;
+  padding-top: 1vh;
+}
+
+/* One line — sizes the intro column; keep shared .story-heading font-size. */
+.story-boardrooms-intro .story-heading {
+  white-space: nowrap;
+  margin: 0;
+}
+
+.story-boardrooms-lead {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  /* Match the one-line title width exactly. */
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+}
+
+.story-boardrooms-lead p {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: clamp(15px, 1.05vw, 20px);
+  line-height: 1.4;
+  text-transform: capitalize;
+}
+
+.story-milestones {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(32px, 3.8vw, 64px);
+  margin: 1.5vh 0 0;
+  padding: 0;
+  list-style: none;
+  width: 100%;
+  min-width: 0;
+  isolation: isolate;
+}
+
+.story-milestone {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding-top: 0;
+  border-top: none;
+  min-width: 0;
+}
+
+.story-milestone-label {
+  font-family: var(--font-body);
+  font-size: clamp(16px, 1.25vw, 24px);
+  font-weight: 600;
+  color: var(--color-accent);
+  text-transform: capitalize;
+}
+
+.story-milestone-year {
+  font-family: var(--font-display);
+  font-size: clamp(32px, 3vw, 54px);
+  font-weight: 600;
+  line-height: 1.1;
+  text-transform: capitalize;
+}
+
+.story-milestone-title {
+  font-family: var(--font-body);
+  font-size: clamp(18px, 1.4vw, 26px);
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.story-milestone-copy {
+  font-family: var(--font-body);
+  font-size: clamp(14px, 1.05vw, 20px);
+  line-height: 1.35;
+  text-transform: capitalize;
+}
+
+/* White CTA (matches hero structure; light surface for sky slides) */
+.story-cta {
+  --cta-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --cta-speed: 0.4s;
+  --cta-pad: 28px;
+  --cta-mark-w: 82px;
+  --cta-mark-h: 56px;
+  --cta-gap: 12px;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  height: 56px;
+  gap: var(--cta-gap);
+  text-decoration: none;
+  flex: none;
+}
+
+.story-cta-body {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 56px;
+  padding: 0 var(--cta-pad);
+  border-radius: 50px;
+  background: #ffffff;
+  box-sizing: border-box;
+  transition: padding-right var(--cta-speed) var(--cta-ease);
+}
+
+.story-cta-label {
+  color: #000000;
+  font-family: var(--font-body);
+  font-size: 17px;
+  font-weight: 500;
+  line-height: 1;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.story-cta-mark {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--cta-mark-w);
+  height: var(--cta-mark-h);
+  border-radius: 50px;
+  background: var(--color-accent);
+  flex: none;
+  transition:
+    width var(--cta-speed) var(--cta-ease),
+    height var(--cta-speed) var(--cta-ease),
+    margin-left var(--cta-speed) var(--cta-ease);
+}
+
+.story-cta-bird {
+  width: 42px;
+  height: 42px;
+  max-width: none;
+  transform: scaleX(-1);
+  pointer-events: none;
+  transition:
+    width var(--cta-speed) var(--cta-ease),
+    height var(--cta-speed) var(--cta-ease);
+}
+
+@media (hover: hover) {
+  .story-cta:hover {
+    gap: 0;
+  }
+
+  .story-cta:hover .story-cta-body {
+    padding-right: calc(var(--cta-pad) + 55px + var(--cta-gap));
+  }
+
+  .story-cta:hover .story-cta-mark {
+    width: 71.75px;
+    height: 49px;
+    margin-left: calc(-1 * (55px + var(--cta-gap)));
+  }
+
+  .story-cta:hover .story-cta-bird {
+    width: 36.75px;
+    height: 36.75px;
+  }
+}
+
+.story-cta:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 3px;
+  gap: 0;
+}
+
+.story-cta:focus-visible .story-cta-body {
+  padding-right: calc(var(--cta-pad) + 55px + var(--cta-gap));
+}
+
+.story-cta:focus-visible .story-cta-mark {
+  width: 71.75px;
+  height: 49px;
+  margin-left: calc(-1 * (55px + var(--cta-gap)));
+}
+
+/* Slide 3 — match design: cheetahs left, tiger right, 4 values in one row */
+.story-panel--conversation {
+  width: 130vw;
+  min-width: 130vw;
+  width: 130cqw;
+  min-width: 130cqw;
+}
+
+/* Cheetahs — fully on the left edge */
+.story-conversation-cheetahs {
+  position: absolute;
+  left: 0;
+  right: auto;
+  bottom: 0;
+  width: min(38vw, 560px);
+  height: auto;
+  max-height: 62%;
+  object-fit: contain;
+  object-position: left bottom;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Tiger — fully on the right edge */
+.story-conversation-tiger {
+  position: absolute;
+  left: auto;
+  right: 0;
+  bottom: 0;
+  width: min(46vw, 720px);
+  height: auto;
+  max-height: 64%;
+  object-fit: contain;
+  object-position: right bottom;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.story-conversation-copy {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  box-sizing: border-box;
+  width: min(980px, 58vw);
+  margin: 0 auto;
+  padding: 7vh 2vw 6vh;
+  gap: 18px;
+  text-align: center;
+}
+
+.story-heading--conversation {
+  white-space: nowrap;
+}
+
+.story-conversation-lead {
+  max-width: 760px;
+  font-weight: 500;
+}
+
+.story-values {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: flex-start;
+  gap: clamp(24px, 3.5vw, 72px);
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  width: 100%;
+}
+
+.story-value {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 110px;
+}
+
+.story-value-icon {
+  width: 107px;
+  height: 107px;
+  object-fit: contain;
+}
+
+.story-value-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(26px, 2vw, 38px);
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.story-conversation-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  max-width: 720px;
+  margin-top: 6px;
+}
+
+.story-conversation-lines {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: clamp(15px, 1.1vw, 20px);
+  font-weight: 500;
+  font-style: italic;
+  line-height: 1.35;
+  text-transform: capitalize;
+}
+
+.story-conversation-close {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: clamp(15px, 1.1vw, 20px);
+  font-weight: 500;
+  font-style: italic;
+  line-height: 1.4;
+  text-transform: capitalize;
+}
+
+@media (max-width: 1023px) {
+  .story-scroll {
+    margin-top: -3vh;
+  }
+
+  .story-sky-bridge {
+    height: 20vh;
+  }
+
+  .story-cloud-lip {
+    width: 130vw;
+    height: 20vh;
+    margin-left: -15vw;
+    margin-top: -5vh;
+  }
+
+  .story-cloud-lip img {
+    height: 200%;
+    object-position: center bottom;
+  }
+
+  .story-scroll-viewport {
+    height: auto;
+    overflow: visible;
+  }
+
+  .story-track {
+    flex-direction: column;
+    width: 100%;
+    transform: none !important;
+  }
+
+  .story-panel--ordinary,
+  .story-panel--boardrooms,
+  .story-panel--conversation {
+    width: 100%;
+    min-width: 0;
+    min-height: 100vh;
+    min-height: 100svh;
+  }
+
+  .story-ordinary-bird {
+    /* +30% vs prior min(70vw, 360px). */
+    width: min(91vw, 468px);
+    max-height: 100%;
+    opacity: 0.95;
+  }
+
+  .story-ordinary-copy {
+    width: calc(100% - 40px);
+    margin: 0 auto;
+    padding: 72px 0 48px;
+    justify-content: flex-start;
+  }
+
+  .story-pillars {
+    gap: 28px;
+  }
+
+  .story-panel--boardrooms {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .story-boardrooms-silhouettes {
+    object-position: center bottom;
+  }
+
+  .story-boardrooms-inner {
+    grid-template-columns: 1fr;
+    padding: 72px 20px 160px;
+    gap: 36px;
+  }
+
+  .story-boardrooms-intro {
+    margin-left: 0;
+    max-width: none;
+  }
+
+  .story-boardrooms-intro .story-heading {
+    white-space: normal;
+  }
+
+  .story-milestones {
+    grid-template-columns: 1fr;
+  }
+
+  .story-conversation-cheetahs {
+    left: 0;
+    right: auto;
+    width: min(55vw, 280px);
+    max-height: 42%;
+    opacity: 0.95;
+  }
+
+  .story-conversation-tiger {
+    left: auto;
+    right: 0;
+    width: min(58vw, 300px);
+    max-height: 44%;
+    opacity: 0.95;
+  }
+
+  .story-conversation-copy {
+    width: calc(100% - 40px);
+    padding: 72px 0 140px;
+  }
+
+  .story-heading--conversation {
+    white-space: normal;
+  }
+
+  .story-values {
+    flex-wrap: wrap;
+    gap: 24px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .story-cta {
+    --cta-speed: 0s;
+  }
+
+  .story-track {
+    transform: none !important;
+  }
+}
