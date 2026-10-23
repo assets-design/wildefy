@@ -67,6 +67,7 @@ export function StoryScroll() {
 
         gsap.set(track, { x: 0, force3D: true });
 
+        // Soften scrub for continuous reverse-friendly horizontal storytelling.
         gsap.to(track, {
           x: () => -getTravel(),
           ease: "none",
@@ -77,7 +78,7 @@ export function StoryScroll() {
             end: () => `+=${Math.max(1, Math.round(getTravel()))}`,
             pin: true,
             pinSpacing: true,
-            scrub: 1.35,
+            scrub: 1.5,
             anticipatePin: 1,
             invalidateOnRefresh: true,
           },

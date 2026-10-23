@@ -6,6 +6,7 @@ import { StoriesGallery } from "@/components/gallery/StoriesGallery";
 import { CloudTransition } from "@/components/gallery/CloudTransition";
 import { Conservation } from "@/components/gallery/Conservation";
 import { AwardsScroll } from "@/components/awards/AwardsScroll";
+import { FooterReveal } from "@/components/footer/FooterReveal";
 
 export default function HomePage() {
   return (
@@ -19,6 +20,7 @@ export default function HomePage() {
       <CloudTransition />
       <Conservation />
       <AwardsScroll />
+      <FooterReveal />
     </JourneyShell>
   );
 }

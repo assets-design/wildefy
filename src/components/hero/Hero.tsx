@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { StageFrame } from "@/components/layout/StageFrame";
@@ -49,9 +49,24 @@ export function Hero() {
   const stickyRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<HTMLElement>(null);
   const headerRef = useRef<HTMLElement>(null);
-  const birdRef = useRef<HTMLImageElement>(null);
+  const birdRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const rightRef = useRef<HTMLDivElement>(null);
+
+  // Pause wing CSS animation while the hero bird is off-screen.
+  useEffect(() => {
+    const bird = birdRef.current;
+    if (!bird || prefersReducedMotion()) return;
+
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        bird.classList.toggle("is-offscreen", !entry.isIntersecting);
+      },
+      { root: null, threshold: 0.08 },
+    );
+    io.observe(bird);
+    return () => io.disconnect();
+  }, []);
 
   useLayoutEffect(() => {
     const experience = experienceRef.current;
@@ -155,7 +170,7 @@ export function Hero() {
           end: () => `+=${Math.round(window.innerHeight * PIN_VH)}`,
           pin: true,
           pinSpacing: true,
-          scrub: 0.45,
+          scrub: 0.65,
           invalidateOnRefresh: true,
           anticipatePin: 1,
           onRefreshInit: updateDistances,
@@ -380,15 +395,46 @@ export function Hero() {
         <StageFrame>
           <section className="hero journey-scene" ref={sceneRef} aria-label="Introduction">
             <div className="hero-media">
-              <img
+              {/*
+                Base keeps body + shoulder roots (above tips). Outer tips
+                underlap the cut and sweep in-plane so hinges stay covered.
+              */}
+              <div
                 ref={birdRef}
-                className="hero-photo hero-bird"
-                src="/images/hero/hero-bird.png"
-                alt="A hummingbird hovering beneath a red flower"
-                width={7680}
-                height={4000}
-                draggable={false}
-              />
+                className="hero-bird"
+                role="img"
+                aria-label="A hummingbird hovering beneath a red flower"
+              >
+                <img
+                  className="hero-bird-layer hero-bird-wing hero-bird-wing--left"
+                  src="/images/hero/hero-bird-wing-left.png?v=outer9"
+                  alt=""
+                  width={2880}
+                  height={1500}
+                  draggable={false}
+                  decoding="async"
+                  aria-hidden="true"
+                />
+                <img
+                  className="hero-bird-layer hero-bird-wing hero-bird-wing--right"
+                  src="/images/hero/hero-bird-wing-right.png?v=outer9"
+                  alt=""
+                  width={2880}
+                  height={1500}
+                  draggable={false}
+                  decoding="async"
+                  aria-hidden="true"
+                />
+                <img
+                  className="hero-bird-layer hero-bird-base"
+                  src="/images/hero/hero-bird-base.png?v=outer9"
+                  alt=""
+                  width={2880}
+                  height={1500}
+                  draggable={false}
+                  decoding="async"
+                />
+              </div>
             </div>
 
             <header className="site-header" ref={headerRef}>

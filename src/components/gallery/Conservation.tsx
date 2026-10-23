@@ -137,8 +137,6 @@ export function Conservation() {
         ))}
 
         <div className="conservation-visual">
-          {/* Cropped from the supplied reference — replace with the
-              original forest photograph when available. */}
           <img
             className="conservation-forest"
             src="/images/gallery/forest-circle.jpg"
