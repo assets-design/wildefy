@@ -814,9 +814,8 @@ body {
   */
   margin-top: -100vh;
   margin-top: -100dvh;
-  /* Short bottom pad — cloud continuity lives on the story lip, not over §2 content. */
-  padding: 96px 0 72px;
-  /* Content stays clear; journey cloud is backdrop only. */
+  /* Immersive journey owns spacing; static fallback pads via its own stack. */
+  padding: 0;
   background: transparent;
   color: #000000;
   overflow: visible;
@@ -1226,6 +1225,7 @@ body {
 
 /* Framed image crops replicate the Figma fills. */
 .sx-darter,
+.sx-darter-stage,
 .sx-camp,
 .sx-hummingbird,
 .sx-cockatoo {
@@ -1244,11 +1244,41 @@ body {
   display: block;
 }
 
+/*
+  Bird reveal stage — left third of panel 1 only so Learn/Lead/Explore
+  stay clear. Layered clouds + veil recreate a NatGeo-style mist reveal.
+*/
+.sx-darter-stage {
+  left: 0;
+  top: 0;
+  width: min(52vw, 980px);
+  height: 100%;
+  z-index: 2;
+  overflow: visible;
+  /* Soft right edge so cloud layers dissolve into the sky/text area. */
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    #000 0%,
+    #000 58%,
+    rgba(0, 0, 0, 0.55) 78%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    90deg,
+    #000 0%,
+    #000 58%,
+    rgba(0, 0, 0, 0.55) 78%,
+    transparent 100%
+  );
+}
+
 .sx-darter {
   left: 0;
   top: 28.7vh;
   width: 36.72vw;
   height: 71.3vh;
+  z-index: 3;
+  will-change: transform, opacity, filter;
 }
 
 .sx-darter img {
@@ -1256,6 +1286,116 @@ body {
   top: -18.16%;
   width: 119.54%;
   height: 118.16%;
+}
+
+.sx-bird-cloud {
+  position: absolute;
+  pointer-events: none;
+  will-change: transform, opacity;
+  /* Feather each cloud patch so edges never read as a rectangle. */
+  -webkit-mask-image: radial-gradient(
+    ellipse 72% 68% at 45% 55%,
+    #000 0%,
+    #000 42%,
+    rgba(0, 0, 0, 0.55) 68%,
+    transparent 100%
+  );
+  mask-image: radial-gradient(
+    ellipse 72% 68% at 45% 55%,
+    #000 0%,
+    #000 42%,
+    rgba(0, 0, 0, 0.55) 68%,
+    transparent 100%
+  );
+}
+
+.sx-bird-cloud img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  max-width: none;
+}
+
+.sx-bird-cloud--back {
+  left: -22%;
+  top: 8%;
+  width: 130%;
+  height: 92%;
+  z-index: 1;
+  opacity: 0.55;
+  filter: blur(2.5px) saturate(0.8);
+  mix-blend-mode: screen;
+}
+
+.sx-bird-cloud--mid {
+  left: -30%;
+  top: 22%;
+  width: 145%;
+  height: 95%;
+  z-index: 4;
+  opacity: 0.9;
+  mix-blend-mode: screen;
+  filter: contrast(1.08);
+  -webkit-mask-image: radial-gradient(
+    ellipse 78% 70% at 38% 62%,
+    #000 0%,
+    #000 38%,
+    rgba(0, 0, 0, 0.5) 64%,
+    transparent 100%
+  );
+  mask-image: radial-gradient(
+    ellipse 78% 70% at 38% 62%,
+    #000 0%,
+    #000 38%,
+    rgba(0, 0, 0, 0.5) 64%,
+    transparent 100%
+  );
+}
+
+.sx-bird-cloud--fore {
+  left: -16%;
+  bottom: -14%;
+  width: 120%;
+  height: 68%;
+  z-index: 5;
+  opacity: 1;
+  filter: blur(0.4px);
+  mix-blend-mode: screen;
+  -webkit-mask-image: radial-gradient(
+    ellipse 85% 60% at 40% 70%,
+    #000 0%,
+    #000 35%,
+    rgba(0, 0, 0, 0.45) 62%,
+    transparent 100%
+  );
+  mask-image: radial-gradient(
+    ellipse 85% 60% at 40% 70%,
+    #000 0%,
+    #000 35%,
+    rgba(0, 0, 0, 0.45) 62%,
+    transparent 100%
+  );
+}
+
+.sx-bird-veil {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      ellipse 70% 58% at 28% 60%,
+      rgba(250, 246, 238, 0.42) 0%,
+      rgba(210, 222, 232, 0.2) 44%,
+      transparent 76%
+    ),
+    linear-gradient(
+      108deg,
+      rgba(205, 218, 228, 0.28) 0%,
+      transparent 46%
+    );
+  will-change: opacity;
 }
 
 .sx-camp {
@@ -1609,11 +1749,35 @@ body {
     order: 11;
   }
 
-  .sx-darter {
+  .sx-darter-stage {
     order: 3;
-    width: min(80vw, 420px);
+    width: min(88vw, 480px);
     height: auto;
-    aspect-ratio: 1.4;
+    aspect-ratio: 1.15;
+    -webkit-mask-image: none;
+    mask-image: none;
+    overflow: hidden;
+  }
+
+  .sx-darter {
+    position: absolute !important;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .sx-darter img {
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: left bottom;
+  }
+
+  .sx-bird-cloud,
+  .sx-bird-veil {
+    display: none;
   }
 
   .sx-pillar,
@@ -1728,6 +1892,19 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .sx-track {
     transform: none !important;
+  }
+
+  .sx-darter,
+  .sx-bird-cloud,
+  .sx-bird-veil {
+    transform: none !important;
+    filter: none !important;
+    opacity: 1 !important;
+  }
+
+  .sx-bird-cloud,
+  .sx-bird-veil {
+    display: none !important;
   }
 }
 /* ---------- Custom cursor (dot + trailing ring) ---------- */

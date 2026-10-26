@@ -304,26 +304,29 @@ export function Hero() {
           },
         );
 
+        // Hold clouds only through the 3D journey entrance, then clear so
+        // the terrain canvas owns the viewport for the rest of §2.
         gsap.fromTo(
           cloud,
           {
             x: () => distances.cloudDriftX * 0.55,
             y: () => distances.cloudYHigh,
             scale: () => distances.cloudScaleHigh,
+            autoAlpha: 1,
             transformOrigin: "50% 40%",
           },
           {
             x: () => distances.cloudDriftX * 0.35,
-            // Stay on dense mid — don't pull soft bottom fringe over §2 rows.
             y: () => distances.cloudYHigh - window.innerHeight * 0.08,
             scale: 1.35,
+            autoAlpha: 0,
             transformOrigin: "50% 35%",
             ease: "none",
             immediateRender: false,
             scrollTrigger: {
               trigger: experiences,
               start: "top top",
-              end: "bottom top",
+              end: "top+=35% top",
               scrub: 0.65,
             },
           },

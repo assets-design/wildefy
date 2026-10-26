@@ -59,32 +59,138 @@ export function StoryScroll() {
       mm.add("(min-width: 1024px)", () => {
         const viewport = section.querySelector<HTMLElement>(".sx-viewport");
         const panel = track.querySelector<HTMLElement>(".sx-panel");
+        const stage = track.querySelector<HTMLElement>(".sx-darter-stage");
+        const bird = track.querySelector<HTMLElement>(".sx-darter");
+        const cloudBack = track.querySelector<HTMLElement>(".sx-bird-cloud--back");
+        const cloudMid = track.querySelector<HTMLElement>(".sx-bird-cloud--mid");
+        const cloudFore = track.querySelector<HTMLElement>(".sx-bird-cloud--fore");
+        const veil = track.querySelector<HTMLElement>(".sx-bird-veil");
         if (!viewport || !panel) return;
 
         const getViewW = () => viewport.clientWidth || window.innerWidth;
         const getTravel = () =>
           Math.max(0, panel.offsetLeft + panel.offsetWidth - getViewW());
+        // Dedicated scroll runway for the mist reveal before the story pans.
+        const getRevealRun = () =>
+          Math.max(720, Math.round(window.innerHeight * 1.35));
 
         gsap.set(track, { x: 0, force3D: true });
 
-        // Soften scrub for continuous reverse-friendly horizontal storytelling.
-        gsap.to(track, {
-          x: () => -getTravel(),
-          ease: "none",
-          force3D: true,
-          scrollTrigger: {
-            trigger: section,
-            start: "top top",
-            end: () => `+=${Math.max(1, Math.round(getTravel()))}`,
-            pin: true,
-            pinSpacing: true,
-            scrub: 1.5,
-            anticipatePin: 1,
-            invalidateOnRefresh: true,
+        const hasReveal =
+          !!(stage && bird && cloudBack && cloudMid && cloudFore && veil);
+
+        if (hasReveal && bird && cloudBack && cloudMid && cloudFore && veil) {
+          gsap.set(bird, {
+            transformOrigin: "32% 72%",
+            autoAlpha: 0.2,
+            scale: 0.8,
+            yPercent: 18,
+            xPercent: -9,
+            force3D: true,
+          });
+          gsap.set(veil, { autoAlpha: 0.55, force3D: true });
+          gsap.set(cloudBack, {
+            xPercent: -6,
+            yPercent: 8,
+            scale: 1.02,
+            autoAlpha: 0.55,
+            force3D: true,
+          });
+          gsap.set(cloudMid, {
+            xPercent: 12,
+            yPercent: 12,
+            scale: 1.06,
+            autoAlpha: 0.9,
+            force3D: true,
+          });
+          gsap.set(cloudFore, {
+            xPercent: -10,
+            yPercent: 22,
+            scale: 1.12,
+            autoAlpha: 0.95,
+            force3D: true,
+          });
+        }
+
+        /*
+          Progress-driven pin (NatGeo grammar):
+            0 → revealEnd  : clouds part, bird settles (track held at x=0)
+            revealEnd → 1  : horizontal story pan
+          Same scroll progress drives both directions — fully reversible.
+        */
+        const applyProgress = (progress: number) => {
+          const revealPx = getRevealRun();
+          const travelPx = getTravel();
+          const total = Math.max(1, revealPx + travelPx);
+          const revealEnd = revealPx / total;
+          const p = Math.min(1, Math.max(0, progress));
+
+          if (hasReveal && bird && cloudBack && cloudMid && cloudFore && veil) {
+            const t = p <= revealEnd ? p / revealEnd : 1;
+            // Ease mist out a touch ahead of the bird settling.
+            const mistT = Math.min(1, t / 0.82);
+            const birdT = t;
+
+            gsap.set(bird, {
+              autoAlpha: 0.2 + 0.8 * birdT,
+              scale: 0.8 + 0.2 * birdT,
+              yPercent: 18 * (1 - birdT),
+              xPercent: -9 * (1 - birdT),
+            });
+            gsap.set(veil, { autoAlpha: 0.55 * (1 - mistT) });
+            gsap.set(cloudBack, {
+              xPercent: -6 + 22 * mistT,
+              yPercent: 8 - 20 * mistT,
+              scale: 1.02 + 0.2 * mistT,
+              autoAlpha: 0.55 * (1 - mistT),
+            });
+            gsap.set(cloudMid, {
+              xPercent: 12 - 64 * mistT,
+              yPercent: 12 - 32 * mistT,
+              scale: 1.06 + 0.44 * mistT,
+              autoAlpha: 0.9 * (1 - mistT),
+            });
+            gsap.set(cloudFore, {
+              xPercent: -10 + 78 * mistT,
+              yPercent: 22 - 56 * mistT,
+              scale: 1.12 + 0.58 * mistT,
+              autoAlpha: 0.95 * (1 - mistT),
+            });
+          }
+
+          const panT =
+            p <= revealEnd ? 0 : (p - revealEnd) / Math.max(0.0001, 1 - revealEnd);
+          gsap.set(track, { x: -travelPx * panT, force3D: true });
+        };
+
+        const storyTrigger = ScrollTrigger.create({
+          trigger: section,
+          start: "top top",
+          end: () =>
+            `+=${Math.max(1, Math.round(getRevealRun() + getTravel()))}`,
+          pin: true,
+          pinSpacing: true,
+          anticipatePin: 1,
+          invalidateOnRefresh: true,
+          onUpdate: (self) => {
+            applyProgress(self.progress);
+          },
+          onRefresh: (self) => {
+            applyProgress(self.progress);
           },
         });
 
-        const refresh = () => ScrollTrigger.refresh();
+        applyProgress(storyTrigger.progress);
+
+        let refreshQueued = false;
+        const refresh = () => {
+          if (refreshQueued) return;
+          refreshQueued = true;
+          requestAnimationFrame(() => {
+            refreshQueued = false;
+            ScrollTrigger.refresh();
+          });
+        };
         window.addEventListener("load", refresh, { once: true });
         const ro = new ResizeObserver(refresh);
         ro.observe(viewport);
@@ -93,6 +199,7 @@ export function StoryScroll() {
         return () => {
           ro.disconnect();
           window.removeEventListener("load", refresh);
+          storyTrigger.kill();
         };
       });
     }, section);
@@ -111,14 +218,42 @@ export function StoryScroll() {
         <div className="sx-track" ref={trackRef}>
           <article className="sx-panel">
             {/* ——— Panel 1 · Outside the Ordinary ——— */}
-            <div className="sx-darter">
-              <img
-                src="/images/story/darter.png"
-                alt="A darter perched on a leafy branch"
-                width={1223}
-                height={1223}
-                draggable={false}
-              />
+            <div className="sx-darter-stage" aria-hidden="false">
+              <div className="sx-bird-cloud sx-bird-cloud--back" aria-hidden="true">
+                <img
+                  src="/images/clouds-section.png"
+                  alt=""
+                  draggable={false}
+                  decoding="async"
+                />
+              </div>
+              <div className="sx-bird-cloud sx-bird-cloud--mid" aria-hidden="true">
+                <img
+                  src="/images/clouds-section.png"
+                  alt=""
+                  draggable={false}
+                  decoding="async"
+                />
+              </div>
+              <div className="sx-darter">
+                <img
+                  src="/images/story/darter.png"
+                  alt="A darter perched on a leafy branch"
+                  width={1223}
+                  height={1223}
+                  draggable={false}
+                  decoding="async"
+                />
+              </div>
+              <div className="sx-bird-cloud sx-bird-cloud--fore" aria-hidden="true">
+                <img
+                  src="/images/clouds-no-bg.png"
+                  alt=""
+                  draggable={false}
+                  decoding="async"
+                />
+              </div>
+              <div className="sx-bird-veil" aria-hidden="true" />
             </div>
             <h2 className="sx-heading sx-heading--ordinary">
               What Happens When We Step

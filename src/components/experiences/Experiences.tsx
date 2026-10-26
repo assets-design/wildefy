@@ -1,258 +1,279 @@
 "use client";
 
-import { useLayoutEffect, useRef } from "react";
+import dynamic from "next/dynamic";
+import {
+  Component,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { ExperienceJourneyCard } from "@/components/experiences/ExperienceJourneyCard";
+import {
+  EXPERIENCES,
+  STAGE_LABELS,
+  type Experience,
+} from "@/components/experiences/experiencesData";
+import {
+  JourneyReveal,
+  REVEAL_END,
+  cameraProgressFromScroll,
+} from "@/components/experiences/JourneyReveal";
+import { detectQuality, hasWebGL, type SceneQuality } from "@/lib/wildefy3d/quality";
+import styles from "./experiences-journey.module.css";
 
 gsap.registerPlugin(ScrollTrigger);
 
-type Experience = {
-  id: string;
-  title: string;
-  tags: string[];
-  description: string;
-  cta: string;
-  href: string;
-  image: string;
-  imageAlt: string;
-};
+const WildefyScene = dynamic(
+  () => import("@/components/wildefy3d/WildefyScene").then((mod) => mod.WildefyScene),
+  { ssr: false },
+);
 
-const EXPERIENCES: Experience[] = [
-  {
-    id: "tours",
-    title: "Guided Wildlife Tours",
-    tags: [
-      "Wildlife Safaris Across India",
-      "Five International Countries",
-      "Bespoke Wildlife Journeys",
-      "Photography-Focused Experiences",
-    ],
-    description:
-      "Explore extraordinary wildlife habitats through guided safaris and personalised journeys across India and international destinations.",
-    cta: "Explore Tours",
-    href: "#tours",
-    image: "/images/experiences/tours.png",
-    imageAlt: "Elephants on a guided safari viewed from a vehicle",
-  },
-  {
-    id: "offsites",
-    title: "Offsites in the Wilderness",
-    tags: [
-      "Corporate Team Experiences",
-      "Wildlife Safaris",
-      "Founder-Led Workshops",
-      "Campfire Conversations",
-    ],
-    description:
-      "Bring your team beyond the boardroom through wildlife encounters, leadership workshops, and meaningful shared experiences in nature.",
-    cta: "Explore Offsites",
-    href: "#offsites",
-    image: "/images/experiences/offsites.png",
-    imageAlt: "A small group gathered around a wilderness campfire",
-  },
-  {
-    id: "stories",
-    title: "Wildlife Stories That Teach",
-    tags: [
-      "Keynotes and Town Halls",
-      "Photography Workshops",
-      "Photoshop and Photo-Editing Workshops",
-      "Campus Sessions",
-      "International Photography Professionals",
-    ],
-    description:
-      "Real encounters from the wild become stories, conversations, and learning experiences revealing lessons in patience, resilience, observation, decision-making, and leadership.",
-    cta: "Explore Wildlife Stories",
-    href: "#stories",
-    image: "/images/experiences/stories.png",
-    imageAlt: "A wildlife photographer with a telephoto lens in the field",
-  },
-  {
-    id: "learning",
-    title: "Corporate Learning",
-    tags: [
-      "Financial Awareness",
-      "Profit and Loss",
-      "Business Performance",
-      "Financial Decision-Making",
-      "Leadership and Business Fundamentals",
-    ],
-    description:
-      "Build financial awareness and business understanding through practical learning focused on financial performance, decision-making, and leadership.",
-    cta: "Explore Corporate Learning",
-    href: "#learning",
-    image: "/images/experiences/learning.png",
-    imageAlt: "A corporate learning session in a warm nature-inspired venue",
-  },
-];
+class SceneBoundary extends Component<
+  { children: ReactNode; onError: () => void },
+  { failed: boolean }
+> {
+  state = { failed: false };
+
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+
+  componentDidCatch() {
+    this.props.onError();
+  }
+
+  render() {
+    if (this.state.failed) return null;
+    return this.props.children;
+  }
+}
 
 function prefersReducedMotion() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-function ExperienceCta({ label, href }: { label: string; href: string }) {
-  return (
-    <a className="experience-cta" href={href}>
-      <span className="experience-cta-body">
-        <span className="experience-cta-label">{label}</span>
-      </span>
-      <span className="experience-cta-mark" aria-hidden="true">
-        <img
-          className="experience-cta-bird"
-          src="/images/hero/hummingbird.png"
-          alt=""
-          width={42}
-          height={42}
-        />
-      </span>
-    </a>
-  );
+/** Map scroll progress → card opacity + horizontal travel. */
+function cardStyleForProgress(item: Experience, progress: number): CSSProperties {
+  const { from, hold, to } = item.window;
+  const enterEnd = hold;
+  const exitStart = Math.min(hold + (to - hold) * 0.45, to);
+
+  let visibility = 0;
+  if (progress <= from || progress >= to) visibility = 0;
+  else if (progress < enterEnd) visibility = (progress - from) / Math.max(enterEnd - from, 0.001);
+  else if (progress <= exitStart) visibility = 1;
+  else visibility = 1 - (progress - exitStart) / Math.max(to - exitStart, 0.001);
+
+  visibility = Math.min(1, Math.max(0, visibility));
+  const eased = visibility * visibility * (3 - 2 * visibility);
+
+  const travel = item.enterFrom === "right" ? 72 : -72;
+  const x = (1 - eased) * travel;
+
+  return {
+    opacity: eased,
+    ["--card-x" as string]: `${x}%`,
+    pointerEvents: eased > 0.45 ? "auto" : "none",
+    visibility: eased < 0.02 ? "hidden" : "visible",
+  };
+}
+
+function introStyleForProgress(progress: number): CSSProperties {
+  /* Hold through most of the fly-past, then clear with the mountain reveal. */
+  const fadeOut = Math.min(1, Math.max(0, (progress - REVEAL_END * 0.35) / (REVEAL_END * 0.65)));
+  const opacity = 1 - fadeOut;
+  return {
+    opacity,
+    transform: `translate3d(0, ${fadeOut * -36}px, 0) scale(${1 + fadeOut * 0.04})`,
+    visibility: opacity < 0.04 ? "hidden" : "visible",
+  };
+}
+
+function activeStageIndex(progress: number) {
+  if (progress < STAGE_LABELS[0].from) return -1;
+  for (let i = STAGE_LABELS.length - 1; i >= 0; i -= 1) {
+    if (progress >= STAGE_LABELS[i].from) return i;
+  }
+  return 0;
 }
 
 export function Experiences() {
   const sectionRef = useRef<HTMLElement>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const progressRef = useRef(0);
+  const [progress, setProgress] = useState(0);
+  const [quality, setQuality] = useState<SceneQuality | null>(null);
+  const [webgl, setWebgl] = useState<"unknown" | "yes" | "no">("unknown");
+  const [reducedMotion, setReducedMotion] = useState(false);
+  const [booting, setBooting] = useState(true);
+  const [failed, setFailed] = useState(false);
+  const readyOnce = useRef(false);
+
+  useEffect(() => {
+    setQuality(detectQuality());
+    setWebgl(hasWebGL() ? "yes" : "no");
+    setReducedMotion(prefersReducedMotion());
+  }, []);
 
   useLayoutEffect(() => {
-    const section = sectionRef.current;
-    if (!section || prefersReducedMotion()) return;
+    const wrap = wrapRef.current;
+    if (!wrap || reducedMotion || webgl === "no" || failed) return;
 
-    const ctx = gsap.context(() => {
-      const mm = gsap.matchMedia();
+    const trigger = ScrollTrigger.create({
+      trigger: wrap,
+      start: "top top",
+      end: "bottom bottom",
+      scrub: true,
+      onUpdate: (self) => {
+        // Camera uses remapped progress (slow during reveal); UI uses raw scroll.
+        progressRef.current = cameraProgressFromScroll(self.progress);
+        setProgress(self.progress);
+      },
+    });
 
-      mm.add("(min-width: 1024px)", () => {
-        const intro = section.querySelector(".experiences-intro");
-        if (intro) {
-          gsap.fromTo(
-            intro.children,
-            { y: 28, opacity: 0.4 },
-            {
-              y: 0,
-              opacity: 1,
-              ease: "none",
-              stagger: 0.06,
-              scrollTrigger: {
-                trigger: intro,
-                start: "top 85%",
-                end: "top 55%",
-                scrub: 0.4,
-              },
-            },
-          );
-        }
+    progressRef.current = cameraProgressFromScroll(trigger.progress);
+    setProgress(trigger.progress);
 
-        section.querySelectorAll<HTMLElement>(".experience-row").forEach((row) => {
-          const left = row.querySelector(".experience-left");
-          const mid = row.querySelector(".experience-mid");
-          const media = row.querySelector(".experience-media");
-          if (!left || !mid || !media) return;
+    return () => {
+      trigger.kill();
+    };
+  }, [reducedMotion, webgl, failed]);
 
-          // Modest travel — editorial opposing motion without clipping the grid.
-          gsap.fromTo(
-            [left, mid],
-            { x: -40 },
-            {
-              x: 0,
-              ease: "none",
-              scrollTrigger: {
-                trigger: row,
-                start: "top 92%",
-                end: "top 45%",
-                scrub: 0.4,
-              },
-            },
-          );
-
-          gsap.fromTo(
-            media,
-            { x: 48 },
-            {
-              x: 0,
-              ease: "none",
-              scrollTrigger: {
-                trigger: row,
-                start: "top 92%",
-                end: "top 45%",
-                scrub: 0.4,
-              },
-            },
-          );
-        });
-      });
-
-      mm.add("(max-width: 1023px)", () => {
-        section.querySelectorAll<HTMLElement>(".experience-row").forEach((row) => {
-          gsap.fromTo(
-            row,
-            { y: 28, opacity: 0.55 },
-            {
-              y: 0,
-              opacity: 1,
-              ease: "none",
-              scrollTrigger: {
-                trigger: row,
-                start: "top 92%",
-                end: "top 60%",
-                scrub: 0.35,
-              },
-            },
-          );
-        });
-      });
-    }, section);
-
-    return () => ctx.revert();
+  const onBoot = useCallback(() => {}, []);
+  const onOakProgress = useCallback(() => {}, []);
+  const onOakSettled = useCallback(() => {}, []);
+  const onReady = useCallback(() => {
+    if (readyOnce.current) return;
+    readyOnce.current = true;
+    window.setTimeout(() => setBooting(false), 400);
   }, []);
+  const onFrame = useCallback(() => {}, []);
+  const onError = useCallback(() => {
+    setFailed(true);
+    setBooting(false);
+  }, []);
+
+  const showScene = webgl === "yes" && quality && !failed && !reducedMotion;
+  const stageIndex = activeStageIndex(progress);
+  const snowActive = progress >= 0.74;
+
+  if (reducedMotion || webgl === "no" || failed) {
+    return (
+      <section
+        className={`experiences ${styles.journey}`}
+        id="experiences"
+        aria-label="Four ways to experience the wild"
+        ref={sectionRef}
+      >
+        <div className={styles.staticStack}>
+          <header className={styles.staticIntro}>
+            <h2 className={styles.introTitle}>Four Ways to Experience the Wild</h2>
+            <p className={styles.introLead}>
+              From unforgettable wildlife journeys to transformative learning experiences,
+              discover how Wildefy brings the wisdom of the wild into the way we travel,
+              work, learn, and lead.
+            </p>
+          </header>
+          {(failed || webgl === "no") && (
+            <p className={styles.introLead} style={{ marginBottom: 36 }}>
+              {failed
+                ? "The 3D landscape could not start on this device. Explore the four experiences below."
+                : "Showing a simplified view — open on a WebGL-capable browser for the full terrain journey."}
+            </p>
+          )}
+          {EXPERIENCES.map((item) => (
+            <ExperienceJourneyCard key={item.id} experience={item} reduced />
+          ))}
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section
-      className="experiences"
+      className={`experiences ${styles.journey}`}
       id="experiences"
       aria-label="Four ways to experience the wild"
       ref={sectionRef}
     >
-      <div className="experiences-inner">
-        <header className="experiences-intro">
-          <h2 className="experiences-title">Four Ways to Experience the Wild</h2>
-          <p className="experiences-lead">
-            From unforgettable wildlife journeys to transformative learning
-            experiences, discover how Wildefy brings the wisdom of the wild into
-            the way we travel, work, learn, and lead.
-          </p>
-        </header>
+      <div className={styles.wrap} ref={wrapRef}>
+        <div className={styles.sticky}>
+          <div className={styles.scene}>
+            {showScene ? (
+              <SceneBoundary onError={onError}>
+                <WildefyScene
+                  progressRef={progressRef}
+                  quality={quality}
+                  reducedMotion={false}
+                  onBoot={onBoot}
+                  onOakProgress={onOakProgress}
+                  onOakSettled={onOakSettled}
+                  onReady={onReady}
+                  onFrame={onFrame}
+                  onContextLost={onError}
+                />
+              </SceneBoundary>
+            ) : (
+              <div className={styles.fallbackScene} aria-hidden="true" />
+            )}
+          </div>
 
-        <div className="experiences-list">
-          {EXPERIENCES.map((item) => (
-            <article className="experience-row" key={item.id} id={item.id}>
-              <div className="experience-left">
-                <h3 className="experience-heading">{item.title}</h3>
-                <ul className="experience-tags">
-                  {item.tags.map((tag) => (
-                    <li key={tag}>
-                      <span className="experience-tag">{tag}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+          <div
+            className={`${styles.atmosphere} ${snowActive ? styles.atmosphereSnow : ""}`}
+            aria-hidden="true"
+          />
+          <div
+            className={`${styles.snowLayer} ${snowActive ? styles.snowLayerVisible : ""}`}
+            aria-hidden="true"
+          />
 
-              <div className="experience-mid">
-                <p className="experience-description">{item.description}</p>
-                <ExperienceCta label={item.cta} href={item.href} />
-              </div>
+          <JourneyReveal progress={progress} />
 
-              <div className="experience-media">
-                <div className="experience-media-frame">
-                  <img
-                    src={item.image}
-                    alt={item.imageAlt}
-                    width={800}
-                    height={600}
-                    loading="lazy"
-                    decoding="async"
+          <div className={styles.overlay}>
+            <header className={styles.intro} style={introStyleForProgress(progress)}>
+              <h2 className={styles.introTitle}>Four Ways to Experience the Wild</h2>
+              <p className={styles.introLead}>
+                From unforgettable wildlife journeys to transformative learning
+                experiences, discover how Wildefy brings the wisdom of the wild into the
+                way we travel, work, learn, and lead.
+              </p>
+            </header>
+
+            <div className={styles.cardsLayer}>
+              <div className={styles.stageRail} aria-hidden="true">
+                {STAGE_LABELS.map((stage, index) => (
+                  <span
+                    key={stage.id}
+                    className={`${styles.stageDot} ${
+                      index === stageIndex ? styles.stageDotActive : ""
+                    }`}
+                    title={stage.label}
                   />
-                </div>
+                ))}
               </div>
-            </article>
-          ))}
+
+              {EXPERIENCES.map((item) => (
+                <ExperienceJourneyCard
+                  key={item.id}
+                  experience={item}
+                  style={cardStyleForProgress(item, progress)}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div
+            className={`${styles.loading} ${booting ? "" : styles.loadingHidden}`}
+            aria-hidden={!booting}
+          >
+            <p className={styles.loadingCopy}>Entering the wild</p>
+          </div>
         </div>
       </div>
     </section>

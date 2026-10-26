@@ -1,0 +1,505 @@
+.journey {
+  position: relative;
+  z-index: 3;
+  margin-top: -100vh;
+  margin-top: -100dvh;
+  color: #f5f0e6;
+  background: #0a1f18;
+}
+
+.wrap {
+  position: relative;
+  height: 520vh;
+}
+
+.sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.scene {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.scene canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.fallbackScene {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background:
+    linear-gradient(180deg, rgba(10, 31, 24, 0.35), rgba(10, 31, 24, 0.72)),
+    url("/assets/wildefy/storyboard/01_opening_aerial.jpg") center / cover no-repeat;
+}
+
+/* NatGeo-style fly-past reveal — bird + branches + mist over the 3D scene */
+.reveal {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.revealVeil {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 70% 60% at 50% 45%,
+    transparent 20%,
+    rgba(8, 24, 18, 0.55) 100%
+  );
+  will-change: opacity;
+}
+
+.revealMist {
+  position: absolute;
+  inset: -12%;
+  background:
+    url("/images/clouds-mist.png") center 60% / cover no-repeat,
+    linear-gradient(
+      180deg,
+      rgba(210, 220, 230, 0.35) 0%,
+      rgba(245, 240, 230, 0.2) 45%,
+      rgba(180, 200, 190, 0.25) 100%
+    );
+  filter: blur(2px);
+  mix-blend-mode: screen;
+  transform-origin: 50% 55%;
+  will-change: transform, opacity;
+}
+
+.revealBird {
+  position: absolute;
+  left: 4%;
+  bottom: -4%;
+  width: min(58vw, 720px);
+  transform-origin: 35% 70%;
+  will-change: transform, opacity;
+  filter: drop-shadow(0 18px 40px rgba(0, 0, 0, 0.35));
+}
+
+.revealBird img {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+.revealBranchLeft,
+.revealBranchRight {
+  position: absolute;
+  width: min(52vw, 560px);
+  height: min(70vh, 640px);
+  transform-origin: center center;
+  will-change: transform, opacity;
+  filter: drop-shadow(0 12px 28px rgba(0, 0, 0, 0.3));
+}
+
+.revealBranchLeft {
+  left: -8%;
+  bottom: -6%;
+  transform-origin: 10% 85%;
+}
+
+.revealBranchRight {
+  right: -10%;
+  top: -8%;
+  transform-origin: 90% 15%;
+}
+
+.revealBranchSvg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.atmosphere {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 95% 80% at 50% 42%,
+    transparent 42%,
+    rgba(8, 22, 18, 0.16) 100%
+  );
+  transition: background 0.4s ease;
+}
+
+.atmosphereSnow {
+  background:
+    radial-gradient(ellipse 90% 70% at 50% 35%, rgba(200, 220, 235, 0.14), transparent 58%),
+    linear-gradient(180deg, rgba(180, 200, 220, 0.12), transparent 48%, rgba(8, 22, 18, 0.22));
+}
+
+.snowLayer {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  background-image:
+    radial-gradient(2px 2px at 12% 18%, rgba(255, 255, 255, 0.75), transparent),
+    radial-gradient(1.5px 1.5px at 28% 42%, rgba(255, 255, 255, 0.55), transparent),
+    radial-gradient(2px 2px at 46% 12%, rgba(255, 255, 255, 0.65), transparent),
+    radial-gradient(1px 1px at 62% 58%, rgba(255, 255, 255, 0.5), transparent),
+    radial-gradient(2px 2px at 78% 28%, rgba(255, 255, 255, 0.7), transparent),
+    radial-gradient(1.5px 1.5px at 88% 72%, rgba(255, 255, 255, 0.45), transparent);
+  animation: snow-drift 18s linear infinite;
+}
+
+.snowLayerVisible {
+  opacity: 0.85;
+}
+
+@keyframes snow-drift {
+  from {
+    background-position: 0 0, 0 0, 0 0, 0 0, 0 0, 0 0;
+  }
+  to {
+    background-position: 40px 420px, -30px 380px, 20px 460px, -50px 400px, 35px 440px, -25px 390px;
+  }
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  padding: clamp(20px, 3vh, 40px) clamp(20px, 4vw, 56px);
+  box-sizing: border-box;
+}
+
+.intro {
+  justify-self: center;
+  max-width: 920px;
+  text-align: center;
+  pointer-events: none;
+  will-change: opacity, transform;
+}
+
+.introTitle {
+  margin: 0 0 14px;
+  font-family: var(--font-display);
+  font-size: clamp(32px, 4.2vw, 60px);
+  font-weight: 400;
+  line-height: 1.12;
+  letter-spacing: 0;
+  color: #f5f0e6;
+  text-shadow: 0 2px 28px rgba(0, 0, 0, 0.45);
+}
+
+.introLead {
+  margin: 0 auto;
+  max-width: 780px;
+  font-family: var(--font-body);
+  font-size: clamp(15px, 1.1vw, 19px);
+  line-height: 1.45;
+  color: rgba(245, 240, 230, 0.88);
+  text-shadow: 0 1px 16px rgba(0, 0, 0, 0.4);
+}
+
+.stageRail {
+  position: absolute;
+  left: 50%;
+  bottom: clamp(18px, 3vh, 36px);
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.stageDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1px solid rgba(245, 240, 230, 0.55);
+  background: transparent;
+  transition:
+    background 0.35s ease,
+    border-color 0.35s ease,
+    transform 0.35s ease;
+}
+
+.stageDotActive {
+  background: #f9a01f;
+  border-color: #f9a01f;
+  transform: scale(1.25);
+}
+
+.cardsLayer {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.card {
+  --card-x: 0%;
+  position: absolute;
+  top: 50%;
+  width: min(420px, calc(100vw - 48px));
+  transform: translate3d(var(--card-x), -50%, 0);
+  pointer-events: auto;
+  will-change: transform, opacity;
+  filter: drop-shadow(0 18px 40px rgba(0, 0, 0, 0.35));
+}
+
+.card[data-side="right"] {
+  right: clamp(16px, 5vw, 72px);
+  left: auto;
+}
+
+.card[data-side="left"] {
+  left: clamp(16px, 5vw, 72px);
+  right: auto;
+}
+
+.cardStatic {
+  position: relative;
+  top: auto;
+  left: auto !important;
+  right: auto !important;
+  transform: none;
+  width: min(480px, 100%);
+  margin: 0 auto 28px;
+  filter: none;
+}
+
+.cardFrame {
+  display: flex;
+  flex-direction: column;
+  background: #123f32;
+  border: 1px solid rgba(245, 240, 230, 0.72);
+  overflow: hidden;
+}
+
+.cardMedia {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: #0a2a22;
+}
+
+.cardMedia img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cardBody {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 22px 22px 24px;
+}
+
+.cardTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(26px, 2.4vw, 36px);
+  font-weight: 400;
+  line-height: 1.15;
+  color: #f5f0e6;
+}
+
+.cardTags {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.cardTag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  width: 100%;
+  padding: 7px 12px;
+  box-sizing: border-box;
+  border: 1px solid rgba(245, 240, 230, 0.78);
+  border-radius: 999px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  line-height: 1.25;
+  text-align: center;
+  color: #f5f0e6;
+}
+
+.cardCta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  width: fit-content;
+  text-decoration: none;
+  margin-top: 4px;
+}
+
+.cardCtaLabel {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 22px;
+  border-radius: 999px;
+  background: #f5f0e6;
+  color: #123f32;
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  transition: background 0.25s ease, color 0.25s ease;
+}
+
+.cardCtaMark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #f9a01f;
+  flex: none;
+}
+
+.cardCtaBird {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+}
+
+.cardCta:hover .cardCtaLabel,
+.cardCta:focus-visible .cardCtaLabel {
+  background: #ffffff;
+}
+
+.cardCta:focus-visible {
+  outline: 2px solid #f9a01f;
+  outline-offset: 3px;
+}
+
+.loading {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  background: rgba(7, 17, 14, 0.72);
+  pointer-events: none;
+  transition: opacity 0.45s ease;
+}
+
+.loadingHidden {
+  opacity: 0;
+}
+
+.loadingCopy {
+  font-family: var(--font-body);
+  font-size: 13px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(245, 240, 230, 0.8);
+}
+
+/* Reduced-motion / no-WebGL stacked fallback */
+.staticStack {
+  position: relative;
+  z-index: 2;
+  width: min(1120px, calc(100% - 48px));
+  margin: 0 auto;
+  padding: 96px 0 80px;
+}
+
+.staticIntro {
+  max-width: 860px;
+  margin: 0 auto 48px;
+  text-align: center;
+}
+
+.staticIntro .introTitle {
+  color: #f5f0e6;
+  text-shadow: none;
+}
+
+.staticIntro .introLead {
+  color: rgba(245, 240, 230, 0.82);
+  text-shadow: none;
+}
+
+@media (max-width: 900px) {
+  .wrap {
+    height: 380vh;
+  }
+
+  .card {
+    width: min(340px, calc(100vw - 32px));
+    top: auto;
+    bottom: clamp(16px, 4vh, 36px);
+    transform: translate3d(var(--card-x), 0, 0);
+  }
+
+  .card[data-side="right"] {
+    right: 16px;
+    left: auto;
+  }
+
+  .card[data-side="left"] {
+    left: 16px;
+    right: auto;
+  }
+
+  .cardTags {
+    grid-template-columns: 1fr;
+  }
+
+  .stageRail {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .wrap {
+    height: 320vh;
+  }
+
+  .introTitle {
+    font-size: 28px;
+  }
+
+  .cardBody {
+    padding: 18px 16px 20px;
+    gap: 14px;
+  }
+
+  .cardTitle {
+    font-size: 24px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .snowLayer {
+    animation: none;
+  }
+}

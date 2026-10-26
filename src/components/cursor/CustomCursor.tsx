@@ -11,7 +11,7 @@ import { useEffect, useRef } from "react";
 */
 const INTERACTIVE_SELECTOR =
   "a, button, [role='button'], input, select, textarea, label, summary";
-const LIGHT_SECTION_SELECTOR = ".experiences, .sx-scroll";
+const LIGHT_SECTION_SELECTOR = ".sx-scroll";
 
 function backgroundIsLight(el: Element | null): boolean {
   let node: Element | null = el;
