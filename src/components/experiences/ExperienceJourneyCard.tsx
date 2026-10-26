@@ -35,8 +35,6 @@ export function ExperienceJourneyCard({ experience, style, reduced }: Props) {
         <div className={styles.cardBody}>
           <h3 className={styles.cardTitle}>{experience.title}</h3>
 
-          <p className={styles.cardCopy}>{experience.description}</p>
-
           <ul className={styles.cardTags}>
             {(reduced ? experience.tags : experience.tags.slice(0, 4)).map((tag) => (
               <li key={tag}>
@@ -45,7 +43,16 @@ export function ExperienceJourneyCard({ experience, style, reduced }: Props) {
             ))}
           </ul>
 
-          <a className={styles.cardCta} href={experience.href}>
+          <a
+            className={styles.cardCta}
+            href={experience.href}
+            onClick={(event) => {
+              // Ensure navigation even if a parent layer eats the click.
+              if (experience.href.startsWith("http") || experience.href.startsWith("/")) {
+                event.stopPropagation();
+              }
+            }}
+          >
             <span className={styles.cardCtaLabel}>{experience.cta}</span>
             <span className={styles.cardCtaMark} aria-hidden="true">
               <img

@@ -18,20 +18,23 @@ const BANK_SRC = "/images/clouds-section.png";
 type Props = {
   /** 0–1 dissolve amount (already eased by parent). */
   progress: number;
+  /** enter: cover→clear. exit: clear→cover (into the next section). */
+  mode?: "enter" | "exit";
 };
 
-export function ExperiencesCloudReveal({ progress }: Props) {
+export function ExperiencesCloudReveal({ progress, mode = "enter" }: Props) {
   const t = Math.min(1, Math.max(0, progress));
   const hidden = t >= 0.995;
   // Hold full cover briefly, then clear — keeps clouds readable mid-reveal
   const cover = Math.min(1, Math.max(0, 1 - t));
   const opacity = cover * cover; // ease out so clouds linger a bit
-  const scale = 1 + t * 0.14;
-  const lift = t * -6;
+  const isExit = mode === "exit";
+  const scale = isExit ? 1.14 - t * 0.14 : 1 + t * 0.14;
+  const lift = isExit ? (1 - t) * 6 : t * -6;
 
   return (
     <div
-      className={styles.cloudReveal}
+      className={`${styles.cloudReveal} ${isExit ? styles.cloudRevealExit : ""}`}
       aria-hidden="true"
       style={{
         visibility: hidden ? "hidden" : "visible",

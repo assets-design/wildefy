@@ -34,6 +34,91 @@ const BOTTOM_IMAGES = [
   { src: "/images/gallery/bottom-6.jpg", alt: "A squirrel monkey among leaves" },
 ] as const;
 
+type Tile = { src: string; alt: string };
+
+function StripSet({
+  images,
+  duplicate,
+}: {
+  images: readonly Tile[];
+  duplicate?: boolean;
+}) {
+  return (
+    <div
+      className="gallery-strip-set"
+      aria-hidden={duplicate ? true : undefined}
+    >
+      {images.map((image) => (
+        <img
+          className="gallery-tile"
+          key={`${duplicate ? "dup-" : ""}${image.src}`}
+          src={image.src}
+          alt={duplicate ? "" : image.alt}
+          width={320}
+          height={256}
+          loading="lazy"
+          decoding="async"
+          draggable={false}
+        />
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Seamless infinite strip. direction -1 = left, +1 = right.
+ */
+function setupInfiniteStrip(
+  track: HTMLElement,
+  options: { direction: 1 | -1; duration: number },
+) {
+  const firstSet = track.querySelector<HTMLElement>(".gallery-strip-set");
+  if (!firstSet) {
+    return { tween: gsap.to({}, {}), refresh: () => undefined };
+  }
+
+  const measure = () => {
+    const gap =
+      parseFloat(
+        getComputedStyle(track).columnGap || getComputedStyle(track).gap,
+      ) || 0;
+    return firstSet.offsetWidth + gap;
+  };
+
+  let distance = Math.max(1, measure());
+  const fromX = options.direction < 0 ? 0 : -distance;
+  const toX = options.direction < 0 ? -distance : 0;
+
+  gsap.set(track, { x: fromX, force3D: true });
+
+  const tween = gsap.fromTo(
+    track,
+    { x: fromX },
+    {
+      x: toX,
+      duration: options.duration,
+      ease: "none",
+      repeat: -1,
+      force3D: true,
+    },
+  );
+
+  const refresh = () => {
+    const progress = tween.progress();
+    distance = Math.max(1, measure());
+    const nextFrom = options.direction < 0 ? 0 : -distance;
+    const nextTo = options.direction < 0 ? -distance : 0;
+    tween.vars.x = nextTo;
+    gsap.set(track, {
+      x: nextFrom + (nextTo - nextFrom) * progress,
+    });
+    tween.invalidate();
+    tween.progress(progress);
+  };
+
+  return { tween, refresh };
+}
+
 export function StoriesGallery() {
   const sectionRef = useRef<HTMLElement>(null);
 
@@ -41,54 +126,57 @@ export function StoriesGallery() {
     const section = sectionRef.current;
     if (!section || prefersReducedMotion()) return;
 
+    const topTrack = section.querySelector<HTMLElement>(
+      ".gallery-strip--top .gallery-strip-track",
+    );
+    const bottomTrack = section.querySelector<HTMLElement>(
+      ".gallery-strip--bottom .gallery-strip-track",
+    );
+    const copy = section.querySelector(".gallery-copy");
+    if (!topTrack || !bottomTrack) return;
+
     const ctx = gsap.context(() => {
-      const top = section.querySelector(".gallery-strip--top");
-      const bottom = section.querySelector(".gallery-strip--bottom");
-      const copy = section.querySelector(".gallery-copy");
+      // Top ← left, bottom → right — always opposite.
+      const top = setupInfiniteStrip(topTrack, {
+        direction: -1,
+        duration: 38,
+      });
+      const bottom = setupInfiniteStrip(bottomTrack, {
+        direction: 1,
+        duration: 42,
+      });
 
-      // Vertical scroll drives both strips horizontally, in opposite
-      // directions and over different distances (parallax). Scrubbing
-      // makes scrolling up reverse the movement naturally.
-      if (top) {
-        gsap.fromTo(
-          top,
-          { x: () => window.innerWidth * 0.02 },
-          {
-            x: () => -window.innerWidth * 0.1,
-            ease: "none",
-            force3D: true,
-            scrollTrigger: {
-              trigger: section,
-              start: "top bottom",
-              end: "bottom top",
-              scrub: 0.6,
-              invalidateOnRefresh: true,
-            },
-          },
-        );
-      }
+      const velProxy = { v: 0 };
+      const syncSpeed = () => {
+        const boost = gsap.utils.clamp(-3, 3, velProxy.v / 800);
+        const speed = gsap.utils.clamp(0.45, 3.4, 1 + Math.abs(boost));
+        // Same timeScale sign keeps each strip on its built-in direction
+        // (left vs right). Negative boost (scroll up) reverses both.
+        const scrollDir = boost >= 0 ? 1 : -1;
+        top.tween.timeScale(speed * scrollDir);
+        bottom.tween.timeScale(speed * scrollDir);
+      };
 
-      if (bottom) {
-        gsap.fromTo(
-          bottom,
-          { x: () => -window.innerWidth * 0.08 },
-          {
-            x: () => window.innerWidth * 0.015,
-            ease: "none",
-            force3D: true,
-            scrollTrigger: {
-              trigger: section,
-              start: "top bottom",
-              end: "bottom top",
-              scrub: 0.6,
-              invalidateOnRefresh: true,
-            },
-          },
-        );
-      }
+      top.tween.timeScale(1);
+      bottom.tween.timeScale(1);
 
-      // Central copy drifts up only slightly, so it stays readable while
-      // the strips do the travelling.
+      ScrollTrigger.create({
+        trigger: section,
+        start: "top bottom",
+        end: "bottom top",
+        onUpdate: (self) => {
+          velProxy.v = self.getVelocity();
+          syncSpeed();
+        },
+      });
+
+      const tick = () => {
+        velProxy.v += (0 - velProxy.v) * 0.08;
+        if (Math.abs(velProxy.v) < 8) velProxy.v = 0;
+        syncSpeed();
+      };
+      gsap.ticker.add(tick);
+
       if (copy) {
         gsap.fromTo(
           copy,
@@ -105,8 +193,32 @@ export function StoriesGallery() {
             },
           },
         );
-
       }
+
+      const onResize = () => {
+        top.refresh();
+        bottom.refresh();
+      };
+      window.addEventListener("resize", onResize);
+      const ro = new ResizeObserver(onResize);
+      ro.observe(topTrack);
+      ro.observe(bottomTrack);
+
+      const imgs = section.querySelectorAll<HTMLImageElement>(".gallery-tile");
+      const onImg = () => {
+        top.refresh();
+        bottom.refresh();
+      };
+      imgs.forEach((img) => {
+        if (!img.complete) img.addEventListener("load", onImg, { once: true });
+      });
+
+      return () => {
+        gsap.ticker.remove(tick);
+        window.removeEventListener("resize", onResize);
+        ro.disconnect();
+        imgs.forEach((img) => img.removeEventListener("load", onImg));
+      };
     }, section);
 
     return () => ctx.revert();
@@ -119,7 +231,6 @@ export function StoriesGallery() {
       aria-label="Stories beyond the frame"
       ref={sectionRef}
     >
-      {/* Same sky family as the horizontal storytelling panels. */}
       <img
         className="gallery-bg"
         src="/images/story/bg-3.png"
@@ -129,20 +240,11 @@ export function StoriesGallery() {
         draggable={false}
       />
 
-      <div className="gallery-strip gallery-strip--top" aria-hidden="false">
-        {TOP_IMAGES.map((image) => (
-          <img
-            className="gallery-tile"
-            key={image.src}
-            src={image.src}
-            alt={image.alt}
-            width={320}
-            height={256}
-            loading="lazy"
-            decoding="async"
-            draggable={false}
-          />
-        ))}
+      <div className="gallery-strip gallery-strip--top">
+        <div className="gallery-strip-track">
+          <StripSet images={TOP_IMAGES} />
+          <StripSet images={TOP_IMAGES} duplicate />
+        </div>
       </div>
 
       <div className="gallery-copy">
@@ -151,11 +253,6 @@ export function StoriesGallery() {
           From quiet encounters to extraordinary moments, explore the wild
           through Hymakar&rsquo;s lens.
         </p>
-        {/*
-          The primary nav's Gallery link already targets #gallery, which
-          is this section — so the CTA uses the same existing anchor
-          rather than inventing a new route.
-        */}
         <a className="gallery-cta" href="#gallery">
           <span className="gallery-cta-body">Explore Gallery</span>
           <span className="gallery-cta-mark" aria-hidden="true">
@@ -171,19 +268,10 @@ export function StoriesGallery() {
       </div>
 
       <div className="gallery-strip gallery-strip--bottom">
-        {BOTTOM_IMAGES.map((image) => (
-          <img
-            className="gallery-tile"
-            key={image.src}
-            src={image.src}
-            alt={image.alt}
-            width={320}
-            height={256}
-            loading="lazy"
-            decoding="async"
-            draggable={false}
-          />
-        ))}
+        <div className="gallery-strip-track">
+          <StripSet images={BOTTOM_IMAGES} />
+          <StripSet images={BOTTOM_IMAGES} duplicate />
+        </div>
       </div>
     </section>
   );

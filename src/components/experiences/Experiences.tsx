@@ -20,14 +20,18 @@ import {
   ExperiencesCloudReveal,
   easeCloudReveal,
 } from "@/components/experiences/ExperiencesCloudReveal";
+import { NatGeoCloudDissolve } from "@/components/experiences/NatGeoCloudDissolve";
 import styles from "./experiences-journey.module.css";
 
 gsap.registerPlugin(ScrollTrigger);
 
-/** Softer scrub so card slide-up feels slower / more deliberate. */
-const SCRUB_LAG = 0.85;
+/** Softer scrub — cards ease in slowly with scroll. */
+const SCRUB_LAG = 1.15;
 /** Cloud dissolve completes in the first stretch after Experiences hits the viewport. */
 const CLOUD_REVEAL_VH = 0.85;
+const HOLD_SCALE = 1;
+/** First portion of each card’s enter window = pin only, then the card appears. */
+const PIN_LEAD = 0.34;
 
 function prefersReducedMotion() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -38,21 +42,33 @@ function easeInOut(t: number) {
   return x * x * (3 - 2 * x);
 }
 
-function slideDistancePx() {
-  if (typeof window === "undefined") return 420;
-  // Big enough to read as “from bottom / to top”, still inside the sticky stage.
-  return Math.round(Math.min(window.innerHeight * 0.72, 560));
+/** Slow early motion so the grow from afar reads clearly. */
+function easeSlowEnter(t: number) {
+  const x = Math.min(1, Math.max(0, t));
+  return easeInOut(Math.pow(x, 1.45));
+}
+
+function projectionOffsetPx(item: Experience) {
+  const w = typeof window !== "undefined" ? window.innerWidth : 1280;
+  const h = typeof window !== "undefined" ? window.innerHeight : 800;
+  const { xVw, yVh, fromScale } = item.projection;
+  return {
+    x: Math.round(xVw * w),
+    y: Math.round(yVh * h),
+    fromScale,
+  };
 }
 
 /**
- * Left + right cards: pure slide-up (no fade).
- * Enter from bottom → rest, exit continue upward off the top.
+ * Each card starts at a unique screen point (small), then slowly travels
+ * to its left/right rest pose while scaling up. Exit zooms back out.
+ * Pin appears first (PIN_LEAD); the card only starts after that.
  */
 function cardStyleForProgress(item: Experience, progress: number): CSSProperties {
   const { from, hold, to } = item.window;
+  const { x: startX, y: startY, fromScale } = projectionOffsetPx(item);
   const enterEnd = hold;
-  const exitStart = Math.min(hold + (to - hold) * 0.55, to);
-  const travel = slideDistancePx();
+  const exitStart = Math.min(hold + (to - hold) * 0.35, to);
 
   let phase: "before" | "enter" | "hold" | "exit" | "after" = "before";
   let t = 0;
@@ -74,24 +90,133 @@ function cardStyleForProgress(item: Experience, progress: number): CSSProperties
     t = 0;
   }
 
-  const eased = easeInOut(Math.min(1, Math.max(0, t)));
-  let y = 0;
-  if (phase === "before" || phase === "enter") {
-    y = (1 - eased) * travel;
-  } else if (phase === "exit" || phase === "after") {
-    y = -(1 - eased) * travel;
+  const clamped = Math.min(1, Math.max(0, t));
+  // Card motion only after the pin has been shown alone
+  const cardT = Math.max(0, (clamped - PIN_LEAD) / Math.max(1 - PIN_LEAD, 0.001));
+  const enterEased = easeSlowEnter(cardT);
+  const exitEased = easeInOut(clamped);
+
+  let scale = fromScale;
+  let x = startX;
+  let y = startY;
+  let opacity = 0;
+
+  if (phase === "enter") {
+    if (cardT <= 0) {
+      // Pin-only beat — keep card hidden at the start point
+      opacity = 0;
+      scale = fromScale;
+      x = startX;
+      y = startY;
+    } else {
+      scale = fromScale + (HOLD_SCALE - fromScale) * enterEased;
+      x = startX * (1 - enterEased);
+      y = startY * (1 - enterEased);
+      opacity = Math.min(1, cardT / 0.22);
+    }
+  } else if (phase === "hold") {
+    scale = HOLD_SCALE;
+    x = 0;
+    y = 0;
+    opacity = 1;
+  } else if (phase === "exit") {
+    // Shrink + fade in place — no lateral slide while hiding
+    scale = fromScale + (HOLD_SCALE - fromScale) * exitEased;
+    x = 0;
+    y = 0;
+    opacity = Math.min(1, Math.max(0, exitEased / 0.28));
   }
 
-  // Fully opaque while on stage — motion only, no fade-in.
-  const onStage = phase === "enter" || phase === "hold" || phase === "exit";
+  const onStage =
+    (phase === "enter" && cardT > 0) || phase === "hold" || phase === "exit";
+
+  const visible = onStage ? opacity : 0;
 
   return {
-    opacity: onStage ? 1 : 0,
-    ["--card-x" as string]: "0px",
+    opacity: visible,
+    ["--card-x" as string]: `${Math.round(x)}px`,
     ["--card-y" as string]: `${Math.round(y)}px`,
-    ["--card-scale" as string]: "1",
-    pointerEvents: phase === "hold" || (phase === "enter" && eased > 0.55) ? "auto" : "none",
-    visibility: onStage ? "visible" : "hidden",
+    ["--card-scale" as string]: scale.toFixed(3),
+    // Keep CTAs clickable whenever the card is readable (not only the
+    // brief hold beat — first card “Explore Tours” → /3d).
+    pointerEvents: visible >= 0.55 ? "auto" : "none",
+    visibility: onStage && opacity > 0.04 ? "visible" : "hidden",
+  };
+}
+
+function formatCoord(value: number, pos: string, neg: string) {
+  const abs = Math.abs(value);
+  const hemi = value >= 0 ? pos : neg;
+  return `${abs.toFixed(4)}° ${hemi}`;
+}
+
+/**
+ * Pin first, then card. Between cards the pin fades out at the old start,
+ * then fades in at the next start (no hard jump).
+ */
+function mapPinForProgress(progress: number): {
+  item: Experience;
+  enterT: number;
+  opacity: number;
+} | null {
+  const firstFrom = EXPERIENCES[0].window.from;
+  // Wait until intro text is gone — no early pin over the headline
+  if (progress < firstFrom) return null;
+
+  for (let i = 0; i < EXPERIENCES.length; i++) {
+    const item = EXPERIENCES[i];
+    const { from, hold } = item.window;
+    const nextFrom = EXPERIENCES[i + 1]?.window.from ?? 1.05;
+
+    if (progress >= from && progress < hold) {
+      const enterT = (progress - from) / Math.max(hold - from, 0.001);
+      // Soft fade-in at each new start (first pin after intro included)
+      const fadeIn = Math.min(1, enterT / Math.max(PIN_LEAD * 0.4, 0.08));
+      return { item, enterT, opacity: fadeIn };
+    }
+
+    // Gap after settle: fade out here → fade in at next start
+    if (progress >= hold && progress < nextFrom) {
+      if (i + 1 >= EXPERIENCES.length) {
+        return { item, enterT: 1, opacity: 1 };
+      }
+      const gapT = (progress - hold) / Math.max(nextFrom - hold, 0.001);
+      if (gapT < 0.5) {
+        const fadeOut = 1 - easeInOut(gapT / 0.5);
+        return { item, enterT: 1, opacity: fadeOut };
+      }
+      const fadeIn = easeInOut((gapT - 0.5) / 0.5);
+      return {
+        item: EXPERIENCES[i + 1],
+        enterT: Math.min(PIN_LEAD * 0.9, fadeIn * PIN_LEAD),
+        opacity: fadeIn,
+      };
+    }
+  }
+
+  return null;
+}
+
+function mapPinStyle(
+  item: Experience,
+  enterT: number,
+  opacity: number,
+): CSSProperties {
+  const { x: startX, y: startY } = projectionOffsetPx(item);
+  const clamped = Math.min(1, Math.max(0, enterT));
+  // Stay small through the pin-only beat; only nudge larger once the card travels
+  const cardStarted = clamped > PIN_LEAD;
+  const afterLead = cardStarted
+    ? (clamped - PIN_LEAD) / Math.max(1 - PIN_LEAD, 0.001)
+    : 0;
+  const pinScale = 0.68 + (cardStarted ? 0.18 * easeInOut(afterLead) : 0);
+
+  return {
+    opacity,
+    ["--pin-x" as string]: `${startX}px`,
+    ["--pin-y" as string]: `${startY}px`,
+    ["--pin-scale" as string]: pinScale.toFixed(3),
+    visibility: opacity < 0.05 ? "hidden" : "visible",
   };
 }
 
@@ -110,9 +235,9 @@ function introStyleForProgress(
       ? 0
       : easeInOut(Math.min(1, (cloudReveal - 0.35) / 0.55));
 
-  // Exit on section journey progress after arrival.
-  const exitStart = 0.05;
-  const exitEnd = 0.12;
+  // Exit fully before the first pin/card (from: 0.15).
+  const exitStart = 0.04;
+  const exitEnd = 0.14;
   let exitT = 0;
   if (progress >= exitEnd) exitT = 1;
   else if (progress > exitStart) {
@@ -144,6 +269,12 @@ export function Experiences() {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [progress, setProgress] = useState(0);
   const [cloudReveal, setCloudReveal] = useState(0);
+  /**
+   * One shared veil between Experiences → Story.
+   * 0 = clear, 1 = full white cover (closes at end of Experiences,
+   * then dissolves as Story begins — not two separate clouds).
+   */
+  const [handoffCover, setHandoffCover] = useState(0);
   const [reducedMotion, setReducedMotion] = useState(false);
   const [booting, setBooting] = useState(true);
   const [failed, setFailed] = useState(false);
@@ -160,6 +291,8 @@ export function Experiences() {
     let pending = -1;
     let cloudRaf = 0;
     let cloudPending = -1;
+    let handoffRaf = 0;
+    let handoffPending = -1;
 
     const flushProgress = () => {
       raf = 0;
@@ -177,8 +310,15 @@ export function Experiences() {
       setCloudReveal(next);
     };
 
-    // Arrival reveal: starts the instant Experiences hits the viewport top —
-    // not deep into the long card runway.
+    const flushHandoff = () => {
+      handoffRaf = 0;
+      if (handoffPending < 0) return;
+      const next = handoffPending;
+      handoffPending = -1;
+      setHandoffCover(next);
+    };
+
+    // Arrival reveal — scrub both directions (enter + reverse to Hero).
     const cloudProxy = { p: 0 };
     const cloudTween = gsap.to(cloudProxy, {
       p: 1,
@@ -193,6 +333,46 @@ export function Experiences() {
       onUpdate: () => {
         cloudPending = easeCloudReveal(cloudProxy.p);
         if (!cloudRaf) cloudRaf = window.requestAnimationFrame(flushCloud);
+      },
+    });
+
+    /*
+      ONE continuous handoff (forward + reverse scrub):
+        first stretch  : white veil closes over Experiences (full cover before unpin)
+        second stretch : same veil dissolves into Story
+      No second cloud layer — scrubbing up reverses the same timeline.
+    */
+    const coverDist = () =>
+      Math.round(window.innerHeight * CLOUD_REVEAL_VH * 1.2);
+    const openDist = () => Math.round(window.innerHeight * CLOUD_REVEAL_VH);
+
+    const coverFromHandoffP = (raw: number) => {
+      const p = Math.min(1, Math.max(0, raw));
+      const closeShare = coverDist() / Math.max(coverDist() + openDist(), 1);
+      if (p <= closeShare) {
+        return easeCloudReveal(p / Math.max(closeShare, 0.001));
+      }
+      return (
+        1 -
+        easeCloudReveal((p - closeShare) / Math.max(1 - closeShare, 0.001))
+      );
+    };
+
+    const handoffProxy = { p: 0 };
+    const handoffTween = gsap.to(handoffProxy, {
+      p: 1,
+      ease: "none",
+      scrollTrigger: {
+        trigger: wrap,
+        start: () => `bottom-=${coverDist()} bottom`,
+        endTrigger: "#our-story",
+        end: () => `top+=${openDist()} top`,
+        scrub: 0.4,
+        invalidateOnRefresh: true,
+      },
+      onUpdate: () => {
+        handoffPending = coverFromHandoffP(handoffProxy.p);
+        if (!handoffRaf) handoffRaf = window.requestAnimationFrame(flushHandoff);
       },
     });
 
@@ -216,12 +396,16 @@ export function Experiences() {
 
     setProgress(proxy.progress);
     setCloudReveal(easeCloudReveal(cloudProxy.p));
+    setHandoffCover(coverFromHandoffP(handoffProxy.p));
 
     return () => {
       if (raf) window.cancelAnimationFrame(raf);
       if (cloudRaf) window.cancelAnimationFrame(cloudRaf);
+      if (handoffRaf) window.cancelAnimationFrame(handoffRaf);
       cloudTween.scrollTrigger?.kill();
       cloudTween.kill();
+      handoffTween.scrollTrigger?.kill();
+      handoffTween.kill();
       tween.scrollTrigger?.kill();
       tween.kill();
     };
@@ -237,7 +421,8 @@ export function Experiences() {
     setBooting(false);
   }, []);
 
-  const snowActive = progress >= 0.74;
+  const snowActive = progress >= 0.88;
+  const mapPin = mapPinForProgress(progress);
 
   if (reducedMotion || failed) {
     return (
@@ -287,8 +472,8 @@ export function Experiences() {
             />
           </div>
 
-          {/* Journey cloud (clouds-section.png) dissolves to reveal the section */}
-          <ExperiencesCloudReveal progress={cloudReveal} />
+          {/* Enter: clouds dissolve to reveal Experiences */}
+          <ExperiencesCloudReveal progress={cloudReveal} mode="enter" />
 
           <div
             className={styles.mistVeil}
@@ -305,7 +490,12 @@ export function Experiences() {
             aria-hidden="true"
           />
 
-          <div className={styles.overlay}>
+          <div
+            className={styles.overlay}
+            style={{
+              opacity: Math.max(0, 1 - handoffCover * 1.15),
+            }}
+          >
             <header
               className={styles.intro}
               style={introStyleForProgress(cloudReveal, progress)}
@@ -327,6 +517,42 @@ export function Experiences() {
                   style={cardStyleForProgress(item, progress)}
                 />
               ))}
+
+              {mapPin ? (
+                <div
+                  className={styles.mapPin}
+                  data-side={mapPin.item.enterFrom}
+                  style={mapPinStyle(mapPin.item, mapPin.enterT, mapPin.opacity)}
+                  aria-hidden="true"
+                >
+                  <div className={styles.mapPinMark}>
+                    <svg
+                      className={styles.mapPinIcon}
+                      viewBox="0 0 40 52"
+                      width="40"
+                      height="52"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M20 0C9.5 0 1 8.5 1 19c0 14.2 19 33 19 33s19-18.8 19-33C39 8.5 30.5 0 20 0z"
+                        fill="#E85A1B"
+                      />
+                      <circle cx="20" cy="18" r="7.5" fill="#fff" />
+                      <circle cx="20" cy="18" r="3.5" fill="#E85A1B" />
+                    </svg>
+                    <span className={styles.mapPinPulse} />
+                  </div>
+                  <div className={styles.mapPinCoords}>
+                    <span>
+                      {formatCoord(mapPin.item.coords.lat, "N", "S")}
+                    </span>
+                    <span>
+                      {formatCoord(mapPin.item.coords.lng, "E", "W")}
+                    </span>
+                  </div>
+                </div>
+              ) : null}
             </div>
           </div>
 
@@ -337,6 +563,23 @@ export function Experiences() {
             <p className={styles.loadingCopy}>Entering the wild</p>
           </div>
         </div>
+      </div>
+
+      {/*
+        wildfy-style NatGeo FBM dissolve into Story (third section).
+        cover 0→1 closes, then 1→0 opens — same organic smoke as
+        WildernessJourneyEngine / NatGeoCloudTransitionEngine.
+      */}
+      <div
+        className={styles.cloudHandoffFixed}
+        aria-hidden="true"
+        style={{
+          opacity: handoffCover > 0.02 ? 1 : 0,
+          visibility: handoffCover > 0.02 ? "visible" : "hidden",
+          pointerEvents: "none",
+        }}
+      >
+        <NatGeoCloudDissolve progress={1 - handoffCover} />
       </div>
     </section>
   );

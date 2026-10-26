@@ -7,21 +7,28 @@ export type Experience = {
   href: string;
   image: string;
   imageAlt: string;
-  /** Card entrance side for the scroll journey. */
+  /** Final resting side for the scroll journey. */
   enterFrom: "left" | "right";
   /**
+   * Where the card starts on screen (as fractions of viewport), then
+   * travels to its left/right rest pose while scaling up.
+   * xVw / yVh are offsets from the final position.
+   */
+  projection: { xVw: number; yVh: number; fromScale: number };
+  /** Map-pin coordinates shown at this card’s start point. */
+  coords: { lat: number; lng: number };
+  /**
    * Scroll progress window for this stage within the pinned journey.
-   * from → enter, hold → fully readable, to → exit.
-   * Tuned to match NatGeo-style fly-through pacing across 4 video environments.
+   * from → enter begins, hold → fully readable, to → exit done.
+   * Enter span (from→hold) is long so cards arrive slowly.
    */
   window: { from: number; hold: number; to: number };
   stage: "mountains" | "forest" | "waterfalls" | "snow";
 };
 
 /**
- * Four narrative stops synced to video_001 environments:
- * mountains → forest river → wide river/rapids → snow.
- * Windows leave gaps so only one card is “on stage” at a time (reference feel).
+ * Four narrative stops synced to video_001 environments.
+ * Each card starts from a unique screen point and settles on alternating sides.
  */
 export const EXPERIENCES: Experience[] = [
   {
@@ -36,12 +43,15 @@ export const EXPERIENCES: Experience[] = [
     description:
       "Explore extraordinary wildlife habitats through guided safaris and personalised journeys across India and international destinations.",
     cta: "Explore Tours",
-    href: "#tours",
+    href: "/3d",
     image: "/images/experiences/tours.png",
     imageAlt: "Elephants on a guided safari viewed from a vehicle",
     enterFrom: "right",
-    /* Cards after arrival cloud (short vh-based dissolve). Wider = slower. */
-    window: { from: 0.08, hold: 0.22, to: 0.3 },
+    /* Starts after intro clears — mid-right, then settles on the right */
+    projection: { xVw: -0.2, yVh: 0.1, fromScale: 0.34 },
+    coords: { lat: 22.3347, lng: 80.6112 },
+    /* from > intro exit (~0.13) so pin/card never overlap the headline */
+    window: { from: 0.15, hold: 0.36, to: 0.42 },
     stage: "mountains",
   },
   {
@@ -60,7 +70,10 @@ export const EXPERIENCES: Experience[] = [
     image: "/images/experiences/offsites.png",
     imageAlt: "A small group gathered around a wilderness campfire",
     enterFrom: "left",
-    window: { from: 0.3, hold: 0.44, to: 0.52 },
+    /* Upper-right area → settle on the left */
+    projection: { xVw: 0.42, yVh: -0.22, fromScale: 0.28 },
+    coords: { lat: -1.2921, lng: 36.8219 },
+    window: { from: 0.42, hold: 0.6, to: 0.66 },
     stage: "forest",
   },
   {
@@ -80,7 +93,10 @@ export const EXPERIENCES: Experience[] = [
     image: "/images/experiences/stories.png",
     imageAlt: "A wildlife photographer with a telephoto lens in the field",
     enterFrom: "right",
-    window: { from: 0.52, hold: 0.66, to: 0.74 },
+    /* Lower-left / mid → settle on the right */
+    projection: { xVw: -0.38, yVh: 0.26, fromScale: 0.3 },
+    coords: { lat: 27.9881, lng: 86.925 },
+    window: { from: 0.66, hold: 0.82, to: 0.88 },
     stage: "waterfalls",
   },
   {
@@ -100,15 +116,18 @@ export const EXPERIENCES: Experience[] = [
     image: "/images/experiences/learning.png",
     imageAlt: "A corporate learning session in a warm nature-inspired venue",
     enterFrom: "left",
-    window: { from: 0.74, hold: 0.88, to: 0.96 },
+    /* Lower-center → settle on the left */
+    projection: { xVw: 0.3, yVh: 0.3, fromScale: 0.26 },
+    coords: { lat: 64.1466, lng: -21.9426 },
+    window: { from: 0.88, hold: 0.97, to: 1 },
     stage: "snow",
   },
 ];
 
 /** Left journey rail — one stop per video environment. */
 export const STAGE_LABELS = [
-  { id: "mountains", label: "Mountains", from: 0.1, to: 0.3 },
-  { id: "forest", label: "Forest", from: 0.3, to: 0.52 },
-  { id: "waterfalls", label: "Rivers", from: 0.52, to: 0.74 },
-  { id: "snow", label: "Snow", from: 0.74, to: 1 },
+  { id: "mountains", label: "Mountains", from: 0.15, to: 0.42 },
+  { id: "forest", label: "Forest", from: 0.42, to: 0.66 },
+  { id: "waterfalls", label: "Rivers", from: 0.66, to: 0.88 },
+  { id: "snow", label: "Snow", from: 0.88, to: 1 },
 ] as const;

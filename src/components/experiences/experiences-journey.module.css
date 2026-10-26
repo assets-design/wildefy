@@ -159,7 +159,7 @@
   height: 100%;
 }
 
-/* Full white-cloud enter veil — mist field + fluffy banks */
+/* Full white-cloud enter/exit veil — mist field + fluffy banks */
 .cloudReveal {
   position: absolute;
   inset: 0;
@@ -168,6 +168,41 @@
   pointer-events: none;
   transform-origin: 50% 45%;
   will-change: transform, opacity;
+}
+
+.cloudRevealExit {
+  z-index: 7;
+  transform-origin: 50% 55%;
+}
+
+/* Full-viewport cloud veil inside a pinned sticky stage */
+.cloudRevealHandoff {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* Bridges Experiences → Story as one veil (scrubbed forward + reverse) */
+.cloudHandoffFixed {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  width: 100%;
+  height: 100%;
+  height: 100dvh;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.natGeoCloudCanvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
 }
 
 .cloudRevealFill {
@@ -337,19 +372,24 @@
   font-size: 12px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: rgba(245, 240, 230, 0.72);
-  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.35);
+  color: #ffffff;
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.65),
+    0 2px 18px rgba(0, 0, 0, 0.55);
 }
 
 .introTitle {
   margin: 0 0 14px;
   font-family: var(--font-display);
   font-size: clamp(34px, 4.6vw, 64px);
-  font-weight: 400;
+  font-weight: 500;
   line-height: 1.1;
   letter-spacing: 0;
-  color: #f5f0e6;
-  text-shadow: 0 2px 28px rgba(0, 0, 0, 0.45);
+  color: #ffffff;
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.75),
+    0 4px 28px rgba(0, 0, 0, 0.65),
+    0 0 40px rgba(0, 0, 0, 0.35);
 }
 
 .introLead {
@@ -358,8 +398,10 @@
   font-family: var(--font-body);
   font-size: clamp(15px, 1.1vw, 19px);
   line-height: 1.5;
-  color: rgba(245, 240, 230, 0.9);
-  text-shadow: 0 1px 16px rgba(0, 0, 0, 0.4);
+  color: rgba(255, 255, 255, 0.96);
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.7),
+    0 2px 20px rgba(0, 0, 0, 0.5);
 }
 
 .cardsLayer {
@@ -368,6 +410,101 @@
   width: 100%;
   height: 100%;
   pointer-events: none;
+}
+
+/* Shared map pin — pin left, lat/lng right; fades between starts */
+.mapPin {
+  --pin-x: 0px;
+  --pin-y: 0px;
+  --pin-scale: 1;
+  position: absolute;
+  top: 50%;
+  z-index: 6;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  /* Same footprint as cards so start offset lands on the card origin */
+  width: min(420px, calc(100vw - 48px));
+  transform: translate3d(var(--pin-x), calc(-50% + var(--pin-y)), 0)
+    scale(var(--pin-scale));
+  transform-origin: 50% 50%;
+  pointer-events: none;
+  will-change: transform, opacity;
+  filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.45));
+}
+
+.mapPin[data-side="right"] {
+  right: clamp(16px, 5vw, 72px);
+  left: auto;
+}
+
+.mapPin[data-side="left"] {
+  left: clamp(16px, 5vw, 72px);
+  right: auto;
+}
+
+.mapPinMark {
+  position: relative;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+}
+
+.mapPinIcon {
+  display: block;
+  width: 34px;
+  height: auto;
+  position: relative;
+  z-index: 1;
+}
+
+.mapPinPulse {
+  position: absolute;
+  left: 50%;
+  top: 34%;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(232, 90, 27, 0.35);
+  transform: translate(-50%, -50%);
+  animation: mapPinPulse 1.6s ease-out infinite;
+  z-index: 0;
+}
+
+@keyframes mapPinPulse {
+  0% {
+    transform: translate(-50%, -50%) scale(0.6);
+    opacity: 0.7;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(2.4);
+    opacity: 0;
+  }
+}
+
+.mapPinCoords {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(8, 20, 16, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  line-height: 1.25;
+  color: #ffffff;
+  white-space: nowrap;
+  text-align: left;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
 }
 
 .card {
@@ -380,6 +517,7 @@
   max-height: calc(100dvh - 40px);
   transform: translate3d(var(--card-x), calc(-50% + var(--card-y)), 0)
     scale(var(--card-scale));
+  transform-origin: 50% 50%;
   pointer-events: auto;
   will-change: transform, opacity;
   filter: drop-shadow(0 18px 40px rgba(0, 0, 0, 0.4));
@@ -444,7 +582,7 @@
 .cardBody {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
   padding: 18px 18px 20px;
   min-height: 0;
 }
@@ -452,22 +590,15 @@
 .cardTitle {
   margin: 0;
   font-family: var(--font-display);
-  font-size: clamp(22px, 2vw, 28px);
-  font-weight: 400;
+  font-size: clamp(24px, 2.2vw, 30px);
+  font-weight: 500;
   line-height: 1.15;
-  color: #f5f0e6;
+  color: #ffffff;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
 }
 
 .cardCopy {
-  margin: 0;
-  font-family: var(--font-body);
-  font-size: clamp(13px, 1vw, 15px);
-  line-height: 1.45;
-  color: rgba(245, 240, 230, 0.82);
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  display: none;
 }
 
 .cardTags {
@@ -498,12 +629,16 @@
 }
 
 .cardCta {
+  position: relative;
+  z-index: 2;
   display: inline-flex;
   align-items: center;
   gap: 8px;
   width: fit-content;
   text-decoration: none;
   margin-top: 2px;
+  cursor: pointer;
+  pointer-events: auto;
 }
 
 .cardCtaLabel {
@@ -590,12 +725,12 @@
 }
 
 .staticIntro .introTitle {
-  color: #f5f0e6;
+  color: #ffffff;
   text-shadow: none;
 }
 
 .staticIntro .introLead {
-  color: rgba(245, 240, 230, 0.82);
+  color: rgba(255, 255, 255, 0.92);
   text-shadow: none;
 }
 
@@ -652,6 +787,19 @@
 
   .cardTitle {
     font-size: 22px;
+  }
+
+  .mapPin {
+    width: min(380px, calc(100vw - 32px));
+  }
+
+  .mapPinIcon {
+    width: 30px;
+  }
+
+  .mapPinCoords {
+    font-size: 9px;
+    padding: 4px 8px;
   }
 
   .card,

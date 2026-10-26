@@ -16,7 +16,6 @@ export default function HomePage() {
       <StoryScroll />
       <CloudTransition />
       <StoriesGallery />
-      {/* Same reusable cloud transition, reversed into the black section. */}
       <CloudTransition />
       <Conservation />
       <AwardsScroll />

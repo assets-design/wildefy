@@ -3,7 +3,6 @@
 import { useLayoutEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-
 gsap.registerPlugin(ScrollTrigger);
 
 function prefersReducedMotion() {
@@ -11,16 +10,12 @@ function prefersReducedMotion() {
 }
 
 /*
-  Redeveloped directly from the Figma frame (node 506:347, 6081×1003):
-  one continuous horizontal sequence —
+  Horizontal sequence:
     1. Recognising The Eye Behind The Lens (awards + certificates)
     2. Giraffe portrait
-    3. Sustainability — Protecting What Matters (circles, 01., tiger)
-  All assets are the originals exported from Figma, saved under
-  /images/awards-figma/. Design coordinates are mapped at
-  1920px = 100vw and 1000px = 100vh, so the composition scales with
-  the viewport exactly as laid out in Figma.
-  Same pinned-track pattern as the first storytelling sequence.
+    3. Sustainability — Protecting What Matters
+  Awards zones use Figma 506:347 coords at 1920px = 100vw.
+  Responsibility lives in its own vertical Conservation section.
 */
 export function AwardsScroll() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -52,21 +47,27 @@ export function AwardsScroll() {
 
         gsap.set(track, { x: 0, force3D: true });
 
-        gsap.to(track, {
-          x: () => -getTravel(),
-          ease: "none",
-          force3D: true,
-          scrollTrigger: {
-            trigger: section,
-            start: "top top",
-            end: () => `+=${Math.max(1, Math.round(getTravel()))}`,
-            pin: true,
-            pinSpacing: true,
-            scrub: 1.5,
-            anticipatePin: 1,
-            invalidateOnRefresh: true,
-          },
+        // Straight horizontal pan — no cloud mash / reveal runway.
+        const applyProgress = (progress: number) => {
+          const travelPx = getTravel();
+          const p = Math.min(1, Math.max(0, progress));
+          gsap.set(track, { x: -travelPx * p, force3D: true });
+        };
+
+        const awardsTrigger = ScrollTrigger.create({
+          trigger: section,
+          start: "top top",
+          end: () => `+=${Math.max(1, Math.round(getTravel()))}`,
+          pin: true,
+          pinSpacing: true,
+          scrub: 1.5,
+          anticipatePin: 1,
+          invalidateOnRefresh: true,
+          onUpdate: (self) => applyProgress(self.progress),
+          onRefresh: (self) => applyProgress(self.progress),
         });
+
+        applyProgress(awardsTrigger.progress);
 
         const refresh = () => ScrollTrigger.refresh();
         window.addEventListener("load", refresh, { once: true });
@@ -75,6 +76,7 @@ export function AwardsScroll() {
         panels.forEach((panel) => ro.observe(panel));
 
         return () => {
+          awardsTrigger.kill();
           ro.disconnect();
           window.removeEventListener("load", refresh);
         };
@@ -92,7 +94,7 @@ export function AwardsScroll() {
     >
       <div className="awards-viewport">
         <div className="awards-track" ref={trackRef}>
-          <article className="awards-panel">
+          <article className="awards-panel awards-panel--journey">
             {/* ——— Panel 1 · Awards ——— */}
             <div className="awd-cheetahs">
               <img

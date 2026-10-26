@@ -1,0 +1,33 @@
+/* Header-only chrome over the cinematic scroll page (same as destination). */
+.page {
+  position: relative;
+  min-height: 100vh;
+  background: #050505;
+}
+
+.header {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 30;
+  height: min(140px, 18vh);
+  pointer-events: none;
+}
+
+.header :global(.stage-frame),
+.header :global(.stage),
+.headerInner {
+  height: 100%;
+}
+
+.headerInner {
+  position: relative;
+  width: 1920px;
+  max-width: none;
+  pointer-events: none;
+}
+
+.headerInner :global(.site-header),
+.headerInner :global(.site-header a),
+.headerInner :global(.menu-toggle) {
+  pointer-events: auto;
+}
