@@ -1,0 +1,52 @@
+{
+  "directory": "/assets/wildefy/storyboard/",
+  "note": "Original supplied frames, copied unchanged. They are composition references for the /3d walk, not a slideshow and not terrain textures. index.html was not in the supplied package.",
+  "frames": [
+    { "frame": 1, "file": "01_opening_aerial.jpg", "status": "preserved", "role": "opening aerial reference" },
+    { "frame": 2, "file": "02_approaching_base_camp.jpg", "status": "preserved", "role": "descent toward base camp" },
+    { "frame": 3, "file": "03_base_camp_details.jpg", "status": "preserved", "role": "base camp ground composition" },
+    { "frame": 4, "file": "04_forest_trail_begins.jpg", "status": "preserved", "role": "forest entrance" },
+    { "frame": 5, "file": "05_deep_forest_trail.jpg", "status": "preserved", "role": "deep forest trail" },
+    { "frame": 6, "file": "06_river_crossing.jpg", "status": "preserved", "role": "river reveal" },
+    { "frame": 7, "file": "07_approaching_river_crossing.jpg", "status": "preserved", "role": "bridge approach" },
+    { "frame": 8, "file": "08_river_crossing_bridge.jpg", "status": "preserved", "role": "on the bridge" },
+    { "frame": 9, "file": "09_forest_camp.jpg", "status": "preserved", "role": "forest camp" },
+    { "frame": 10, "file": "10_waterfall_approach.jpg", "status": "preserved", "role": "waterfall approach" },
+    { "frame": 11, "file": "11_waterfall_view.jpg", "status": "preserved", "role": "waterfall and pool" },
+    { "frame": 12, "file": "12_rocky_ascent.jpg", "status": "preserved", "role": "rocky ascent" },
+    { "frame": 13, "file": "13_high_ridge_trail.jpg", "status": "preserved", "role": "high ridge" },
+    { "frame": 14, "file": "14_summit_approach.jpg", "status": "preserved", "role": "summit approach" },
+    { "frame": 15, "file": "15_summit_arrival.jpg", "status": "preserved", "role": "summit arrival" },
+    { "frame": 16, "file": "16_final_summit_view.jpg", "status": "preserved", "role": "final panorama" }
+  ],
+  "supplementary": [
+    { "file": "ref_ridge_hiker.jpg", "status": "preserved", "role": "extra reference, not a journey frame" },
+    { "file": "ref_dusk_camp.jpg", "status": "preserved", "role": "extra reference, not a journey frame" },
+    { "file": "ref_alpine_lake.jpg", "status": "preserved", "role": "extra reference, not a journey frame" },
+    { "file": "ref_fern_trail.jpg", "status": "preserved", "role": "extra reference, not a journey frame" }
+  ],
+  "missing": ["index.html"],
+  "models": [
+    {
+      "path": "/models/oak_tree_web.glb",
+      "status": "integrated",
+      "source": "Existing Wildefy web oak LOD"
+    }
+  ],
+  "procedural": [
+    "terrain heightfield",
+    "conifers",
+    "ferns",
+    "bushes",
+    "fallen logs",
+    "rocks",
+    "cabins",
+    "tents",
+    "bridge",
+    "river",
+    "waterfall",
+    "lake",
+    "clouds",
+    "sky"
+  ]
+}
