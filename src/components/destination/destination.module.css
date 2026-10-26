@@ -1,0 +1,598 @@
+.page {
+  --dest-orange: #f9a01f;
+  --dest-ink: #000000;
+  --dest-muted: rgba(0, 0, 0, 0.6);
+  --dest-pad: clamp(1.25rem, 6.25vw, 7.5rem);
+
+  background: #ffffff;
+  color: var(--dest-ink);
+  font-family: var(--font-body);
+  min-height: 100vh;
+}
+
+.page :global(a:focus-visible),
+.page :global(button:focus-visible) {
+  outline: 2px solid var(--dest-orange);
+  outline-offset: 3px;
+}
+
+/* —— Hero (homepage header chrome via SiteHeader + StageFrame) —— */
+.hero {
+  position: relative;
+  width: 100%;
+  height: min(862px, 92vh);
+  min-height: 520px;
+  overflow: hidden;
+  background: #111;
+}
+
+.heroImage {
+  object-fit: cover;
+  object-position: center 35%;
+}
+
+.heroShade {
+  position: absolute;
+  inset: auto 0 0;
+  z-index: 1;
+  height: 45%;
+  background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.88) 88%);
+  pointer-events: none;
+}
+
+.heroStage {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.heroStage :global(.stage-frame),
+.heroStage :global(.stage),
+.heroStageInner {
+  height: 100%;
+}
+
+.heroStageInner {
+  position: relative;
+  width: 1920px;
+  max-width: none;
+  pointer-events: none;
+}
+
+.heroStageInner :global(.site-header),
+.heroStageInner :global(.site-header a),
+.heroStageInner :global(.menu-toggle) {
+  pointer-events: auto;
+}
+
+.heroTitle {
+  position: absolute;
+  left: 120px;
+  bottom: 90px;
+  z-index: 3;
+  margin: 0;
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 72px;
+  line-height: 1.05;
+  text-transform: capitalize;
+  pointer-events: none;
+}
+
+/* —— Shared section helpers —— */
+.section {
+  width: min(1680px, calc(100% - (var(--dest-pad) * 2)));
+  margin: 0 auto;
+}
+
+.display {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(2.4rem, 4.2vw, 4.5rem);
+  line-height: 1.05;
+  text-transform: capitalize;
+  color: var(--dest-ink);
+}
+
+.lede {
+  margin: 0.75rem 0 0;
+  font-family: var(--font-body);
+  font-size: 1.25rem;
+  font-weight: 400;
+  color: var(--dest-muted);
+  text-transform: capitalize;
+}
+
+/* —— Itinerary —— */
+.itinerary {
+  padding: clamp(3.5rem, 6vw, 5.5rem) 0 clamp(4rem, 7vw, 6rem);
+  background: #fff;
+}
+
+.itineraryHead {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.dayTabs {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem 0.9rem;
+  margin: 2rem 0 2.5rem;
+}
+
+.dayTab {
+  min-width: 100px;
+  height: 49px;
+  padding: 0 1.1rem;
+  border-radius: 24.5px;
+  border: 1px solid #000;
+  background: #fff;
+  color: #000;
+  font-family: var(--font-body);
+  font-size: 1.125rem;
+  font-weight: 400;
+  text-transform: capitalize;
+  cursor: pointer;
+}
+
+.dayTabActive {
+  border-color: transparent;
+  background: var(--dest-orange);
+}
+
+.itineraryGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 605px) minmax(0, 1fr);
+  gap: clamp(1.5rem, 3vw, 3rem);
+  align-items: start;
+}
+
+.dayCol {
+  min-width: 0;
+}
+
+.stayTitle {
+  margin: 0 0 1.25rem;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(1.5rem, 2vw, 2.125rem);
+  line-height: 1.25;
+}
+
+.overview {
+  margin: 0 0 1.75rem;
+  font-family: var(--font-body);
+  font-size: 1.25rem;
+  line-height: 1.45;
+  color: #000;
+}
+
+.dayCard {
+  width: 100%;
+  margin: 0 0 2.75rem;
+  scroll-margin-top: 1.25rem;
+}
+
+.dayCard:last-child {
+  margin-bottom: 0;
+}
+
+.dayCardActive .dayPill {
+  box-shadow: 0 0 0 3px rgba(224, 90, 36, 0.28);
+}
+
+.dayImageWrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 605 / 300;
+  overflow: hidden;
+  background: #ece7df;
+}
+
+.dayImage {
+  object-fit: cover;
+}
+
+.dayPill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 215px;
+  height: 49px;
+  margin: 1.35rem 0 1rem;
+  padding: 0 1.25rem;
+  border-radius: 24.5px;
+  background: var(--dest-orange);
+  color: var(--dest-muted);
+  font-family: var(--font-body);
+  font-size: 1.125rem;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.dayHeadline {
+  margin: 0 0 1.15rem;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(1.5rem, 2vw, 2.125rem);
+  line-height: 1.2;
+}
+
+.beatList {
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.beat {
+  display: grid;
+  grid-template-columns: 35px 1fr;
+  gap: 0.85rem;
+  align-items: start;
+}
+
+.beatIcon {
+  width: 35px;
+  height: 35px;
+  object-fit: contain;
+}
+
+.beatText {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 1.125rem;
+  line-height: 1.4;
+}
+
+.beatText strong {
+  display: block;
+  font-weight: 600;
+}
+
+.mapCol {
+  position: sticky;
+  top: 1.25rem;
+  align-self: start;
+}
+
+.mapFrame {
+  position: relative;
+  width: 100%;
+  /* Sticky viewport height — clips the taller map stage so Day 5–6 can pan into view */
+  height: calc(100vh - 2.5rem);
+  max-height: calc(100vh - 2.5rem);
+  overflow: hidden;
+  background: #f3eee4;
+}
+
+.mapStage {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  /* Full map height from column width — taller than the clipped frame when needed */
+  aspect-ratio: 1045 / 1568;
+  will-change: transform;
+  /* Let blink GIF (black bg) screen-blend against the map image */
+  isolation: isolate;
+}
+
+.mapImage {
+  object-fit: cover;
+  object-position: center top;
+}
+
+.mapRouteLayer {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  overflow: visible;
+}
+
+/* Figma 518:86 Red Blinking Dot — animated GIF on each day pin */
+.mapBlinkDot {
+  position: absolute;
+  width: clamp(36px, 5.2%, 54px);
+  height: auto;
+  aspect-ratio: 1;
+  max-width: none;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  /* GIF frames use black/off — screen drops black so only the red pulse shows */
+  mix-blend-mode: screen;
+  z-index: 2;
+}
+
+.mapArrow {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: clamp(28px, 4.6%, 48px);
+  height: auto;
+  max-width: none;
+  pointer-events: none;
+  opacity: 0;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.28));
+  will-change: transform;
+  z-index: 3;
+}
+
+/* —— Experiences —— */
+.experiences {
+  background: var(--dest-orange);
+  padding: clamp(3.5rem, 6vw, 5.5rem) 0;
+}
+
+.experiencesHead {
+  text-align: center;
+  margin-bottom: clamp(2.5rem, 4vw, 3.5rem);
+}
+
+.experiences .display,
+.experiences .lede {
+  color: #000;
+}
+
+.experienceGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(2.5rem, 4vw, 4rem) clamp(1.5rem, 3vw, 2.5rem);
+}
+
+.experienceItem {
+  text-align: center;
+  max-width: 395px;
+  margin: 0 auto;
+}
+
+.experienceIcon {
+  width: 113px;
+  height: 113px;
+  margin: 0 auto 1.35rem;
+  object-fit: contain;
+}
+
+.experienceTitle {
+  margin: 0 0 0.55rem;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(1.4rem, 1.9vw, 2.125rem);
+  line-height: 1.15;
+  text-transform: capitalize;
+}
+
+.experienceCopy {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 1.125rem;
+  line-height: 1.4;
+  text-transform: capitalize;
+}
+
+/* —— Transfers —— */
+.transfers {
+  background: #fff;
+  padding: clamp(3.5rem, 6vw, 5.5rem) 0 clamp(4rem, 7vw, 6rem);
+}
+
+.transfersHead {
+  text-align: center;
+  margin-bottom: clamp(2.5rem, 4vw, 3.5rem);
+}
+
+.transferGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(1.5rem, 4vw, 4rem);
+}
+
+.transferCard {
+  display: grid;
+  grid-template-columns: 251px 1fr;
+  gap: 1.25rem 1.5rem;
+  align-items: start;
+}
+
+.transferPhoto {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 251 / 272;
+  overflow: hidden;
+  background: #ece7df;
+}
+
+.transferPhotoImg {
+  object-fit: cover;
+}
+
+.transferTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 2.125rem;
+  text-transform: capitalize;
+}
+
+.transferDate {
+  margin: 0.35rem 0 1.35rem;
+  font-family: var(--font-body);
+  font-size: 1.125rem;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.route {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.65rem;
+  align-items: end;
+  margin-bottom: 1.1rem;
+}
+
+.routePlace {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 1.25rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.routeTrack {
+  position: relative;
+  height: 2px;
+  margin-bottom: 0.65rem;
+  background: #000;
+}
+
+.routeCar {
+  position: absolute;
+  left: 12%;
+  bottom: 4px;
+  width: 72px;
+  height: 27px;
+  object-fit: contain;
+}
+
+.routeTime {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 1.125rem;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.routeTime img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+/* —— CTA band before footer —— */
+.cta {
+  position: relative;
+  min-height: 420px;
+  display: grid;
+  place-items: center;
+  padding: 4rem 1.5rem 5rem;
+  text-align: center;
+  overflow: hidden;
+  background: #1a1a1a;
+}
+
+.ctaBg {
+  object-fit: cover;
+  opacity: 0.45;
+  filter: blur(2px);
+}
+
+.ctaInner {
+  position: relative;
+  z-index: 1;
+}
+
+.ctaTitle {
+  margin: 0 0 1.75rem;
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(2.2rem, 4vw, 4.5rem);
+  line-height: 1.1;
+  text-transform: capitalize;
+}
+
+.ctaActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+}
+
+.ctaTalk {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 210px;
+  height: 56px;
+  padding: 0 1.5rem;
+  border-radius: 50px 0 0 50px;
+  background: #fff;
+  color: #000;
+  text-decoration: none;
+  font-family: var(--font-body);
+  font-size: 1.125rem;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.ctaBird {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 82px;
+  height: 56px;
+  border-radius: 0 50px 50px 0;
+  background: var(--dest-orange);
+}
+
+.ctaBird img {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+  transform: scaleX(-1);
+}
+
+@media (max-width: 1100px) {
+  .itineraryGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .mapCol {
+    position: relative;
+    top: auto;
+    order: -1;
+  }
+
+  .mapFrame {
+    height: min(70vh, 720px);
+    max-height: min(70vh, 720px);
+    margin-inline: auto;
+  }
+
+  .experienceGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .transferGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 860px) {
+  .heroTitle {
+    left: 24px;
+    bottom: 48px;
+    font-size: clamp(2.25rem, 9vw, 3rem);
+  }
+
+  .experienceGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .transferCard {
+    grid-template-columns: 1fr;
+  }
+
+  .transferPhoto {
+    max-width: 320px;
+  }
+}

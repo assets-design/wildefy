@@ -12,11 +12,11 @@ function prefersReducedMotion() {
 
 const NAV_LINKS = [
   { label: "Home", href: "/" },
-  { label: "Our Story", href: "#our-story" },
-  { label: "Experiences", href: "#experiences" },
-  { label: "Destination", href: "#destination" },
-  { label: "Gallery", href: "#gallery" },
-  { label: "Contact us", href: "#contact" },
+  { label: "Our Story", href: "/#our-story" },
+  { label: "Experiences", href: "/#experiences" },
+  { label: "Destination", href: "/destination" },
+  { label: "Gallery", href: "/#gallery" },
+  { label: "Contact us", href: "/#contact" },
 ];
 
 const EXPERIENCE_LINKS = [
