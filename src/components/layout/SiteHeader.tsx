@@ -4,8 +4,9 @@ import type { RefObject } from "react";
 import { MobileNav } from "@/components/hero/MobileNav";
 
 const linksLeft = [
-  { label: "Home", href: "/", x: 352 },
-  { label: "Experiences", href: "/#experiences", x: 624 },
+  { label: "Home", href: "/", x: 330 },
+  { label: "Our Story", href: "/about", x: 430 },
+  { label: "Experiences", href: "/#experiences", x: 575 },
 ] as const;
 
 const linksRight = [

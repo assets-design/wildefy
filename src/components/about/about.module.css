@@ -1,0 +1,523 @@
+/*
+  About Us — Figma 585:563 (1920 × 3382)
+  Sections: hero 862 · every-dot 860 · numbers 936 · planet 716
+*/
+
+.page {
+  --about-ink: #000000;
+  --about-muted: rgba(0, 0, 0, 0.6);
+  --about-accent: #f9a01f;
+  --about-pad: clamp(1.25rem, 6.25vw, 7.5rem);
+
+  position: relative;
+  background: #ffffff;
+  color: var(--about-ink);
+  font-family: var(--font-body);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.page :global(a:focus-visible),
+.page :global(button:focus-visible) {
+  outline: 2px solid var(--about-accent);
+  outline-offset: 3px;
+}
+
+/* —— Hero —— */
+.hero {
+  position: relative;
+  width: 100%;
+  height: min(862px, 92vh);
+  min-height: 520px;
+  overflow: hidden;
+  background: #1a0a00;
+  color: #ffffff;
+}
+
+.heroPhoto {
+  object-fit: cover;
+  object-position: center 45%;
+}
+
+.heroShade {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  height: 45.36%;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0) 0%,
+    #000000 87.628%
+  );
+}
+
+.heroStage {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.heroStage :global(.stage-frame),
+.heroStage :global(.stage),
+.heroInner {
+  height: 100%;
+}
+
+.heroInner {
+  position: relative;
+  width: 1920px;
+  max-width: none;
+  pointer-events: none;
+}
+
+.heroInner :global(.site-header),
+.heroInner :global(.site-header a),
+.heroInner :global(.menu-toggle) {
+  pointer-events: auto;
+}
+
+.heroTitle {
+  position: absolute;
+  left: 120px;
+  top: 715px;
+  z-index: 3;
+  margin: 0;
+  width: 895px;
+  color: #ffffff;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 72px;
+  line-height: normal;
+  text-transform: capitalize;
+  pointer-events: none;
+}
+
+/* Shared section chrome */
+.sectionTitle {
+  margin: 0;
+  color: var(--about-ink);
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(2.25rem, 4.5vw, 72px);
+  line-height: normal;
+  text-align: center;
+  text-transform: capitalize;
+}
+
+.subhead {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(1.75rem, 2.8vw, 44px);
+  line-height: normal;
+  text-transform: capitalize;
+  color: var(--about-ink);
+}
+
+/* —— Every Dot —— */
+.everyDot {
+  position: relative;
+  background: #ffffff;
+  padding: clamp(4rem, 8.3vw, 10rem) var(--about-pad) clamp(3rem, 6vw, 5rem);
+}
+
+.everyDotInner {
+  max-width: 1680px;
+  margin: 0 auto;
+}
+
+.everyDotGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+  gap: clamp(2rem, 4vw, 3.5rem);
+  align-items: start;
+  margin-top: clamp(2.5rem, 4vw, 3.75rem);
+}
+
+.everyDotCopy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  max-width: 601px;
+  padding-top: 0.25rem;
+}
+
+.mutedLine {
+  margin: 1.75rem 0 0;
+  max-width: 446px;
+  font-family: var(--font-body);
+  font-size: 20px;
+  font-weight: 600;
+  line-height: normal;
+  text-transform: capitalize;
+  color: var(--about-muted);
+}
+
+.bodyBlock {
+  margin: 2.75rem 0 0;
+  font-family: var(--font-body);
+  font-size: 22px;
+  font-weight: 400;
+  line-height: normal;
+  text-transform: capitalize;
+  color: var(--about-ink);
+}
+
+.bodyBlock p {
+  margin: 0;
+}
+
+.bodyBlock p + p {
+  margin-top: 1.35rem;
+}
+
+.ctaGroup {
+  display: inline-flex;
+  align-items: stretch;
+  gap: 0;
+  margin-top: 3.75rem;
+  text-decoration: none;
+  color: #ffffff;
+}
+
+.ctaLabel {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 196px;
+  height: 56px;
+  padding: 0 1.75rem;
+  border-radius: 50px;
+  background: #000000;
+  font-family: var(--font-body);
+  font-size: 20px;
+  font-weight: 500;
+  text-transform: capitalize;
+  transition: background 0.2s ease;
+}
+
+.ctaBird {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 82px;
+  height: 56px;
+  margin-left: 0;
+  border-radius: 50px;
+  background: var(--about-accent);
+}
+
+.ctaBird img {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+  transform: scaleX(-1);
+}
+
+.ctaGroup:hover .ctaLabel {
+  background: #1a1a1a;
+}
+
+.portraitWrap {
+  position: relative;
+  width: 100%;
+  max-width: 830px;
+  justify-self: end;
+  aspect-ratio: 830 / 553;
+  overflow: hidden;
+  background: #e8e4dc;
+}
+
+.portrait {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center right;
+}
+
+/* —— Numbers story —— */
+.numbers {
+  position: relative;
+  background: #ffffff;
+  padding: clamp(4rem, 8.3vw, 10rem) var(--about-pad) clamp(3rem, 5vw, 4rem);
+}
+
+.numbersInner {
+  max-width: 1680px;
+  margin: 0 auto;
+}
+
+.lead {
+  margin: 1.25rem auto 0;
+  max-width: 1265px;
+  font-family: var(--font-body);
+  font-size: clamp(1rem, 1.3vw, 22px);
+  font-weight: 400;
+  line-height: 1.35;
+  text-align: center;
+  text-transform: capitalize;
+  color: var(--about-ink);
+}
+
+.numbersLower {
+  display: grid;
+  grid-template-columns: minmax(0, 0.55fr) minmax(0, 1fr);
+  gap: clamp(1.5rem, 3vw, 2.5rem);
+  align-items: end;
+  margin-top: clamp(3rem, 5vw, 5.5rem);
+}
+
+.numbersCopy {
+  max-width: 747px;
+}
+
+.bodyText {
+  margin: 1.75rem 0 0;
+  font-family: var(--font-body);
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 1.35;
+  text-transform: capitalize;
+  color: var(--about-ink);
+}
+
+.graph {
+  position: relative;
+  width: 100%;
+  max-width: 1184px;
+  aspect-ratio: 1184 / 374;
+  justify-self: end;
+  margin-bottom: -1rem;
+}
+
+.graphTrack {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.graphLine {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  pointer-events: none;
+}
+
+.graphDot {
+  position: absolute;
+  width: clamp(28px, 2.6vw, 49px);
+  height: clamp(28px, 2.6vw, 50px);
+  z-index: 2;
+  animation: about-dot-pulse 1.6s ease-in-out infinite;
+}
+
+.graphDot img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* Positions relative to graph box — from Figma 588:658 */
+.graphDot1 {
+  left: 7%;
+  top: 90%;
+  transform: translate(-50%, -50%);
+  animation-delay: 0s;
+}
+
+.graphDot2 {
+  left: 53.3%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  animation-delay: 0.35s;
+}
+
+.graphDot3 {
+  left: 97%;
+  top: 46%;
+  transform: translate(-50%, -50%);
+  animation-delay: 0.7s;
+}
+
+.graphArrow {
+  position: absolute;
+  left: 12.7%;
+  top: 61%;
+  width: clamp(40px, 4.5vw, 86px);
+  height: clamp(40px, 4.5vw, 86px);
+  z-index: 2;
+  transform: translate(-50%, -50%) rotate(44.41deg);
+}
+
+.graphArrow img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+@keyframes about-dot-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    filter: drop-shadow(0 0 0 rgba(220, 40, 40, 0));
+  }
+  50% {
+    opacity: 0.55;
+    filter: drop-shadow(0 0 8px rgba(220, 40, 40, 0.55));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .graphDot {
+    animation: none;
+  }
+}
+
+/* —— Planet / metrics —— */
+.planet {
+  position: relative;
+  background: #ffffff;
+  padding: clamp(4rem, 6vw, 7.2rem) var(--about-pad) clamp(4rem, 7vw, 8rem);
+}
+
+.planetInner {
+  max-width: 1472px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.planetBody {
+  margin: 1.875rem auto 0;
+  max-width: 1472px;
+  font-family: var(--font-body);
+  font-size: clamp(1rem, 1.3vw, 22px);
+  font-weight: 400;
+  line-height: 1.45;
+  text-transform: capitalize;
+  color: var(--about-ink);
+}
+
+.planetBody p {
+  margin: 0;
+}
+
+.planetBody p + p {
+  margin-top: 1.35rem;
+}
+
+.metrics {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: clamp(2.5rem, 8vw, 10rem);
+  margin-top: clamp(3rem, 5.5vw, 5.5rem);
+}
+
+.metric {
+  min-width: 7rem;
+  text-align: center;
+}
+
+.metricValue {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(2.75rem, 4.5vw, 72px);
+  line-height: normal;
+  color: var(--about-accent);
+  text-transform: capitalize;
+}
+
+.metricLabel {
+  margin: 0.35rem 0 0;
+  font-family: var(--font-body);
+  font-size: 22px;
+  font-weight: 400;
+  line-height: normal;
+  text-transform: capitalize;
+  color: var(--about-ink);
+}
+
+/* —— Responsive —— */
+@media (max-width: 1023px) {
+  .hero {
+    height: min(720px, 88vh);
+    min-height: 420px;
+  }
+
+  .heroInner {
+    width: 100%;
+  }
+
+  .heroTitle {
+    left: 1.25rem;
+    right: 1.25rem;
+    top: auto;
+    bottom: 2rem;
+    width: auto;
+    font-size: clamp(2rem, 8vw, 2.75rem);
+  }
+
+  .everyDotGrid,
+  .numbersLower {
+    grid-template-columns: 1fr;
+  }
+
+  .portraitWrap {
+    justify-self: stretch;
+    max-width: none;
+    order: -1;
+  }
+
+  .everyDotCopy {
+    max-width: none;
+  }
+
+  .ctaGroup {
+    margin-top: 2.5rem;
+  }
+
+  .graph {
+    max-width: none;
+    margin: 1rem 0 0;
+  }
+
+  .numbersCopy {
+    max-width: none;
+  }
+
+  .metrics {
+    gap: 2.5rem 3.5rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .ctaLabel {
+    min-width: 0;
+    padding: 0 1.25rem;
+    font-size: 17px;
+  }
+
+  .ctaBird {
+    width: 64px;
+  }
+
+  .bodyBlock,
+  .bodyText,
+  .lead,
+  .planetBody,
+  .metricLabel {
+    font-size: 17px;
+  }
+
+  .mutedLine {
+    font-size: 16px;
+  }
+}
