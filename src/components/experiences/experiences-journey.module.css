@@ -159,10 +159,77 @@
   height: 100%;
 }
 
-.cloudRevealCanvas {
+/* Full white-cloud enter veil — mist field + fluffy banks */
+.cloudReveal {
   position: absolute;
   inset: 0;
   z-index: 5;
+  overflow: hidden;
+  pointer-events: none;
+  transform-origin: 50% 45%;
+  will-change: transform, opacity;
+}
+
+.cloudRevealFill {
+  position: absolute;
+  inset: 0;
+  background: #f7f9fc;
+}
+
+.cloudRevealMist,
+.cloudRevealMistAlt {
+  position: absolute;
+  inset: -8%;
+  width: 116%;
+  height: 116%;
+  object-fit: cover;
+  object-position: center 42%;
+  pointer-events: none;
+  /* Bright white cloud body */
+  filter: brightness(1.22) contrast(1.08) saturate(0.35);
+}
+
+.cloudRevealMist {
+  opacity: 0.95;
+}
+
+.cloudRevealMistAlt {
+  inset: -18% -12% -10%;
+  width: 124%;
+  height: 124%;
+  object-position: 60% 55%;
+  opacity: 0.55;
+  transform: scaleX(-1);
+  filter: brightness(1.28) contrast(1.05) saturate(0.3) blur(1px);
+}
+
+.cloudRevealBankTop,
+.cloudRevealBankBottom {
+  position: absolute;
+  left: 50%;
+  width: 190vw;
+  max-width: none;
+  height: auto;
+  pointer-events: none;
+  filter: brightness(1.2) contrast(1.1) saturate(0.35);
+}
+
+.cloudRevealBankTop {
+  top: -28%;
+  transform: translateX(-50%) scaleY(-1);
+  opacity: 0.92;
+}
+
+.cloudRevealBankBottom {
+  bottom: -32%;
+  transform: translateX(-50%);
+  opacity: 0.98;
+}
+
+.cloudRevealCanvas {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
   width: 100%;
   height: 100%;
   display: block;

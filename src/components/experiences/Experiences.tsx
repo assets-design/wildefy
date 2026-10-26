@@ -287,7 +287,7 @@ export function Experiences() {
             />
           </div>
 
-          {/* NatGeo FBM cloud dissolve — same grammar as wildfy map → next section */}
+          {/* Journey cloud (clouds-section.png) dissolves to reveal the section */}
           <ExperiencesCloudReveal progress={cloudReveal} />
 
           <div
