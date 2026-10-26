@@ -125,6 +125,7 @@ export function WildefyScene({
       shadows={quality.shadows}
       dpr={quality.dpr as [number, number]}
       camera={{ fov: 50, near: 0.35, far: 5200, position: [90, 300, 540] }}
+      style={{ pointerEvents: "none" }}
       gl={{
         antialias: quality.antialias,
         powerPreference: "high-performance",

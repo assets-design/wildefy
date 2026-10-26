@@ -70,9 +70,9 @@ export function StoryScroll() {
         const getViewW = () => viewport.clientWidth || window.innerWidth;
         const getTravel = () =>
           Math.max(0, panel.offsetLeft + panel.offsetWidth - getViewW());
-        // Dedicated scroll runway for the mist reveal before the story pans.
+        // Short mist reveal — long runway felt like scroll was stuck before the pan.
         const getRevealRun = () =>
-          Math.max(720, Math.round(window.innerHeight * 1.35));
+          Math.max(420, Math.round(window.innerHeight * 0.55));
 
         gsap.set(track, { x: 0, force3D: true });
 

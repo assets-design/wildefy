@@ -1,0 +1,12 @@
+﻿{
+  "src": "/assets/video/video_001.mp4",
+  "poster": "/assets/video/video_001_poster.jpg",
+  "duration": 22,
+  "sourceFps": 24,
+  "sourceFrames": 528,
+  "scrubFps": 12,
+  "frameCount": 264,
+  "framePattern": "/assets/video/video_001_frames/frame_%04d.jpg",
+  "width": 1280,
+  "height": 720
+}

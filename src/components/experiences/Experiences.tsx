@@ -1,169 +1,245 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import {
-  Component,
   useCallback,
   useEffect,
   useLayoutEffect,
   useRef,
   useState,
   type CSSProperties,
-  type ReactNode,
 } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { ExperienceJourneyCard } from "@/components/experiences/ExperienceJourneyCard";
 import {
   EXPERIENCES,
-  STAGE_LABELS,
   type Experience,
 } from "@/components/experiences/experiencesData";
+import { ExperiencesScrollVideo } from "@/components/experiences/ExperiencesScrollVideo";
 import {
-  JourneyReveal,
-  REVEAL_END,
-  cameraProgressFromScroll,
-} from "@/components/experiences/JourneyReveal";
-import { detectQuality, hasWebGL, type SceneQuality } from "@/lib/wildefy3d/quality";
+  ExperiencesCloudReveal,
+  easeCloudReveal,
+} from "@/components/experiences/ExperiencesCloudReveal";
 import styles from "./experiences-journey.module.css";
 
 gsap.registerPlugin(ScrollTrigger);
 
-const WildefyScene = dynamic(
-  () => import("@/components/wildefy3d/WildefyScene").then((mod) => mod.WildefyScene),
-  { ssr: false },
-);
-
-class SceneBoundary extends Component<
-  { children: ReactNode; onError: () => void },
-  { failed: boolean }
-> {
-  state = { failed: false };
-
-  static getDerivedStateFromError() {
-    return { failed: true };
-  }
-
-  componentDidCatch() {
-    this.props.onError();
-  }
-
-  render() {
-    if (this.state.failed) return null;
-    return this.props.children;
-  }
-}
+/** Softer scrub so card slide-up feels slower / more deliberate. */
+const SCRUB_LAG = 0.85;
+/** Cloud dissolve completes in the first stretch after Experiences hits the viewport. */
+const CLOUD_REVEAL_VH = 0.85;
 
 function prefersReducedMotion() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-/** Map scroll progress → card opacity + horizontal travel. */
+function easeInOut(t: number) {
+  const x = Math.min(1, Math.max(0, t));
+  return x * x * (3 - 2 * x);
+}
+
+function slideDistancePx() {
+  if (typeof window === "undefined") return 420;
+  // Big enough to read as “from bottom / to top”, still inside the sticky stage.
+  return Math.round(Math.min(window.innerHeight * 0.72, 560));
+}
+
+/**
+ * Left + right cards: pure slide-up (no fade).
+ * Enter from bottom → rest, exit continue upward off the top.
+ */
 function cardStyleForProgress(item: Experience, progress: number): CSSProperties {
   const { from, hold, to } = item.window;
   const enterEnd = hold;
-  const exitStart = Math.min(hold + (to - hold) * 0.45, to);
+  const exitStart = Math.min(hold + (to - hold) * 0.55, to);
+  const travel = slideDistancePx();
 
-  let visibility = 0;
-  if (progress <= from || progress >= to) visibility = 0;
-  else if (progress < enterEnd) visibility = (progress - from) / Math.max(enterEnd - from, 0.001);
-  else if (progress <= exitStart) visibility = 1;
-  else visibility = 1 - (progress - exitStart) / Math.max(to - exitStart, 0.001);
+  let phase: "before" | "enter" | "hold" | "exit" | "after" = "before";
+  let t = 0;
 
-  visibility = Math.min(1, Math.max(0, visibility));
-  const eased = visibility * visibility * (3 - 2 * visibility);
+  if (progress <= from) {
+    phase = "before";
+    t = 0;
+  } else if (progress < enterEnd) {
+    phase = "enter";
+    t = (progress - from) / Math.max(enterEnd - from, 0.001);
+  } else if (progress <= exitStart) {
+    phase = "hold";
+    t = 1;
+  } else if (progress < to) {
+    phase = "exit";
+    t = 1 - (progress - exitStart) / Math.max(to - exitStart, 0.001);
+  } else {
+    phase = "after";
+    t = 0;
+  }
 
-  const travel = item.enterFrom === "right" ? 72 : -72;
-  const x = (1 - eased) * travel;
+  const eased = easeInOut(Math.min(1, Math.max(0, t)));
+  let y = 0;
+  if (phase === "before" || phase === "enter") {
+    y = (1 - eased) * travel;
+  } else if (phase === "exit" || phase === "after") {
+    y = -(1 - eased) * travel;
+  }
+
+  // Fully opaque while on stage — motion only, no fade-in.
+  const onStage = phase === "enter" || phase === "hold" || phase === "exit";
 
   return {
-    opacity: eased,
-    ["--card-x" as string]: `${x}%`,
-    pointerEvents: eased > 0.45 ? "auto" : "none",
-    visibility: eased < 0.02 ? "hidden" : "visible",
+    opacity: onStage ? 1 : 0,
+    ["--card-x" as string]: "0px",
+    ["--card-y" as string]: `${Math.round(y)}px`,
+    ["--card-scale" as string]: "1",
+    pointerEvents: phase === "hold" || (phase === "enter" && eased > 0.55) ? "auto" : "none",
+    visibility: onStage ? "visible" : "hidden",
   };
 }
 
-function introStyleForProgress(progress: number): CSSProperties {
-  /* Hold through most of the fly-past, then clear with the mountain reveal. */
-  const fadeOut = Math.min(1, Math.max(0, (progress - REVEAL_END * 0.35) / (REVEAL_END * 0.65)));
-  const opacity = 1 - fadeOut;
+/**
+ * Intro enters as the arrival cloud dissolves (not deep into the section),
+ * then slides up out once the journey cards begin.
+ */
+function introStyleForProgress(
+  cloudReveal: number,
+  progress: number,
+): CSSProperties {
+  const travel = 72;
+  // Enter while clouds are parting (driven by arrival trigger).
+  const enterT =
+    cloudReveal <= 0.35
+      ? 0
+      : easeInOut(Math.min(1, (cloudReveal - 0.35) / 0.55));
+
+  // Exit on section journey progress after arrival.
+  const exitStart = 0.05;
+  const exitEnd = 0.12;
+  let exitT = 0;
+  if (progress >= exitEnd) exitT = 1;
+  else if (progress > exitStart) {
+    exitT = easeInOut((progress - exitStart) / (exitEnd - exitStart));
+  }
+
+  const opacity = enterT * (1 - exitT);
+  const y = (1 - enterT) * travel + exitT * -travel;
+
   return {
     opacity,
-    transform: `translate3d(0, ${fadeOut * -36}px, 0) scale(${1 + fadeOut * 0.04})`,
+    transform: `translate(-50%, calc(-50% + ${y}px))`,
     visibility: opacity < 0.04 ? "hidden" : "visible",
   };
 }
 
-function activeStageIndex(progress: number) {
-  if (progress < STAGE_LABELS[0].from) return -1;
-  for (let i = STAGE_LABELS.length - 1; i >= 0; i -= 1) {
-    if (progress >= STAGE_LABELS[i].from) return i;
-  }
-  return 0;
+function mistStyleForProgress(progress: number): CSSProperties {
+  const early = 1 - easeInOut(Math.min(1, progress / 0.18));
+  const late = easeInOut(Math.max(0, (progress - 0.78) / 0.22));
+  const opacity = Math.min(0.45, early * 0.42 + late * 0.28);
+  return {
+    opacity,
+    transform: `translate3d(0, ${progress * -4}%, 0) scale(${1.04 + progress * 0.03})`,
+  };
 }
 
 export function Experiences() {
   const sectionRef = useRef<HTMLElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
-  const progressRef = useRef(0);
   const [progress, setProgress] = useState(0);
-  const [quality, setQuality] = useState<SceneQuality | null>(null);
-  const [webgl, setWebgl] = useState<"unknown" | "yes" | "no">("unknown");
+  const [cloudReveal, setCloudReveal] = useState(0);
   const [reducedMotion, setReducedMotion] = useState(false);
   const [booting, setBooting] = useState(true);
   const [failed, setFailed] = useState(false);
-  const readyOnce = useRef(false);
 
   useEffect(() => {
-    setQuality(detectQuality());
-    setWebgl(hasWebGL() ? "yes" : "no");
     setReducedMotion(prefersReducedMotion());
   }, []);
 
   useLayoutEffect(() => {
     const wrap = wrapRef.current;
-    if (!wrap || reducedMotion || webgl === "no" || failed) return;
+    if (!wrap || reducedMotion) return;
 
-    const trigger = ScrollTrigger.create({
-      trigger: wrap,
-      start: "top top",
-      end: "bottom bottom",
-      scrub: true,
-      onUpdate: (self) => {
-        // Camera uses remapped progress (slow during reveal); UI uses raw scroll.
-        progressRef.current = cameraProgressFromScroll(self.progress);
-        setProgress(self.progress);
+    let raf = 0;
+    let pending = -1;
+    let cloudRaf = 0;
+    let cloudPending = -1;
+
+    const flushProgress = () => {
+      raf = 0;
+      if (pending < 0) return;
+      const next = pending;
+      pending = -1;
+      setProgress(next);
+    };
+
+    const flushCloud = () => {
+      cloudRaf = 0;
+      if (cloudPending < 0) return;
+      const next = cloudPending;
+      cloudPending = -1;
+      setCloudReveal(next);
+    };
+
+    // Arrival reveal: starts the instant Experiences hits the viewport top —
+    // not deep into the long card runway.
+    const cloudProxy = { p: 0 };
+    const cloudTween = gsap.to(cloudProxy, {
+      p: 1,
+      ease: "none",
+      scrollTrigger: {
+        trigger: wrap,
+        start: "top top",
+        end: () => `+=${Math.round(window.innerHeight * CLOUD_REVEAL_VH)}`,
+        scrub: 0.35,
+        invalidateOnRefresh: true,
+      },
+      onUpdate: () => {
+        cloudPending = easeCloudReveal(cloudProxy.p);
+        if (!cloudRaf) cloudRaf = window.requestAnimationFrame(flushCloud);
       },
     });
 
-    progressRef.current = cameraProgressFromScroll(trigger.progress);
-    setProgress(trigger.progress);
+    // Progress 0→1 is locked to this section’s pin runway (background + cards).
+    const proxy = { progress: 0 };
+    const tween = gsap.to(proxy, {
+      progress: 1,
+      ease: "none",
+      scrollTrigger: {
+        trigger: wrap,
+        start: "top top",
+        end: "bottom bottom",
+        scrub: SCRUB_LAG,
+        invalidateOnRefresh: true,
+      },
+      onUpdate: () => {
+        pending = proxy.progress;
+        if (!raf) raf = window.requestAnimationFrame(flushProgress);
+      },
+    });
+
+    setProgress(proxy.progress);
+    setCloudReveal(easeCloudReveal(cloudProxy.p));
 
     return () => {
-      trigger.kill();
+      if (raf) window.cancelAnimationFrame(raf);
+      if (cloudRaf) window.cancelAnimationFrame(cloudRaf);
+      cloudTween.scrollTrigger?.kill();
+      cloudTween.kill();
+      tween.scrollTrigger?.kill();
+      tween.kill();
     };
-  }, [reducedMotion, webgl, failed]);
+  }, [reducedMotion]);
 
-  const onBoot = useCallback(() => {}, []);
-  const onOakProgress = useCallback(() => {}, []);
-  const onOakSettled = useCallback(() => {}, []);
   const onReady = useCallback(() => {
-    if (readyOnce.current) return;
-    readyOnce.current = true;
-    window.setTimeout(() => setBooting(false), 400);
+    setBooting(false);
+    ScrollTrigger.refresh();
   }, []);
-  const onFrame = useCallback(() => {}, []);
+
   const onError = useCallback(() => {
     setFailed(true);
     setBooting(false);
   }, []);
 
-  const showScene = webgl === "yes" && quality && !failed && !reducedMotion;
-  const stageIndex = activeStageIndex(progress);
   const snowActive = progress >= 0.74;
 
-  if (reducedMotion || webgl === "no" || failed) {
+  if (reducedMotion || failed) {
     return (
       <section
         className={`experiences ${styles.journey}`}
@@ -180,11 +256,10 @@ export function Experiences() {
               work, learn, and lead.
             </p>
           </header>
-          {(failed || webgl === "no") && (
+          {failed && (
             <p className={styles.introLead} style={{ marginBottom: 36 }}>
-              {failed
-                ? "The 3D landscape could not start on this device. Explore the four experiences below."
-                : "Showing a simplified view — open on a WebGL-capable browser for the full terrain journey."}
+              The cinematic background could not start on this device. Explore the four
+              experiences below.
             </p>
           )}
           {EXPERIENCES.map((item) => (
@@ -205,24 +280,21 @@ export function Experiences() {
       <div className={styles.wrap} ref={wrapRef}>
         <div className={styles.sticky}>
           <div className={styles.scene}>
-            {showScene ? (
-              <SceneBoundary onError={onError}>
-                <WildefyScene
-                  progressRef={progressRef}
-                  quality={quality}
-                  reducedMotion={false}
-                  onBoot={onBoot}
-                  onOakProgress={onOakProgress}
-                  onOakSettled={onOakSettled}
-                  onReady={onReady}
-                  onFrame={onFrame}
-                  onContextLost={onError}
-                />
-              </SceneBoundary>
-            ) : (
-              <div className={styles.fallbackScene} aria-hidden="true" />
-            )}
+            <ExperiencesScrollVideo
+              progress={progress}
+              onReady={onReady}
+              onError={onError}
+            />
           </div>
+
+          {/* NatGeo FBM cloud dissolve — same grammar as wildfy map → next section */}
+          <ExperiencesCloudReveal progress={cloudReveal} />
+
+          <div
+            className={styles.mistVeil}
+            style={mistStyleForProgress(progress)}
+            aria-hidden="true"
+          />
 
           <div
             className={`${styles.atmosphere} ${snowActive ? styles.atmosphereSnow : ""}`}
@@ -233,10 +305,12 @@ export function Experiences() {
             aria-hidden="true"
           />
 
-          <JourneyReveal progress={progress} />
-
           <div className={styles.overlay}>
-            <header className={styles.intro} style={introStyleForProgress(progress)}>
+            <header
+              className={styles.intro}
+              style={introStyleForProgress(cloudReveal, progress)}
+            >
+              <p className={styles.introEyebrow}>Experiences</p>
               <h2 className={styles.introTitle}>Four Ways to Experience the Wild</h2>
               <p className={styles.introLead}>
                 From unforgettable wildlife journeys to transformative learning
@@ -246,18 +320,6 @@ export function Experiences() {
             </header>
 
             <div className={styles.cardsLayer}>
-              <div className={styles.stageRail} aria-hidden="true">
-                {STAGE_LABELS.map((stage, index) => (
-                  <span
-                    key={stage.id}
-                    className={`${styles.stageDot} ${
-                      index === stageIndex ? styles.stageDotActive : ""
-                    }`}
-                    title={stage.label}
-                  />
-                ))}
-              </div>
-
               {EXPERIENCES.map((item) => (
                 <ExperienceJourneyCard
                   key={item.id}

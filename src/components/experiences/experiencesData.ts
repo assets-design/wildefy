@@ -12,11 +12,17 @@ export type Experience = {
   /**
    * Scroll progress window for this stage within the pinned journey.
    * from → enter, hold → fully readable, to → exit.
+   * Tuned to match NatGeo-style fly-through pacing across 4 video environments.
    */
   window: { from: number; hold: number; to: number };
   stage: "mountains" | "forest" | "waterfalls" | "snow";
 };
 
+/**
+ * Four narrative stops synced to video_001 environments:
+ * mountains → forest river → wide river/rapids → snow.
+ * Windows leave gaps so only one card is “on stage” at a time (reference feel).
+ */
 export const EXPERIENCES: Experience[] = [
   {
     id: "tours",
@@ -34,8 +40,8 @@ export const EXPERIENCES: Experience[] = [
     image: "/images/experiences/tours.png",
     imageAlt: "Elephants on a guided safari viewed from a vehicle",
     enterFrom: "right",
-    /* After the fly-past reveal clears (~0.12). */
-    window: { from: 0.14, hold: 0.24, to: 0.36 },
+    /* Cards after arrival cloud (short vh-based dissolve). Wider = slower. */
+    window: { from: 0.08, hold: 0.22, to: 0.3 },
     stage: "mountains",
   },
   {
@@ -54,7 +60,7 @@ export const EXPERIENCES: Experience[] = [
     image: "/images/experiences/offsites.png",
     imageAlt: "A small group gathered around a wilderness campfire",
     enterFrom: "left",
-    window: { from: 0.36, hold: 0.46, to: 0.58 },
+    window: { from: 0.3, hold: 0.44, to: 0.52 },
     stage: "forest",
   },
   {
@@ -74,7 +80,7 @@ export const EXPERIENCES: Experience[] = [
     image: "/images/experiences/stories.png",
     imageAlt: "A wildlife photographer with a telephoto lens in the field",
     enterFrom: "right",
-    window: { from: 0.58, hold: 0.68, to: 0.8 },
+    window: { from: 0.52, hold: 0.66, to: 0.74 },
     stage: "waterfalls",
   },
   {
@@ -94,14 +100,15 @@ export const EXPERIENCES: Experience[] = [
     image: "/images/experiences/learning.png",
     imageAlt: "A corporate learning session in a warm nature-inspired venue",
     enterFrom: "left",
-    window: { from: 0.8, hold: 0.9, to: 0.99 },
+    window: { from: 0.74, hold: 0.88, to: 0.96 },
     stage: "snow",
   },
 ];
 
+/** Left journey rail — one stop per video environment. */
 export const STAGE_LABELS = [
-  { id: "mountains", label: "Mountains", from: 0.12, to: 0.36 },
-  { id: "forest", label: "Forest", from: 0.36, to: 0.58 },
-  { id: "waterfalls", label: "Waterfalls", from: 0.58, to: 0.8 },
-  { id: "snow", label: "Snow", from: 0.8, to: 1 },
+  { id: "mountains", label: "Mountains", from: 0.1, to: 0.3 },
+  { id: "forest", label: "Forest", from: 0.3, to: 0.52 },
+  { id: "waterfalls", label: "Rivers", from: 0.52, to: 0.74 },
+  { id: "snow", label: "Snow", from: 0.74, to: 1 },
 ] as const;

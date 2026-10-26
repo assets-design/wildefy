@@ -9,7 +9,8 @@
 
 .wrap {
   position: relative;
-  height: 520vh;
+  /* Longer runway = slower card + background scrub through the section. */
+  height: 720vh;
 }
 
 .sticky {
@@ -25,12 +26,46 @@
   position: absolute;
   inset: 0;
   z-index: 1;
+  /* Never steal wheel/touch — page scroll must drive the journey */
+  pointer-events: none;
 }
 
 .scene canvas {
   display: block;
   width: 100%;
   height: 100%;
+  pointer-events: none;
+  touch-action: none;
+}
+
+.scrollVideoScene {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: #0a1f18
+    url("/assets/video/video_001_poster.jpg") center / cover no-repeat;
+}
+
+.scrollVideoCanvas,
+.scrollVideo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  pointer-events: none;
+  user-select: none;
+  background: #0a1f18;
+}
+
+.scrollVideoCanvas {
+  position: absolute;
+  inset: 0;
+}
+
+.scrollVideo[hidden] {
+  display: none;
 }
 
 .fallbackScene {
@@ -39,7 +74,7 @@
   z-index: 1;
   background:
     linear-gradient(180deg, rgba(10, 31, 24, 0.35), rgba(10, 31, 24, 0.72)),
-    url("/assets/wildefy/storyboard/01_opening_aerial.jpg") center / cover no-repeat;
+    url("/assets/video/video_001_poster.jpg") center / cover no-repeat;
 }
 
 /* NatGeo-style fly-past reveal — bird + branches + mist over the 3D scene */
@@ -124,6 +159,38 @@
   height: 100%;
 }
 
+.cloudRevealCanvas {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+}
+
+.mistVeil {
+  position: absolute;
+  inset: -14%;
+  z-index: 2;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      ellipse 70% 55% at 50% 48%,
+      rgba(245, 248, 252, 0.28) 0%,
+      transparent 62%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(220, 230, 235, 0.22) 0%,
+      transparent 38%,
+      rgba(180, 200, 195, 0.12) 100%
+    );
+  filter: blur(10px);
+  mix-blend-mode: soft-light;
+  will-change: transform, opacity;
+}
+
 .atmosphere {
   position: absolute;
   inset: 0;
@@ -132,7 +199,7 @@
   background: radial-gradient(
     ellipse 95% 80% at 50% 42%,
     transparent 42%,
-    rgba(8, 22, 18, 0.16) 100%
+    rgba(8, 22, 18, 0.22) 100%
   );
   transition: background 0.4s ease;
 }
@@ -178,26 +245,41 @@
   inset: 0;
   z-index: 4;
   pointer-events: none;
-  display: grid;
-  grid-template-rows: auto 1fr auto;
-  padding: clamp(20px, 3vh, 40px) clamp(20px, 4vw, 56px);
+  /* Full sticky stage — do not use grid rows (absolute intro collapsed card height). */
+  padding: 0;
   box-sizing: border-box;
 }
 
 .intro {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  transform: translate(-50%, -50%);
   justify-self: center;
   max-width: 920px;
+  width: min(920px, calc(100% - 48px));
   text-align: center;
   pointer-events: none;
   will-change: opacity, transform;
+  z-index: 2;
+}
+
+.introEyebrow {
+  margin: 0 0 12px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(245, 240, 230, 0.72);
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.35);
 }
 
 .introTitle {
   margin: 0 0 14px;
   font-family: var(--font-display);
-  font-size: clamp(32px, 4.2vw, 60px);
+  font-size: clamp(34px, 4.6vw, 64px);
   font-weight: 400;
-  line-height: 1.12;
+  line-height: 1.1;
   letter-spacing: 0;
   color: #f5f0e6;
   text-shadow: 0 2px 28px rgba(0, 0, 0, 0.45);
@@ -205,60 +287,36 @@
 
 .introLead {
   margin: 0 auto;
-  max-width: 780px;
+  max-width: 720px;
   font-family: var(--font-body);
   font-size: clamp(15px, 1.1vw, 19px);
-  line-height: 1.45;
-  color: rgba(245, 240, 230, 0.88);
+  line-height: 1.5;
+  color: rgba(245, 240, 230, 0.9);
   text-shadow: 0 1px 16px rgba(0, 0, 0, 0.4);
 }
 
-.stageRail {
-  position: absolute;
-  left: 50%;
-  bottom: clamp(18px, 3vh, 36px);
-  transform: translateX(-50%);
-  display: flex;
-  flex-direction: row;
-  gap: 12px;
-  pointer-events: none;
-  z-index: 4;
-}
-
-.stageDot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  border: 1px solid rgba(245, 240, 230, 0.55);
-  background: transparent;
-  transition:
-    background 0.35s ease,
-    border-color 0.35s ease,
-    transform 0.35s ease;
-}
-
-.stageDotActive {
-  background: #f9a01f;
-  border-color: #f9a01f;
-  transform: scale(1.25);
-}
-
 .cardsLayer {
-  position: relative;
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   pointer-events: none;
 }
 
 .card {
-  --card-x: 0%;
+  --card-x: 0px;
+  --card-y: 0px;
+  --card-scale: 1;
   position: absolute;
   top: 50%;
   width: min(420px, calc(100vw - 48px));
-  transform: translate3d(var(--card-x), -50%, 0);
+  max-height: calc(100dvh - 40px);
+  transform: translate3d(var(--card-x), calc(-50% + var(--card-y)), 0)
+    scale(var(--card-scale));
   pointer-events: auto;
   will-change: transform, opacity;
-  filter: drop-shadow(0 18px 40px rgba(0, 0, 0, 0.35));
+  filter: drop-shadow(0 18px 40px rgba(0, 0, 0, 0.4));
+  border-radius: 22px;
 }
 
 .card[data-side="right"] {
@@ -278,23 +336,34 @@
   right: auto !important;
   transform: none;
   width: min(480px, 100%);
+  max-height: none;
   margin: 0 auto 28px;
   filter: none;
+  border-radius: 22px;
 }
 
 .cardFrame {
   display: flex;
   flex-direction: column;
-  background: #123f32;
-  border: 1px solid rgba(245, 240, 230, 0.72);
+  max-height: calc(100dvh - 40px);
+  background: rgba(10, 28, 24, 0.78);
+  border: 1px solid rgba(245, 240, 230, 0.32);
+  border-radius: 22px;
   overflow: hidden;
+  backdrop-filter: blur(16px) saturate(1.15);
+  -webkit-backdrop-filter: blur(16px) saturate(1.15);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .cardMedia {
   position: relative;
-  aspect-ratio: 16 / 10;
+  flex: 0 0 auto;
+  /* Taller media so the full photo reads clearly. */
+  height: clamp(200px, 32vh, 260px);
   overflow: hidden;
   background: #0a2a22;
+  border-bottom: 1px solid rgba(245, 240, 230, 0.12);
+  border-radius: 22px 22px 0 0;
 }
 
 .cardMedia img {
@@ -302,22 +371,36 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center;
 }
 
 .cardBody {
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  padding: 22px 22px 24px;
+  gap: 14px;
+  padding: 18px 18px 20px;
+  min-height: 0;
 }
 
 .cardTitle {
   margin: 0;
   font-family: var(--font-display);
-  font-size: clamp(26px, 2.4vw, 36px);
+  font-size: clamp(22px, 2vw, 28px);
   font-weight: 400;
   line-height: 1.15;
   color: #f5f0e6;
+}
+
+.cardCopy {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: clamp(13px, 1vw, 15px);
+  line-height: 1.45;
+  color: rgba(245, 240, 230, 0.82);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .cardTags {
@@ -326,46 +409,47 @@
   list-style: none;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: 6px;
 }
 
 .cardTag {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 36px;
+  min-height: 28px;
   width: 100%;
-  padding: 7px 12px;
+  padding: 5px 8px;
   box-sizing: border-box;
-  border: 1px solid rgba(245, 240, 230, 0.78);
+  border: 1px solid rgba(245, 240, 230, 0.35);
   border-radius: 999px;
+  background: rgba(245, 240, 230, 0.06);
   font-family: var(--font-body);
-  font-size: 12px;
-  line-height: 1.25;
+  font-size: 10px;
+  line-height: 1.2;
   text-align: center;
-  color: #f5f0e6;
+  color: rgba(245, 240, 230, 0.92);
 }
 
 .cardCta {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   width: fit-content;
   text-decoration: none;
-  margin-top: 4px;
+  margin-top: 2px;
 }
 
 .cardCtaLabel {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 48px;
-  padding: 0 22px;
+  min-height: 40px;
+  padding: 0 18px;
   border-radius: 999px;
   background: #f5f0e6;
   color: #123f32;
   font-family: var(--font-body);
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 500;
   line-height: 1;
   white-space: nowrap;
@@ -376,16 +460,16 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 48px;
-  height: 48px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   background: #f9a01f;
   flex: none;
 }
 
 .cardCtaBird {
-  width: 30px;
-  height: 30px;
+  width: 24px;
+  height: 24px;
   object-fit: contain;
   filter: brightness(0) invert(1);
 }
@@ -450,38 +534,44 @@
 
 @media (max-width: 900px) {
   .wrap {
-    height: 380vh;
+    height: 600vh;
   }
 
   .card {
-    width: min(340px, calc(100vw - 32px));
-    top: auto;
-    bottom: clamp(16px, 4vh, 36px);
-    transform: translate3d(var(--card-x), 0, 0);
+    width: min(380px, calc(100vw - 32px));
+    max-height: calc(100dvh - 32px);
+    top: 50%;
+    border-radius: 20px;
+    transform: translate3d(var(--card-x), calc(-50% + var(--card-y)), 0)
+      scale(var(--card-scale));
   }
 
-  .card[data-side="right"] {
-    right: 16px;
-    left: auto;
-  }
-
+  .card[data-side="right"],
   .card[data-side="left"] {
+    right: 16px;
     left: 16px;
-    right: auto;
+    margin: 0 auto;
+    width: min(380px, calc(100vw - 32px));
+  }
+
+  .cardFrame,
+  .cardMedia {
+    border-radius: 20px;
+  }
+
+  .cardMedia {
+    border-radius: 20px 20px 0 0;
+    height: clamp(160px, 26vh, 210px);
   }
 
   .cardTags {
     grid-template-columns: 1fr;
   }
-
-  .stageRail {
-    display: none;
-  }
 }
 
 @media (max-width: 640px) {
   .wrap {
-    height: 320vh;
+    height: 560vh;
   }
 
   .introTitle {
@@ -489,12 +579,23 @@
   }
 
   .cardBody {
-    padding: 18px 16px 20px;
-    gap: 14px;
+    padding: 14px 14px 16px;
+    gap: 12px;
   }
 
   .cardTitle {
-    font-size: 24px;
+    font-size: 22px;
+  }
+
+  .card,
+  .cardFrame {
+    border-radius: 18px;
+    max-height: calc(100dvh - 28px);
+  }
+
+  .cardMedia {
+    border-radius: 18px 18px 0 0;
+    height: clamp(140px, 24vh, 180px);
   }
 }
 

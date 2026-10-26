@@ -26,7 +26,7 @@ export function ExperienceJourneyCard({ experience, style, reduced }: Props) {
             alt={experience.imageAlt}
             width={800}
             height={520}
-            loading="lazy"
+            loading={reduced ? "lazy" : "eager"}
             decoding="async"
             draggable={false}
           />
@@ -35,8 +35,10 @@ export function ExperienceJourneyCard({ experience, style, reduced }: Props) {
         <div className={styles.cardBody}>
           <h3 className={styles.cardTitle}>{experience.title}</h3>
 
+          <p className={styles.cardCopy}>{experience.description}</p>
+
           <ul className={styles.cardTags}>
-            {experience.tags.map((tag) => (
+            {(reduced ? experience.tags : experience.tags.slice(0, 4)).map((tag) => (
               <li key={tag}>
                 <span className={styles.cardTag}>{tag}</span>
               </li>
