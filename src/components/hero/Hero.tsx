@@ -23,7 +23,6 @@ export function Hero() {
   const sceneRef = useRef<HTMLElement>(null);
   const headerRef = useRef<HTMLElement>(null);
   const birdRef = useRef<HTMLDivElement>(null);
-  const birdFlyerRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const rightRef = useRef<HTMLDivElement>(null);
 
@@ -40,44 +39,6 @@ export function Hero() {
     );
     io.observe(bird);
     return () => io.disconnect();
-  }, []);
-
-  // Page load: flower stays put; bird rises from below into place.
-  useLayoutEffect(() => {
-    const flyer = birdFlyerRef.current;
-    if (!flyer) return;
-
-    if (prefersReducedMotion()) {
-      gsap.set(flyer, { y: 0, clearProps: "transform" });
-      return;
-    }
-
-    const rise = window.innerHeight * 0.42;
-    gsap.fromTo(
-      flyer,
-      { y: rise, force3D: true },
-      {
-        y: 0,
-        duration: 2.35,
-        ease: "power3.out",
-        delay: 0.12,
-        force3D: true,
-        onComplete: () => {
-          // Soft hover after arrival — whole bird breathes in place
-          gsap.to(flyer, {
-            y: 7,
-            duration: 2.8,
-            ease: "sine.inOut",
-            yoyo: true,
-            repeat: -1,
-          });
-        },
-      },
-    );
-
-    return () => {
-      gsap.killTweensOf(flyer);
-    };
   }, []);
 
   useLayoutEffect(() => {
@@ -187,13 +148,15 @@ export function Hero() {
           anticipatePin: 1,
           onRefreshInit: updateDistances,
           onUpdate: (self) => {
-            // Keep cloud hidden until the rise begins (both scroll directions).
+            // Keep cloud hidden until the rise begins (no load FOUC).
             if (self.progress < distances.birdStart * 0.9) {
               gsap.set(cloud, { autoAlpha: 0 });
             }
           },
-          // Let the scrub timeline own visibility both ways — no forced leave snaps
-          // that stick when scrolling bottom → top back into Hero.
+          onLeave: () => {
+            if (experiences) gsap.set(experiences, { autoAlpha: 1 });
+            gsap.set(cloud, { autoAlpha: 1 });
+          },
         },
       });
 
@@ -418,10 +381,9 @@ export function Hero() {
                 role="img"
                 aria-label="A hummingbird hovering beneath a red flower"
               >
-                {/* Flower stays fixed at the top while the bird flies up */}
                 <img
-                  className="hero-bird-layer hero-bird-flower"
-                  src="/images/hero/hero-bird-base.png?v=outer9"
+                  className="hero-bird-layer hero-bird-wing hero-bird-wing--left"
+                  src="/images/hero/hero-bird-wing-left.png?v=outer9"
                   alt=""
                   width={2880}
                   height={1500}
@@ -429,37 +391,25 @@ export function Hero() {
                   decoding="async"
                   aria-hidden="true"
                 />
-                <div className="hero-bird-flyer" ref={birdFlyerRef}>
-                  <img
-                    className="hero-bird-layer hero-bird-wing hero-bird-wing--left"
-                    src="/images/hero/hero-bird-wing-left.png?v=outer9"
-                    alt=""
-                    width={2880}
-                    height={1500}
-                    draggable={false}
-                    decoding="async"
-                    aria-hidden="true"
-                  />
-                  <img
-                    className="hero-bird-layer hero-bird-wing hero-bird-wing--right"
-                    src="/images/hero/hero-bird-wing-right.png?v=outer9"
-                    alt=""
-                    width={2880}
-                    height={1500}
-                    draggable={false}
-                    decoding="async"
-                    aria-hidden="true"
-                  />
-                  <img
-                    className="hero-bird-layer hero-bird-base"
-                    src="/images/hero/hero-bird-base.png?v=outer9"
-                    alt=""
-                    width={2880}
-                    height={1500}
-                    draggable={false}
-                    decoding="async"
-                  />
-                </div>
+                <img
+                  className="hero-bird-layer hero-bird-wing hero-bird-wing--right"
+                  src="/images/hero/hero-bird-wing-right.png?v=outer9"
+                  alt=""
+                  width={2880}
+                  height={1500}
+                  draggable={false}
+                  decoding="async"
+                  aria-hidden="true"
+                />
+                <img
+                  className="hero-bird-layer hero-bird-base"
+                  src="/images/hero/hero-bird-base.png?v=outer9"
+                  alt=""
+                  width={2880}
+                  height={1500}
+                  draggable={false}
+                  decoding="async"
+                />
               </div>
             </div>
 

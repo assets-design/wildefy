@@ -7,9 +7,14 @@ import styles from "./conservation.module.css";
 
 gsap.registerPlugin(ScrollTrigger);
 
-/* Slot angles around the disc, top → bottom. 0° is the center photo. */
-const SLOT_ANGLES = [53.21, 25.9, -0.17, -26.14, -53.39];
-const STEPS = 4;
+/**
+ * Figma disc seats (degrees). Cards are pre-placed in CSS; orbit rotation
+ * only slides them along this arc. Scroll loops on the arc — never behind
+ * the disc (no +360° long-way spin).
+ */
+const SLOT_ANGLES = [53.21, 25.9, -0.17, -26.14, -53.39] as const;
+const SLOT_COUNT = SLOT_ANGLES.length;
+const STEPS = SLOT_COUNT; // full loop back to the first seat
 
 const WEDGES = [
   {
@@ -67,35 +72,55 @@ const SLIDES = [
   },
 ] as const;
 
-function pathFor(homeSlot: number) {
-  const angles = [SLOT_ANGLES[homeSlot]];
-  let slot = homeSlot;
-  let prev = angles[0];
-  for (let step = 0; step < 5; step++) {
-    slot = (slot + 4) % 5;
-    let next = SLOT_ANGLES[slot];
-    while (next <= prev + 0.01) next += 360;
-    angles.push(next);
-    prev = next;
+/**
+ * Fractional seat → angle on the disc arc.
+ * Crossing the last↔first seat fades out/in so cards never travel behind the disc.
+ */
+function poseAtSeat(seatFloat: number) {
+  const n = SLOT_COUNT;
+  const s = ((seatFloat % n) + n) % n;
+  const i0 = Math.floor(s);
+  const f = s - i0;
+  const i1 = (i0 + 1) % n;
+
+  if (i0 === n - 1 && i1 === 0) {
+    if (f < 0.5) {
+      return { angle: SLOT_ANGLES[i0], opacity: Math.max(0, 1 - f * 2) };
+    }
+    return { angle: SLOT_ANGLES[i1], opacity: Math.max(0, (f - 0.5) * 2) };
   }
-  return angles;
-}
 
-const PATHS = WEDGES.map((wedge) => pathFor(wedge.homeSlot));
-
-function angleFor(path: number[], t: number) {
-  const max = path.length - 1;
-  const clamped = Math.min(max, Math.max(0, t));
-  const index = Math.min(max - 1, Math.floor(clamped));
-  const fraction = clamped - index;
-  return path[index] + (path[index + 1] - path[index]) * fraction;
+  const a0 = SLOT_ANGLES[i0];
+  const a1 = SLOT_ANGLES[i1];
+  return { angle: a0 + (a1 - a0) * f, opacity: 1 };
 }
 
 function slideOpacity(t: number, index: number) {
-  const distance = Math.abs(t - index);
+  const n = SLOT_COUNT;
+  let distance = Math.abs(t - index);
+  distance = Math.min(
+    distance,
+    Math.abs(t - index - n),
+    Math.abs(t - index + n),
+  );
   if (distance <= 0.28) return 1;
   if (distance >= 0.72) return 0;
   return 1 - (distance - 0.28) / 0.44;
+}
+
+function slideMotion(t: number, index: number) {
+  const opacity = slideOpacity(t, index);
+  const n = SLOT_COUNT;
+  let delta = t - index;
+  if (delta > n / 2) delta -= n;
+  if (delta < -n / 2) delta += n;
+  let y = 0;
+  if (delta < -0.02) {
+    y = 44 * Math.min(1, -delta / 0.72);
+  } else if (delta > 0.02) {
+    y = -36 * Math.min(1, delta / 0.72);
+  }
+  return { opacity, y };
 }
 
 function prefersReducedMotion() {
@@ -117,15 +142,20 @@ export function Conservation() {
     );
 
     const apply = (progress: number) => {
-      const t = Math.min(STEPS, Math.max(0, progress * STEPS));
+      // 0→1 = one full loop along the arc
+      const t = progress * STEPS;
       orbits.forEach((orbit, index) => {
-        const natural = PATHS[index][0];
-        const angle = angleFor(PATHS[index], t);
+        const home = WEDGES[index].homeSlot;
+        const natural = SLOT_ANGLES[home];
+        // Scroll down → seats drift toward the next index (around the arc)
+        const { angle, opacity } = poseAtSeat(home + t);
         orbit.style.transform = `rotate(${natural - angle}deg)`;
+        orbit.style.opacity = String(opacity);
       });
       slides.forEach((slide, index) => {
-        const opacity = slideOpacity(t, index);
+        const { opacity, y } = slideMotion(t, index);
         slide.style.opacity = String(opacity);
+        slide.style.transform = `translate3d(0, ${y}px, 0)`;
         slide.setAttribute("aria-hidden", opacity < 0.45 ? "true" : "false");
       });
     };
@@ -134,7 +164,7 @@ export function Conservation() {
       const trigger = ScrollTrigger.create({
         trigger: section,
         start: "top top",
-        end: () => `+=${Math.round(window.innerHeight * 4)}`,
+        end: () => `+=${Math.round(window.innerHeight * STEPS)}`,
         pin: true,
         pinSpacing: true,
         scrub: 0.65,
@@ -183,11 +213,7 @@ export function Conservation() {
 
             <div className={styles.wheel}>
               {WEDGES.map((wedge) => (
-                <div
-                  key={wedge.src}
-                  className={styles.orbit}
-                  data-orbit=""
-                >
+                <div key={wedge.src} className={styles.orbit} data-orbit="">
                   <div className={`${styles.wedge} ${wedge.className}`}>
                     <div className={styles.wedgeInner}>
                       <img src={wedge.src} alt={wedge.alt} draggable={false} />

@@ -217,7 +217,7 @@ body {
   will-change: transform;
 }
 
-/* Transparent bird — flower stays put; flyer rises from below on load. */
+/* Transparent bird — base holds body+shoulders; outer wing tips sweep. */
 .hero-bird {
   position: absolute;
   inset: 0;
@@ -240,25 +240,9 @@ body {
   user-select: none;
 }
 
-/* Top flower only — clipped so it never rides the load-in */
-.hero-bird-flower {
-  z-index: 3;
-  clip-path: inset(0% 22% 46% 22%);
-}
-
-/* Bird body + wings — rises from bottom to the flower */
-.hero-bird-flyer {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  will-change: transform;
-  transform: translate3d(0, 0, 0);
-}
-
 .hero-bird-base {
-  /* Hide the flower on the flying base so it doesn't double the static one */
+  /* Base sits above tips so underlapped hinge stays covered during sweep */
   z-index: 2;
-  clip-path: inset(30% 0% 0% 0%);
 }
 
 .hero-bird-wing {
@@ -268,17 +252,18 @@ body {
 }
 
 /*
-  Shoulder hinges — full-wing swing (not tip-only), slow continuous flap.
+  Mid-wing hinges: tips underlap the base at the cut so rotation never
+  opens a background gap. Roots stay fixed on the base layer.
 */
 .hero-bird-wing--left {
-  transform-origin: 38% 58%;
-  animation: hero-wing-sweep-left 3.8s cubic-bezier(0.4, 0.05, 0.55, 0.95) infinite;
+  transform-origin: 35% 65.72%;
+  animation: hero-wing-sweep-left 2.2s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
   will-change: transform;
 }
 
 .hero-bird-wing--right {
-  transform-origin: 62% 58%;
-  animation: hero-wing-sweep-right 3.8s cubic-bezier(0.4, 0.05, 0.55, 0.95) 0.12s infinite;
+  transform-origin: 64.8% 65.72%;
+  animation: hero-wing-sweep-right 2.2s cubic-bezier(0.45, 0.05, 0.55, 0.95) 0.05s infinite;
   will-change: transform;
 }
 
@@ -287,13 +272,16 @@ body {
   100% {
     transform: rotateZ(0deg);
   }
-  30% {
-    /* Whole feather forward toward the flower */
-    transform: rotateZ(-12deg);
+  25% {
+    /* Forward — outer tip toward beak (in-plane; base covers underlap) */
+    transform: rotateZ(-2deg);
   }
-  65% {
-    /* Whole feather back toward the tail */
-    transform: rotateZ(8deg);
+  50% {
+    transform: rotateZ(0deg);
+  }
+  75% {
+    /* Backward — outer tip toward tail */
+    transform: rotateZ(1.5deg);
   }
 }
 
@@ -302,11 +290,14 @@ body {
   100% {
     transform: rotateZ(0deg);
   }
-  30% {
-    transform: rotateZ(12deg);
+  25% {
+    transform: rotateZ(2deg);
   }
-  65% {
-    transform: rotateZ(-8deg);
+  50% {
+    transform: rotateZ(0deg);
+  }
+  75% {
+    transform: rotateZ(-1.5deg);
   }
 }
 
@@ -597,7 +588,6 @@ body {
   }
 
   .hero-bird,
-  .hero-bird-flyer,
   .site-header,
   .journey-backdrop-photo,
   .journey-cloud,
@@ -610,14 +600,6 @@ body {
   .hero-bird-wing--right {
     animation: none !important;
     transform: none !important;
-  }
-
-  .hero-bird-flower {
-    display: none !important;
-  }
-
-  .hero-bird-base {
-    clip-path: none !important;
   }
 
   .journey-cloud {
@@ -2246,7 +2228,7 @@ body {
   gap: 32px;
   min-height: 100vh;
   min-height: 100svh;
-  padding: 2.4vh 0;
+  padding: 0;
   overflow: hidden;
   background: #cfe0e2;
   box-sizing: border-box;

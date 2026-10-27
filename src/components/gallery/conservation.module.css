@@ -64,6 +64,7 @@
   inset: 0;
   transform-origin: -146px 500px;
   pointer-events: none;
+  will-change: transform, opacity;
 }
 
 .wedge {
@@ -97,6 +98,9 @@
 }
 
 .wedgeA .wedgeInner {
+  /* Slightly smaller than neighbors so every image↔image clear gap is ~23px */
+  width: 361px;
+  height: 309px;
   transform: rotate(90deg);
 }
 
@@ -154,6 +158,7 @@
   align-items: center;
   justify-content: center;
   pointer-events: none;
+  z-index: 2;
 }
 
 .discRot {
@@ -194,6 +199,7 @@
   letter-spacing: 0;
   text-align: center;
   text-transform: capitalize;
+  z-index: 3;
 }
 
 .copy {
@@ -211,10 +217,13 @@
   position: absolute;
   inset: 0;
   opacity: 0;
+  transform: translate3d(0, 44px, 0);
+  will-change: transform, opacity;
 }
 
 .slide:first-child {
   opacity: 1;
+  transform: translate3d(0, 0, 0);
 }
 
 .title {
