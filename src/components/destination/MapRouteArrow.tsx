@@ -13,7 +13,7 @@ gsap.registerPlugin(MotionPathPlugin);
  */
 const ROUTE_POINTS = [
   // Day 1 — Raipur
-  { x: 26.8, y: 7.55 },
+  { x: 26.95, y: 7.65},
   { x: 28.76, y: 9.84 },
   { x: 32.88, y: 11.43 },
   { x: 36.09, y: 13.62 },
@@ -30,7 +30,7 @@ const ROUTE_POINTS = [
   { x: 56.22, y: 35.71 },
   { x: 56.51, y: 37.91 },
   // Day 3 — Kanha Safari Zone
-  { x: 56.44, y: 40.3 },
+  { x: 56.50, y: 40.32 },
   { x: 56.92, y: 42.02 },
   { x: 56.17, y: 44.03 },
   { x: 54.33, y: 45.8 },
@@ -38,14 +38,14 @@ const ROUTE_POINTS = [
   { x: 49.45, y: 48.79 },
   { x: 47.93, y: 50.64 },
   // Day 4 — Kanha Leisure
-  { x: 47.76, y: 52.85 },
+  { x: 47.76, y: 52.91 },
   { x: 47.57, y: 54.85 },
   { x: 46.99, y: 57.0 },
   { x: 47.56, y: 59.12 },
   { x: 49.1, y: 61.09 },
   { x: 50.99, y: 62.96 },
   // Day 5 — Kanha Safari Zone
-  { x: 52.53, y: 65.05 },
+  { x: 52.53, y: 65.13 },
   { x: 52.5, y: 67.29 },
   { x: 50.2, y: 69.53 },
   { x: 46.59, y: 71.11 },
@@ -54,7 +54,7 @@ const ROUTE_POINTS = [
   { x: 36.08, y: 76.1 },
   { x: 33.2, y: 78.14 },
   // Day 6 — Return to Raipur
-  { x: 32.42, y: 80.83 },
+  { x: 32.47, y: 80.89 },
 ] as const;
 
 /** Route-point indices on each day pin (Day 1…6). */

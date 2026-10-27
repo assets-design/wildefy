@@ -138,20 +138,8 @@ export function FooterReveal() {
         // Hold CTA composition briefly before footer begins.
         tl.to({}, { duration: 0.12 }, 0.28);
 
-        // Stage 3 — glass rises; hide headline + CTA as the container enters.
+        // Stage 3 — glass rises from bottom to final ~70vh coverage.
         tl.to(glass, { yPercent: 0, duration: 0.5 }, 0.4);
-        tl.to(
-          title,
-          { opacity: 0, y: -24, duration: 0.22 },
-          0.4,
-        );
-        tl.to(
-          button,
-          { opacity: 0, y: -16, duration: 0.2 },
-          0.42,
-        );
-        // Keep CTA non-interactive once hidden under the glass
-        tl.set(cta, { pointerEvents: "none" }, 0.55);
 
         // Settle hold so reverse scroll can park near the 70% checkpoint.
         tl.to({}, { duration: 0.14 });
