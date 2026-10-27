@@ -7,156 +7,119 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { FooterReveal } from "@/components/footer/FooterReveal";
 import { StageFrame } from "@/components/layout/StageFrame";
 import { SiteHeader } from "@/components/layout/SiteHeader";
-import { MapRouteArrow, progressForDay } from "./MapRouteArrow";
+import {
+  MapRouteArrow,
+  dayFromProgress,
+  progressForDay,
+  scrollToRouteProgress,
+} from "./MapRouteArrow";
 import styles from "./destination.module.css";
 
 gsap.registerPlugin(ScrollTrigger);
 
-const DAYS = [1, 2, 3, 4, 5, 6] as const;
+/** Figma 616:384 artboard — 1680 × 2852 */
+const ART_W = 1680;
+const ART_H = 2852;
 
-const DAY_CONTENT = [
+type Beat = { icon: string; label: string };
+
+type MapStop = {
+  id: number;
+  dayLabel: string;
+  place: string;
+  headline: string;
+  stay: string;
+  beats: Beat[];
+  card: { left: number; top: number };
+};
+
+const STAY =
+  "Stay: The Safari Lodge Kanha · Grand Chalet · double sharing · all major meals";
+
+const ICON_CLOCK = "/images/destination/map-v2/icon-hourglass.png";
+const ICON_WALK = "/images/destination/map-v2/icon-walk.png";
+const ICON_SUNSET = "/images/destination/map-v2/icon-sunset.png";
+
+const MAP_STOPS: MapStop[] = [
   {
     id: 1,
-    pill: "Day 1 · Tue, Dec 1",
-    image: "/images/destination/day1-sunset.png",
-    imageAlt: "Sunset over a lakeside landscape in Kanha",
+    dayLabel: "Day 1",
+    place: "Raipur",
     headline: "Arrive in Raipur; private road transfer to Kanha.",
+    stay: STAY,
     beats: [
-      {
-        icon: "/images/destination/icon-clock.png",
-        text: "12:23 PM, Arrival in Kanha National Park from Raipur",
-      },
-      {
-        icon: "/images/destination/icon-walk.png",
-        text: "Nature walk, A gentle guided walk to experience the forest surroundings and begin the Kanha stay at an easy pace.",
-      },
-      {
-        icon: "/images/destination/icon-sunset.png",
-        text: "Sunset lakeside picnic, Relax by the lake at sunset with a scenic picnic in the reserve setting.",
-      },
+      { icon: ICON_CLOCK, label: "12:23 PM Arrival in Kanha" },
+      { icon: ICON_WALK, label: "Afternoon Nature Walk" },
+      { icon: ICON_SUNSET, label: "Afternoon Sunset Lakeside Picnic" },
     ],
+    card: { left: (695 / ART_W) * 100, top: (40 / ART_H) * 100 },
   },
   {
     id: 2,
-    pill: "Day 2 · Wed, Dec 2",
-    image: "/images/destination/day2-jeep.png",
-    imageAlt: "Open jeep safari entering a Kanha forest trail",
-    headline: "Morning and evening private jeep safaris, picnic breakfasts and lodge dining.",
+    dayLabel: "Day 2",
+    place: "Kanha National Park",
+    headline: "Morning and evening private jeep safaris.",
+    stay: STAY,
     beats: [
-      {
-        icon: "/images/destination/icon-clock.png",
-        title: "Private core-zone jeep safari",
-        text: "Included safari with permits, guide, and modified vehicle.",
-      },
-      {
-        icon: "/images/destination/icon-walk.png",
-        title: "Picnic breakfast",
-        text: "Breakfast enjoyed picnic-style as part of the safari day.",
-      },
-      {
-        icon: "/images/destination/icon-sunset.png",
-        title: "Private core-zone jeep safari",
-        text: "The second included safari of the day in the core zone.",
-      },
+      { icon: ICON_CLOCK, label: "Dawn core-zone jeep safari" },
+      { icon: ICON_WALK, label: "Picnic breakfast in the wild" },
+      { icon: ICON_SUNSET, label: "Evening jeep safari" },
     ],
+    card: { left: (166 / ART_W) * 100, top: (707 / ART_H) * 100 },
   },
   {
     id: 3,
-    pill: "Day 3 · Thu, Dec 3",
-    image: "/images/destination/day2-jeep.png",
-    imageAlt: "Safari jeep on a Kanha forest track at dawn",
-    headline: "Full day of core-zone drives with a bush lunch between safaris.",
+    dayLabel: "Day 3",
+    place: "Kanha Safari Zone",
+    headline: "Full day of core-zone drives with a bush lunch.",
+    stay: STAY,
     beats: [
-      {
-        icon: "/images/destination/icon-clock.png",
-        title: "Dawn jeep safari",
-        text: "Early start into the core zone while mist still hangs over the meadows.",
-      },
-      {
-        icon: "/images/destination/icon-walk.png",
-        title: "Bush lunch",
-        text: "Hot meal served in a shaded clearing between the morning and evening drives.",
-      },
-      {
-        icon: "/images/destination/icon-sunset.png",
-        title: "Evening jeep safari",
-        text: "Return drive focused on predator movement as the light softens.",
-      },
+      { icon: ICON_CLOCK, label: "Dawn jeep safari" },
+      { icon: ICON_WALK, label: "Bush lunch between drives" },
+      { icon: ICON_SUNSET, label: "Evening jeep safari" },
     ],
+    card: { left: (1050 / ART_W) * 100, top: (1257 / ART_H) * 100 },
   },
   {
     id: 4,
-    pill: "Day 4 · Fri, Dec 4",
-    image: "/images/destination/day1-sunset.png",
-    imageAlt: "Golden-hour light over Kanha grasslands",
-    headline: "Buffer-zone exploration, village visit, and an outdoor bush dinner.",
+    dayLabel: "Day 4",
+    place: "Kanha Leisure & Breakfast",
+    headline: "Buffer-zone exploration and outdoor bush dinner.",
+    stay: STAY,
     beats: [
-      {
-        icon: "/images/destination/icon-clock.png",
-        title: "Buffer-zone morning drive",
-        text: "Slower pace through buffer forests with time for birding and photography.",
-      },
-      {
-        icon: "/images/destination/icon-walk.png",
-        title: "Village walk",
-        text: "Guided visit to a nearby Baiga village with local hosts and tea.",
-      },
-      {
-        icon: "/images/destination/icon-sunset.png",
-        title: "Bush dinner",
-        text: "Outdoor dinner under the trees after your final evening at the lodge.",
-      },
+      { icon: ICON_CLOCK, label: "Buffer-zone morning drive" },
+      { icon: ICON_WALK, label: "Village walk & local tea" },
+      { icon: ICON_SUNSET, label: "Outdoor bush dinner" },
     ],
+    card: { left: (142 / ART_W) * 100, top: (1568 / ART_H) * 100 },
   },
   {
     id: 5,
-    pill: "Day 5 · Sat, Dec 5",
-    image: "/images/destination/day2-jeep.png",
-    imageAlt: "Open jeep paused on a Kanha meadow track",
-    headline: "Last full safari day with a photography focus and lodge leisure.",
+    dayLabel: "Day 5",
+    place: "Kanha Safari Zone",
+    headline: "Last full safari day with a photography focus.",
+    stay: STAY,
     beats: [
-      {
-        icon: "/images/destination/icon-clock.png",
-        title: "Photography safari",
-        text: "Extended morning drive timed for soft light and longer stops at sightings.",
-      },
-      {
-        icon: "/images/destination/icon-walk.png",
-        title: "Lodge leisure",
-        text: "Afternoon at the Grand Chalet — spa time, pool, or quiet reading on the deck.",
-      },
-      {
-        icon: "/images/destination/icon-sunset.png",
-        title: "Sunset viewpoint",
-        text: "Short transfer to a hillside lookout for the last Kanha sunset of the trip.",
-      },
+      { icon: ICON_CLOCK, label: "Photography safari" },
+      { icon: ICON_WALK, label: "Lodge leisure afternoon" },
+      { icon: ICON_SUNSET, label: "Sunset viewpoint" },
     ],
+    card: { left: (978 / ART_W) * 100, top: (1936 / ART_H) * 100 },
   },
   {
     id: 6,
-    pill: "Day 6 · Sun, Dec 6",
-    image: "/images/destination/day1-sunset.png",
-    imageAlt: "Morning light on the road leaving Kanha",
-    headline: "Breakfast at the lodge, then private transfer back to Raipur.",
+    dayLabel: "Day 6",
+    place: "Return to Raipur",
+    headline: "Breakfast at the lodge, then transfer back to Raipur.",
+    stay: STAY,
     beats: [
-      {
-        icon: "/images/destination/icon-clock.png",
-        title: "Leisurely breakfast",
-        text: "Final lodge breakfast with time to pack and settle departure details.",
-      },
-      {
-        icon: "/images/destination/icon-walk.png",
-        title: "Checkout & farewell",
-        text: "Brief walk around the property before boarding the private transfer.",
-      },
-      {
-        icon: "/images/destination/icon-sunset.png",
-        title: "Transfer to Raipur",
-        text: "9:30 AM departure for Raipur, arriving around 1:47 PM for onward travel.",
-      },
+      { icon: ICON_CLOCK, label: "Leisurely lodge breakfast" },
+      { icon: ICON_WALK, label: "Checkout & farewell" },
+      { icon: ICON_SUNSET, label: "9:30 AM transfer to Raipur" },
     ],
+    card: { left: (17 / ART_W) * 100, top: (2409 / ART_H) * 100 },
   },
-] as const;
+];
 
 const INCLUSIONS = [
   {
@@ -214,10 +177,11 @@ export function DestinationPage() {
   const [activeDay, setActiveDay] = useState(1);
   const [routeProgress, setRouteProgress] = useState(0);
   const [reduceMotion, setReduceMotion] = useState(false);
+  const journeyRef = useRef<HTMLDivElement>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
   const clickingRef = useRef(false);
-  const dayColRef = useRef<HTMLDivElement>(null);
-  const mapViewportRef = useRef<HTMLDivElement>(null);
-  const mapStageRef = useRef<HTMLDivElement>(null);
+  const clickTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -228,88 +192,90 @@ export function DestinationPage() {
   }, []);
 
   useLayoutEffect(() => {
-    const root = dayColRef.current;
-    if (!root) return;
+    const journey = journeyRef.current;
+    const viewport = viewportRef.current;
+    const stage = stageRef.current;
+    if (!journey || !viewport || !stage) return;
 
-    const cards = [...root.querySelectorAll<HTMLElement>("[data-day-card]")];
-    if (!cards.length) return;
-
-    /**
-     * Progress is driven by a single scroll sample: the 45% viewport line
-     * walks from each day card's top to the next card's top. That way when
-     * Day 5's header reaches the line, the arrow is on the Day 5 pin — not
-     * still scrubbing through a tall Day 4 card (old end: "bottom 45%").
-     */
-    const sampleProgress = () => {
+    const applyProgress = (scrollProgress: number) => {
       if (clickingRef.current) return;
+      // Map scroll → route so Day 6 has a dwell after the tracker arrives
+      const routeP = scrollToRouteProgress(scrollProgress);
+      setRouteProgress(routeP);
+      setActiveDay(dayFromProgress(routeP));
+    };
 
-      const line = window.innerHeight * 0.45;
-      let progress = progressForDay(1);
-      let active = 1;
-
-      for (let i = 0; i < cards.length; i++) {
-        const card = cards[i];
-        const dayNum = Number(card.dataset.dayCard) || i + 1;
-        const from = progressForDay(dayNum);
-        const to = progressForDay(Math.min(dayNum + 1, 6));
-        const top = card.getBoundingClientRect().top;
-        const next = cards[i + 1];
-        const segmentEnd = next
-          ? next.getBoundingClientRect().top
-          : card.getBoundingClientRect().bottom;
-
-        if (line < top) {
-          if (i === 0) {
-            progress = from;
-            active = dayNum;
-          }
-          break;
-        }
-
-        if (line <= segmentEnd) {
-          const t = (line - top) / Math.max(segmentEnd - top, 1);
-          const clamped = Math.min(1, Math.max(0, t));
-          progress = dayNum >= 6 ? from : from + (to - from) * clamped;
-          active = clamped >= 0.85 && dayNum < 6 ? dayNum + 1 : dayNum;
-          break;
-        }
-
-        progress = dayNum >= 6 ? from : to;
-        active = Math.min(dayNum + (dayNum < 6 ? 1 : 0), 6);
-      }
-
-      setRouteProgress(progress);
-      setActiveDay(active);
+    const getScrollRun = () => {
+      const stageH = stage.offsetHeight;
+      const viewH = viewport.clientHeight || window.innerHeight;
+      // Extra runway: pan the tall map + readable time per day, including Day 6 hold
+      return Math.max(
+        stageH - viewH + window.innerHeight * 3.2,
+        viewH * 4.2,
+      );
     };
 
     const trigger = ScrollTrigger.create({
-      trigger: root,
-      start: "top bottom",
-      end: "bottom top",
-      onUpdate: sampleProgress,
-      onRefresh: sampleProgress,
+      trigger: journey,
+      start: "top top",
+      end: () => `+=${Math.round(getScrollRun())}`,
+      pin: true,
+      pinSpacing: true,
+      scrub: reduceMotion ? false : 0.4,
+      anticipatePin: 1,
+      invalidateOnRefresh: true,
+      onUpdate: (self) => applyProgress(self.progress),
+      onRefresh: (self) => applyProgress(self.progress),
     });
 
-    sampleProgress();
+    applyProgress(trigger.progress);
     ScrollTrigger.refresh();
 
     return () => {
+      if (clickTimerRef.current != null) {
+        window.clearTimeout(clickTimerRef.current);
+        clickTimerRef.current = null;
+      }
       trigger.kill();
     };
   }, [reduceMotion]);
 
   const selectDay = (day: number) => {
+    const journey = journeyRef.current;
+    if (!journey) return;
+    // progressForDay returns scroll progress (with Day 6 dwell accounted for)
+    const scrollTarget = progressForDay(day);
+    const routeTarget = scrollToRouteProgress(scrollTarget);
     setActiveDay(day);
-    setRouteProgress(progressForDay(day));
+    setRouteProgress(routeTarget);
     clickingRef.current = true;
-    const target = document.getElementById(`day-${day}`);
-    target?.scrollIntoView({
-      behavior: reduceMotion ? "auto" : "smooth",
-      block: "start",
-    });
-    window.setTimeout(() => {
-      clickingRef.current = false;
-    }, reduceMotion ? 50 : 900);
+    if (clickTimerRef.current != null) {
+      window.clearTimeout(clickTimerRef.current);
+    }
+
+    const st = ScrollTrigger.getAll().find((t) => t.trigger === journey);
+    if (st) {
+      const scrollTo = st.start + (st.end - st.start) * scrollTarget;
+      window.scrollTo({
+        top: scrollTo,
+        behavior: reduceMotion ? "auto" : "smooth",
+      });
+    }
+
+    clickTimerRef.current = window.setTimeout(
+      () => {
+        clickingRef.current = false;
+        clickTimerRef.current = null;
+        // Re-sync from live ScrollTrigger so scrub doesn't stay stuck
+        const live = ScrollTrigger.getAll().find((t) => t.trigger === journey);
+        if (live) {
+          const routeP = scrollToRouteProgress(live.progress);
+          setRouteProgress(routeP);
+          setActiveDay(dayFromProgress(routeP));
+        }
+      },
+      reduceMotion ? 50 : 900,
+    );
   };
 
   return (
@@ -343,103 +309,99 @@ export function DestinationPage() {
             <p className={styles.lede}>5 nights · Dec 1 – Dec 6 · 2 adults</p>
           </div>
 
-          <div className={styles.dayTabs} role="tablist" aria-label="Itinerary days">
-            {DAYS.map((day) => (
+          <div
+            className={styles.dayTabs}
+            role="tablist"
+            aria-label="Itinerary days"
+          >
+            {MAP_STOPS.map((stop) => (
               <button
-                key={day}
+                key={stop.id}
                 type="button"
                 role="tab"
-                id={`day-tab-${day}`}
-                aria-controls={`day-panel-${day}`}
-                aria-selected={activeDay === day}
-                tabIndex={activeDay === day ? 0 : -1}
+                id={`day-tab-${stop.id}`}
+                aria-controls={`map-day-${stop.id}`}
+                aria-selected={activeDay === stop.id}
+                tabIndex={activeDay === stop.id ? 0 : -1}
                 className={
-                  activeDay === day
+                  activeDay === stop.id
                     ? `${styles.dayTab} ${styles.dayTabActive}`
                     : styles.dayTab
                 }
-                onClick={() => selectDay(day)}
+                onClick={() => selectDay(stop.id)}
               >
-                Day - {day}
+                Day - {stop.id}
               </button>
             ))}
           </div>
+        </div>
 
-          <div className={styles.itineraryGrid}>
-            <div className={styles.dayCol} ref={dayColRef}>
-              <h3 className={styles.stayTitle}>
-                Stay: The Safari Lodge Kanha · Grand Chalet · double sharing · all major meals
-              </h3>
-              <p className={styles.overview}>
-                Five nights at The Safari Lodge Kanha. Start with a nature walk and sunset
-                lakeside picnic, then enjoy private core-zone jeep safaris with picnic
-                breakfasts. Finish with an outdoor bush dinner before your transfer back to Raipur.
-              </p>
+        {/* Centered map with white side margins — Figma 616:384 */}
+        <div
+          className={styles.mapJourney}
+          ref={journeyRef}
+          aria-label="Kanha six-day route map"
+        >
+          <div className={styles.mapFrame} ref={viewportRef}>
+            <div className={styles.mapStage} ref={stageRef}>
+              <Image
+                className={styles.mapArtImage}
+                src="/images/destination/map-v2/map-bg.png"
+                alt="Illustrated map of Kanha National Park with the six-day route from Raipur"
+                width={2485}
+                height={4095}
+                priority
+                sizes="(max-width: 1680px) 100vw, 1680px"
+              />
 
-              {DAY_CONTENT.map((day) => (
-                <article
-                  key={day.id}
-                  id={`day-${day.id}`}
-                  data-day-card={day.id}
-                  role="tabpanel"
-                  aria-labelledby={`day-tab-${day.id}`}
-                  className={
-                    activeDay === day.id
-                      ? `${styles.dayCard} ${styles.dayCardActive}`
-                      : styles.dayCard
-                  }
-                >
-                  <div className={styles.dayImageWrap}>
-                    <Image
-                      className={styles.dayImage}
-                      src={day.image}
-                      alt={day.imageAlt}
-                      fill
-                      sizes="(max-width: 1100px) 100vw, 605px"
-                    />
-                  </div>
-                  <div className={styles.dayPill}>{day.pill}</div>
-                  <h4 className={styles.dayHeadline}>{day.headline}</h4>
-                  <ul className={styles.beatList}>
-                    {day.beats.map((beat, beatIndex) => (
-                      <li key={`${day.id}-${beatIndex}`} className={styles.beat}>
-                        <img
-                          className={styles.beatIcon}
-                          src={beat.icon}
-                          alt=""
-                          width={35}
-                          height={35}
-                        />
-                        <p className={styles.beatText}>
-                          {"title" in beat && beat.title ? <strong>{beat.title}</strong> : null}
-                          {beat.text}
-                        </p>
-                      </li>
-                    ))}
-                  </ul>
-                </article>
-              ))}
+              <MapRouteArrow
+                progress={routeProgress}
+                stageRef={stageRef}
+                viewportRef={viewportRef}
+              />
+
+              {MAP_STOPS.map((stop) => {
+                const isActive = activeDay === stop.id;
+                return (
+                  <article
+                    key={stop.id}
+                    id={`map-day-${stop.id}`}
+                    data-map-day={stop.id}
+                    role="tabpanel"
+                    aria-labelledby={`day-tab-${stop.id}`}
+                    aria-hidden={!isActive}
+                    className={
+                      isActive
+                        ? `${styles.glassCard} ${styles.glassCardActive}`
+                        : styles.glassCard
+                    }
+                    style={{
+                      left: `${stop.card.left}%`,
+                      top: `${stop.card.top}%`,
+                    }}
+                  >
+                    <div className={styles.glassCardInner}>
+                      <h3 className={styles.glassHeadline}>{stop.headline}</h3>
+                      <p className={styles.glassStay}>{stop.stay}</p>
+                      <ul className={styles.glassBeats}>
+                        {stop.beats.map((beat) => (
+                          <li key={beat.label} className={styles.glassBeat}>
+                            <img
+                              src={beat.icon}
+                              alt=""
+                              width={35}
+                              height={35}
+                              className={styles.glassBeatIcon}
+                            />
+                            <span>{beat.label}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </article>
+                );
+              })}
             </div>
-
-            <aside className={styles.mapCol} aria-label="Kanha route map">
-              <div className={styles.mapFrame} ref={mapViewportRef}>
-                <div className={styles.mapStage} ref={mapStageRef}>
-                  <Image
-                    className={styles.mapImage}
-                    src="/images/destination/map-kanha.png"
-                    alt="Illustrated map of Kanha National Park with the six-day route"
-                    fill
-                    sizes="(max-width: 1100px) 100vw, 1045px"
-                    priority
-                  />
-                  <MapRouteArrow
-                    progress={routeProgress}
-                    stageRef={mapStageRef}
-                    viewportRef={mapViewportRef}
-                  />
-                </div>
-              </div>
-            </aside>
           </div>
         </div>
       </section>
@@ -450,7 +412,9 @@ export function DestinationPage() {
             <h2 id="inclusions-title" className={styles.display}>
               Experiences & Inclusions
             </h2>
-            <p className={styles.lede}>From INR 157,500 per adult · 2 adults · 5 nights</p>
+            <p className={styles.lede}>
+              From INR 157,500 per adult · 2 adults · 5 nights
+            </p>
           </div>
           <div className={styles.experienceGrid}>
             {INCLUSIONS.map((item) => (
@@ -508,7 +472,12 @@ export function DestinationPage() {
                     <p className={styles.routePlace}>{leg.to}</p>
                   </div>
                   <p className={styles.routeTime}>
-                    <img src="/images/destination/icon-timer.png" alt="" width={32} height={32} />
+                    <img
+                      src="/images/destination/icon-timer.png"
+                      alt=""
+                      width={32}
+                      height={32}
+                    />
                     {leg.time}
                   </p>
                 </div>

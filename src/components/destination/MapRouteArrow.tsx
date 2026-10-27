@@ -8,78 +8,67 @@ import styles from "./destination.module.css";
 gsap.registerPlugin(MotionPathPlugin);
 
 /**
- * Dense polyline sampled from the orange dashed route on map-kanha.png
- * (frame 516:83), with day pins snapped to Figma Red Blinking Dot centers.
- * Keep points tight so GSAP curves stay on the dashes instead of cutting corners.
+ * Polyline along the orange dashed route centerline on map-v2.
+ * Day pins are the refined centers of the orange/white hollow markers
+ * in map-bg.png, mapped through object-fit:cover + center top on the
+ * 1680×2852 stage. Values are % of the map stage.
  */
 const ROUTE_POINTS = [
-  { x: 27.0, y: 8.4 }, // Day 1 — Raipur
-  { x: 28.6, y: 10.3 },
-  { x: 30.8, y: 11.3 },
-  { x: 33.5, y: 12.4 },
-  { x: 35.5, y: 13.7 },
-  { x: 37.1, y: 15.2 },
-  { x: 38.9, y: 16.7 },
-  { x: 40.7, y: 18.2 },
-  { x: 42.4, y: 19.6 },
-  { x: 44.3, y: 21.2 },
-  { x: 46.0, y: 22.7 },
-  { x: 47.6, y: 24.5 },
-  { x: 49.0, y: 26.1 },
-  { x: 50.5, y: 28.2 }, // Day 2
-  { x: 51.0, y: 29.3 },
-  { x: 51.2, y: 31.1 },
-  { x: 51.4, y: 33.0 },
-  { x: 52.4, y: 34.7 },
-  { x: 54.0, y: 36.2 },
-  { x: 55.5, y: 37.7 },
-  { x: 56.4, y: 39.5 },
-  { x: 56.5, y: 41.3 },
-  { x: 56.4, y: 43.1 },
-  { x: 56.6, y: 44.3 }, // Day 3
-  { x: 56.9, y: 46.5 },
-  { x: 56.3, y: 48.3 },
-  { x: 54.8, y: 49.8 },
-  { x: 52.8, y: 51.3 },
-  { x: 50.8, y: 52.6 },
-  { x: 49.0, y: 54.0 },
-  { x: 47.9, y: 55.7 },
-  { x: 47.9, y: 58.1 }, // Day 4
-  { x: 47.9, y: 59.3 },
-  { x: 47.3, y: 61.1 },
-  { x: 47.0, y: 63.0 },
-  { x: 47.5, y: 64.8 },
-  { x: 48.7, y: 66.4 },
-  { x: 50.2, y: 68.0 },
-  { x: 51.7, y: 69.7 },
-  { x: 52.6, y: 71.6 }, // Day 5
-  { x: 52.8, y: 72.9 },
-  { x: 52.1, y: 75.1 },
-  { x: 50.2, y: 76.4 },
-  { x: 48.1, y: 77.5 },
-  { x: 45.6, y: 78.5 },
-  { x: 43.3, y: 79.5 },
-  { x: 41.1, y: 80.6 },
-  { x: 38.9, y: 81.8 },
-  { x: 36.9, y: 83.1 },
-  { x: 35.1, y: 84.5 },
-  { x: 33.8, y: 86.0 },
-  { x: 33.0, y: 87.4 },
-  { x: 32.4, y: 88.9 }, // Day 6 — Return Raipur
+  // Day 1 — Raipur
+  { x: 26.14, y: 7.45 },
+  { x: 28.76, y: 9.84 },
+  { x: 32.88, y: 11.43 },
+  { x: 36.09, y: 13.62 },
+  { x: 39.24, y: 15.86 },
+  { x: 42.3, y: 18.14 },
+  { x: 45.3, y: 20.45 },
+  { x: 48.0, y: 22.89 },
+  // Day 2 — Kanha National Park
+  { x: 50.43, y: 25.42 },
+  { x: 51.14, y: 27.59 },
+  { x: 51.4, y: 29.79 },
+  { x: 52.54, y: 31.89 },
+  { x: 54.76, y: 33.68 },
+  { x: 56.22, y: 35.71 },
+  { x: 56.51, y: 37.91 },
+  // Day 3 — Kanha Safari Zone
+  { x: 56.65, y: 40.12 },
+  { x: 56.92, y: 42.02 },
+  { x: 56.17, y: 44.03 },
+  { x: 54.33, y: 45.8 },
+  { x: 51.94, y: 47.31 },
+  { x: 49.45, y: 48.79 },
+  { x: 47.93, y: 50.64 },
+  // Day 4 — Kanha Leisure
+  { x: 47.62, y: 52.7 },
+  { x: 47.57, y: 54.85 },
+  { x: 46.99, y: 57.0 },
+  { x: 47.56, y: 59.12 },
+  { x: 49.1, y: 61.09 },
+  { x: 50.99, y: 62.96 },
+  // Day 5 — Kanha Safari Zone
+  { x: 52.5, y: 64.93 },
+  { x: 52.5, y: 67.29 },
+  { x: 50.2, y: 69.53 },
+  { x: 46.59, y: 71.11 },
+  { x: 42.75, y: 72.51 },
+  { x: 39.32, y: 74.24 },
+  { x: 36.08, y: 76.1 },
+  { x: 33.2, y: 78.14 },
+  // Day 6 — Return to Raipur
+  { x: 31.9, y: 80.66 },
 ] as const;
 
-/** Route-point indices that sit on each day pin. */
-const DAY_POINT_INDEX = [0, 13, 23, 31, 39, 52] as const;
+/** Route-point indices on each day pin (Day 1…6). */
+const DAY_POINT_INDEX = [0, 8, 15, 22, 28, 36] as const;
 
-/** Day pin centers — Figma Red Blinking Dot 8–13 over map 516:83. */
 const DAY_PINS = DAY_POINT_INDEX.map((idx) => ROUTE_POINTS[idx]);
 
 const BLINK_DOT_SRC = "/images/destination/red-blinking-dot.gif";
 
-/** nav-arrow-map.png points up; GSAP path angle is along +X, so +90° aims tip along travel. */
+/** nav-arrow-map.png points up; GSAP path angle is along +X. */
 const ARROW_ANGLE_OFFSET = 90;
 
-/** Polyline arc-length table — keep in sync with MotionPath (curviness ~0). */
 const ROUTE_ARC = (() => {
   const cum = [0];
   for (let i = 1; i < ROUTE_POINTS.length; i++) {
@@ -91,11 +80,66 @@ const ROUTE_ARC = (() => {
   return cum.map((v) => v / total);
 })();
 
-/** Arc-length progress at each day pin (not index/(n-1) — that drifts off the dashes). */
-const DAY_PROGRESS = DAY_POINT_INDEX.map((idx) => ROUTE_ARC[idx]);
+/** Route-arc progress at each day pin (0…1 along the orange path). */
+export const DAY_PROGRESS = DAY_POINT_INDEX.map((idx) => ROUTE_ARC[idx]);
+
+/**
+ * Scroll checkpoints: when each day's card becomes active (tracker arrived).
+ * Day 6 arrives early enough (~78%) that the final stretch is a readable dwell
+ * before the pin releases — this was the skip bug.
+ */
+const DAY_SCROLL_ARRIVE = [0, 0.14, 0.28, 0.42, 0.56, 0.78] as const;
+
+/** Map ScrollTrigger progress → route progress along the dashed path. */
+export function scrollToRouteProgress(scrollProgress: number) {
+  const p = Math.max(0, Math.min(1, scrollProgress));
+
+  // After Day 6 arrival: hold at end of route
+  if (p >= DAY_SCROLL_ARRIVE[5]) return 1;
+
+  // Find segment between day i and i+1
+  let i = 0;
+  for (let d = 0; d < DAY_SCROLL_ARRIVE.length - 1; d++) {
+    if (p >= DAY_SCROLL_ARRIVE[d]) i = d;
+  }
+  const a = DAY_SCROLL_ARRIVE[i];
+  const b = DAY_SCROLL_ARRIVE[i + 1];
+  const t = b === a ? 1 : (p - a) / (b - a);
+  const from = DAY_PROGRESS[i];
+  const to = DAY_PROGRESS[i + 1];
+  return from + (to - from) * Math.max(0, Math.min(1, t));
+}
+
+/** Inverse: route progress → scroll progress (for day-tab jumps). */
+export function routeToScrollProgress(routeProgress: number) {
+  const r = Math.max(0, Math.min(1, routeProgress));
+  let day = 1;
+  for (let i = 0; i < DAY_PROGRESS.length; i++) {
+    if (r + 1e-6 >= DAY_PROGRESS[i]) day = i + 1;
+  }
+  const arrive = DAY_SCROLL_ARRIVE[day - 1];
+  if (day === 6) {
+    // Mid Day-6 dwell so the final card is clearly active
+    return arrive + (1 - arrive) * 0.45;
+  }
+  // Slightly after arrival so the card is settled
+  const next = DAY_SCROLL_ARRIVE[day] ?? 1;
+  return arrive + (next - arrive) * 0.08;
+}
 
 export function progressForDay(day: number) {
-  return DAY_PROGRESS[Math.max(0, Math.min(day, 6) - 1)] ?? 0;
+  const route = DAY_PROGRESS[Math.max(0, Math.min(day, 6) - 1)] ?? 0;
+  return routeToScrollProgress(route);
+}
+
+/** Active day once the tracker has reached that pin (reversible). */
+export function dayFromProgress(routeProgress: number) {
+  const p = Math.max(0, Math.min(1, routeProgress));
+  let day = 1;
+  for (let i = 0; i < DAY_PROGRESS.length; i++) {
+    if (p + 0.0005 >= DAY_PROGRESS[i]) day = i + 1;
+  }
+  return day;
 }
 
 function pointsInFrame(width: number, height: number) {
@@ -108,23 +152,29 @@ function pointsInFrame(width: number, height: number) {
 /** Keep the arrow in the sticky viewport; bias slightly above center. */
 function panOffset(arrowY: number, stageH: number, viewH: number) {
   if (stageH <= viewH + 1) return 0;
-  const focus = viewH * 0.42;
+  const focus = viewH * 0.38;
   const raw = focus - arrowY;
   return Math.max(-(stageH - viewH), Math.min(0, raw));
 }
 
 type MapRouteArrowProps = {
-  /** 0 = Day 1 pin, 1 = Day 6 pin — scrubbed by left-column scroll. */
+  /** 0 = Day 1 pin, 1 = Day 6 pin — scrubbed route progress. */
   progress: number;
   stageRef: React.RefObject<HTMLDivElement | null>;
   viewportRef: React.RefObject<HTMLDivElement | null>;
 };
 
-export function MapRouteArrow({ progress, stageRef, viewportRef }: MapRouteArrowProps) {
+export function MapRouteArrow({
+  progress,
+  stageRef,
+  viewportRef,
+}: MapRouteArrowProps) {
   const [mounted, setMounted] = useState(false);
   const layerRef = useRef<HTMLDivElement>(null);
   const arrowRef = useRef<HTMLImageElement>(null);
-  const rawPathRef = useRef<ReturnType<typeof MotionPathPlugin.arrayToRawPath> | null>(null);
+  const rawPathRef = useRef<ReturnType<
+    typeof MotionPathPlugin.arrayToRawPath
+  > | null>(null);
   const progressRef = useRef(progress);
 
   useLayoutEffect(() => {
@@ -142,12 +192,10 @@ export function MapRouteArrow({ progress, stageRef, viewportRef }: MapRouteArrow
     const rebuildPath = () => {
       const w = stage.offsetWidth;
       const h = stage.offsetHeight;
-      // Low curviness + dense samples keeps the motion path on the dashed S-curve.
-      rawPathRef.current = MotionPathPlugin.arrayToRawPath(pointsInFrame(w, h), {
-        // Flat segments through dense samples — stays on the dashed route
-        curviness: 0,
-      });
-      return { width: w, height: h };
+      rawPathRef.current = MotionPathPlugin.arrayToRawPath(
+        pointsInFrame(w, h),
+        { curviness: 0.35 },
+      );
     };
 
     const place = (p: number) => {
@@ -229,7 +277,7 @@ export function MapRouteArrow({ progress, stageRef, viewportRef }: MapRouteArrow
       ))}
       <img
         ref={arrowRef}
-        className={styles.mapArrow}
+        className={styles.mapTrackerArrow}
         src="/images/destination/nav-arrow-map.png"
         alt=""
         width={56}

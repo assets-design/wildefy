@@ -145,131 +145,21 @@
   background: var(--dest-orange);
 }
 
-.itineraryGrid {
-  display: grid;
-  grid-template-columns: minmax(0, 605px) minmax(0, 1fr);
-  gap: clamp(1.5rem, 3vw, 3rem);
-  align-items: start;
-}
-
-.dayCol {
-  min-width: 0;
-}
-
-.stayTitle {
-  margin: 0 0 1.25rem;
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: clamp(1.5rem, 2vw, 2.125rem);
-  line-height: 1.25;
-}
-
-.overview {
-  margin: 0 0 1.75rem;
-  font-family: var(--font-body);
-  font-size: 1.25rem;
-  line-height: 1.45;
-  color: #000;
-}
-
-.dayCard {
-  width: 100%;
-  margin: 0 0 2.75rem;
-  scroll-margin-top: 1.25rem;
-}
-
-.dayCard:last-child {
-  margin-bottom: 0;
-}
-
-.dayCardActive .dayPill {
-  box-shadow: 0 0 0 3px rgba(224, 90, 36, 0.28);
-}
-
-.dayImageWrap {
+/* —— Figma 616:384 centered map (white side margins preserved) —— */
+.mapJourney {
   position: relative;
-  width: 100%;
-  aspect-ratio: 605 / 300;
-  overflow: hidden;
-  background: #ece7df;
-}
-
-.dayImage {
-  object-fit: cover;
-}
-
-.dayPill {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 215px;
-  height: 49px;
-  margin: 1.35rem 0 1rem;
-  padding: 0 1.25rem;
-  border-radius: 24.5px;
-  background: var(--dest-orange);
-  color: var(--dest-muted);
-  font-family: var(--font-body);
-  font-size: 1.125rem;
-  font-weight: 500;
-  text-transform: capitalize;
-}
-
-.dayHeadline {
-  margin: 0 0 1.15rem;
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: clamp(1.5rem, 2vw, 2.125rem);
-  line-height: 1.2;
-}
-
-.beatList {
-  display: grid;
-  gap: 1rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.beat {
-  display: grid;
-  grid-template-columns: 35px 1fr;
-  gap: 0.85rem;
-  align-items: start;
-}
-
-.beatIcon {
-  width: 35px;
-  height: 35px;
-  object-fit: contain;
-}
-
-.beatText {
-  margin: 0;
-  font-family: var(--font-body);
-  font-size: 1.125rem;
-  line-height: 1.4;
-}
-
-.beatText strong {
-  display: block;
-  font-weight: 600;
-}
-
-.mapCol {
-  position: sticky;
-  top: 1.25rem;
-  align-self: start;
+  width: min(1680px, calc(100% - (var(--dest-pad) * 2)));
+  margin: 0 auto;
+  background: #fff;
 }
 
 .mapFrame {
   position: relative;
   width: 100%;
-  /* Sticky viewport height — clips the taller map stage so Day 5–6 can pan into view */
-  height: calc(100vh - 2.5rem);
-  max-height: calc(100vh - 2.5rem);
+  height: min(92vh, 980px);
   overflow: hidden;
-  background: #f3eee4;
+  background: #f2f0e9;
+  border-radius: 0;
 }
 
 .mapStage {
@@ -277,33 +167,129 @@
   left: 0;
   top: 0;
   width: 100%;
-  /* Full map height from column width — taller than the clipped frame when needed */
-  aspect-ratio: 1045 / 1568;
+  aspect-ratio: 1680 / 2852;
   will-change: transform;
-  /* Let blink GIF (black bg) screen-blend against the map image */
   isolation: isolate;
 }
 
-.mapImage {
+.mapArtImage {
+  display: block;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
   object-position: center top;
+  pointer-events: none;
+  user-select: none;
 }
 
 .mapRouteLayer {
   position: absolute;
   inset: 0;
-  z-index: 2;
+  z-index: 3;
   pointer-events: none;
   overflow: visible;
 }
 
-/* Figma 518:86 Red Blinking Dot — animated GIF on each day pin */
+/* Only the active day's card is visible */
+.glassCard {
+  position: absolute;
+  z-index: 4;
+  width: min(37.5%, 630px);
+  min-height: 12%;
+  padding: clamp(1rem, 1.6vw, 1.75rem) clamp(1rem, 1.8vw, 1.85rem);
+  border-radius: 22px;
+  background: rgba(104, 104, 104, 0.2);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: #000;
+  box-sizing: border-box;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translate3d(0, 8px, 0);
+  transition:
+    opacity 0.45s ease,
+    visibility 0.45s ease,
+    transform 0.45s ease,
+    box-shadow 0.45s ease;
+}
+
+.glassCardActive {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translate3d(0, 0, 0);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12);
+  z-index: 6;
+}
+
+.glassCardInner {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.55rem, 1vw, 0.9rem);
+}
+
+.glassHeadline {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(1.15rem, 1.85vw, 2.125rem);
+  line-height: 1.2;
+  text-transform: capitalize;
+  color: #000;
+}
+
+.glassStay {
+  margin: 0;
+  max-width: 28rem;
+  font-family: var(--font-body);
+  font-size: clamp(0.85rem, 1.15vw, 1.375rem);
+  font-weight: 400;
+  line-height: 1.35;
+  text-transform: capitalize;
+  color: #000;
+}
+
+.glassBeats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(0.65rem, 1.2vw, 1.15rem) clamp(0.75rem, 1.5vw, 1.5rem);
+  margin: 0.35rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.glassBeat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  width: clamp(5.5rem, 8.5vw, 10.5rem);
+  text-align: center;
+  font-family: var(--font-body);
+  font-size: clamp(0.75rem, 1.05vw, 1.25rem);
+  line-height: 1.25;
+  text-transform: capitalize;
+  color: #000;
+}
+
+.glassBeatIcon {
+  width: clamp(28px, 2vw, 35px);
+  height: clamp(28px, 2vw, 35px);
+  object-fit: contain;
+}
+
+/* Red blinking dots — centered in the orange/white route rings */
 .mapBlinkDot {
   position: absolute;
-  width: clamp(36px, 5.2%, 54px);
+  width: clamp(16px, 1.9%, 24px);
   height: auto;
   aspect-ratio: 1;
   max-width: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  /* left/top = ring center; translate centers the GIF on that point */
   transform: translate(-50%, -50%);
   pointer-events: none;
   /* GIF frames use black/off — screen drops black so only the red pulse shows */
@@ -311,7 +297,8 @@
   z-index: 2;
 }
 
-.mapArrow {
+/* Red route tracker arrow — scrubbed along MotionPath */
+.mapTrackerArrow {
   position: absolute;
   left: 0;
   top: 0;
@@ -322,7 +309,7 @@
   opacity: 0;
   filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.28));
   will-change: transform;
-  z-index: 3;
+  z-index: 4;
 }
 
 /* —— Experiences —— */
@@ -552,20 +539,30 @@
 }
 
 @media (max-width: 1100px) {
-  .itineraryGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .mapCol {
-    position: relative;
-    top: auto;
-    order: -1;
+  .mapJourney {
+    width: min(1680px, calc(100% - 2.5rem));
   }
 
   .mapFrame {
-    height: min(70vh, 720px);
-    max-height: min(70vh, 720px);
-    margin-inline: auto;
+    height: min(78vh, 820px);
+  }
+
+  .glassCard {
+    width: min(48%, 480px);
+    padding: 0.9rem 1rem;
+  }
+
+  .glassHeadline {
+    font-size: clamp(1rem, 2.4vw, 1.45rem);
+  }
+
+  .glassStay {
+    font-size: clamp(0.78rem, 1.6vw, 1rem);
+  }
+
+  .glassBeat {
+    width: clamp(4.5rem, 12vw, 7.5rem);
+    font-size: clamp(0.7rem, 1.5vw, 0.9rem);
   }
 
   .experienceGrid {
@@ -582,6 +579,22 @@
     left: 24px;
     bottom: 48px;
     font-size: clamp(2.25rem, 9vw, 3rem);
+  }
+
+  .mapJourney {
+    width: calc(100% - 1.5rem);
+  }
+
+  .mapFrame {
+    height: min(70vh, 640px);
+  }
+
+  .glassCard {
+    width: min(72%, 360px);
+  }
+
+  .glassBeats {
+    gap: 0.55rem 0.75rem;
   }
 
   .experienceGrid {
