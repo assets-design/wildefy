@@ -20,7 +20,7 @@ gsap.registerPlugin(ScrollTrigger);
 const GlobeScene = dynamic(() => import("./GlobeScene"), { ssr: false });
 
 const N = DESTINATIONS.length;
-/** Scroll distance per stop — scroll down through all 6 cards, then release. */
+/** Scroll distance per destination while the half-globe stays pinned. */
 const VH_PER_STOP = 120;
 
 function prefersReducedMotion() {
@@ -37,29 +37,29 @@ function windowForIndex(index: number) {
   const span = 1 / N;
   const from = index * span;
   const to = (index + 1) * span;
-  // Short enter, long hold so each of the 6 cards can be read while scrolling down.
   const enterEnd = from + span * 0.18;
   const exitStart = from + span * 0.78;
   return { from, enterEnd, exitStart, to };
 }
 
 /**
- * Cards slide upward as the user scrolls down (enter from below → hold → exit up).
+ * Cards rise up the left side of the half-globe
+ * (enter from below → hold → exit upward).
  */
 function cardStyleForProgress(index: number, progress: number): CSSProperties {
   const { from, enterEnd, exitStart, to } = windowForIndex(index);
   const travel =
     typeof window === "undefined"
-      ? 420
-      : Math.round(Math.min(window.innerHeight * 0.55, 480));
+      ? 520
+      : Math.round(Math.min(window.innerHeight * 0.72, 640));
 
   let phase: "before" | "enter" | "hold" | "exit" | "after" = "before";
   let t = 0;
 
-  // First card is already on stage when the globe pins (progress ≈ 0).
-  if (index === 0 && progress < enterEnd) {
-    phase = progress <= 0.001 ? "hold" : "enter";
-    t = progress <= 0.001 ? 1 : progress / Math.max(enterEnd, 0.001);
+  // First card is already centered when the globe pins — no enter-from-below.
+  if (index === 0 && progress < exitStart) {
+    phase = "hold";
+    t = 1;
   } else if (progress < from) {
     phase = "before";
     t = 0;
@@ -97,8 +97,7 @@ function cardStyleForProgress(index: number, progress: number): CSSProperties {
 }
 
 export function GlobeJourney() {
-  const section = useRef<HTMLElement>(null);
-  const wrap = useRef<HTMLDivElement>(null);
+  const stageEl = useRef<HTMLDivElement>(null);
   const stage = useRef(0);
   const revision = useRef(0);
   const draggingCard = useRef(false);
@@ -116,8 +115,19 @@ export function GlobeJourney() {
   }, []);
 
   useLayoutEffect(() => {
-    const track = wrap.current;
-    if (!track || reducedMotion) return;
+    const pinTarget = stageEl.current;
+    if (!pinTarget || reducedMotion) return;
+
+    ScrollTrigger.getAll().forEach((t) => {
+      if (t.trigger === pinTarget || t.vars?.id === "about-globe-pin") {
+        t.kill(true);
+      }
+    });
+    const orphan = pinTarget.parentElement;
+    if (orphan?.classList.contains("pin-spacer")) {
+      orphan.parentElement?.insertBefore(pinTarget, orphan);
+      orphan.remove();
+    }
 
     let raf = 0;
     let pending = -1;
@@ -132,29 +142,27 @@ export function GlobeJourney() {
         stage.current = s;
         revision.current += 1;
         setProgress(p);
-        // Equal windows along the downward runway: one card per sixth of scroll.
         setActiveSafe(Math.min(N - 1, Math.max(0, Math.floor(p * N))));
       }
     };
 
-    const proxy = { progress: 0 };
-    const tween = gsap.to(proxy, {
-      progress: 1,
-      ease: "none",
-      scrollTrigger: {
-        trigger: track,
-        start: "top top",
-        end: "bottom bottom",
-        scrub: true,
-        invalidateOnRefresh: true,
-        onUpdate: (self) => {
-          // Prefer ScrollTrigger progress directly so scrub + programmatic scroll stay in sync.
-          pending = self.progress;
-          if (!raf) raf = window.requestAnimationFrame(flush);
-        },
+    const trigger = ScrollTrigger.create({
+      id: "about-globe-pin",
+      trigger: pinTarget,
+      start: "top top",
+      end: () => `+=${Math.round(window.innerHeight * ((N * VH_PER_STOP) / 100))}`,
+      pin: true,
+      pinSpacing: true,
+      // Tight scrub so stage (and the route tracker) stay locked to scroll.
+      scrub: 0.15,
+      anticipatePin: 1,
+      invalidateOnRefresh: true,
+      onUpdate: (self) => {
+        pending = self.progress;
+        if (!raf) raf = window.requestAnimationFrame(flush);
       },
-      onUpdate: () => {
-        pending = proxy.progress;
+      onRefresh: (self) => {
+        pending = self.progress;
         if (!raf) raf = window.requestAnimationFrame(flush);
       },
     });
@@ -163,18 +171,19 @@ export function GlobeJourney() {
     stage.current = s0;
     setProgress(0);
     setActiveSafe(0);
+    flush();
 
-    // Refresh after layout / WebGL mount so pin runway is accurate.
     const refresh = () => ScrollTrigger.refresh();
     const t = window.setTimeout(refresh, 120);
     window.addEventListener("load", refresh);
+    window.addEventListener("resize", refresh);
 
     return () => {
       window.clearTimeout(t);
       window.removeEventListener("load", refresh);
+      window.removeEventListener("resize", refresh);
       if (raf) window.cancelAnimationFrame(raf);
-      tween.scrollTrigger?.kill();
-      tween.kill();
+      trigger.kill(true);
     };
   }, [reducedMotion, setActiveSafe]);
 
@@ -226,46 +235,38 @@ export function GlobeJourney() {
 
   return (
     <section
-      ref={section}
       id="about-globe"
       className={styles.journey}
       aria-label="Wildefy destinations around the Earth"
     >
-      {/* Tall runway: scroll down through all 6 cards, then the section continues down */}
-      <div
-        ref={wrap}
-        className={styles.wrap}
-        style={{ height: `${N * VH_PER_STOP}vh` }}
-      >
-        <div className={styles.sticky}>
-          <div className={styles.sceneFrame}>
-            <GlobeScene
-              stage={stage}
-              revision={revision}
-              onActiveChange={onActiveChange}
-            />
-          </div>
+      <div ref={stageEl} className={styles.sticky}>
+        <div className={styles.sceneFrame}>
+          <GlobeScene
+            stage={stage}
+            revision={revision}
+            onActiveChange={onActiveChange}
+          />
+        </div>
 
+        {DESTINATIONS.map((d, i) => (
+          <DestinationCard
+            key={d.id}
+            dest={d}
+            index={i}
+            total={N}
+            visible={i === active}
+            side="left"
+            style={cardStyleForProgress(i, progress)}
+          />
+        ))}
+
+        <div className={styles.dots} aria-hidden>
           {DESTINATIONS.map((d, i) => (
-            <DestinationCard
+            <span
               key={d.id}
-              dest={d}
-              index={i}
-              total={N}
-              visible={i === active}
-              side="left"
-              style={cardStyleForProgress(i, progress)}
+              className={i === active ? styles.dotActive : styles.dot}
             />
           ))}
-
-          <div className={styles.dots} aria-hidden>
-            {DESTINATIONS.map((d, i) => (
-              <span
-                key={d.id}
-                className={i === active ? styles.dotActive : styles.dot}
-              />
-            ))}
-          </div>
         </div>
       </div>
     </section>

@@ -159,18 +159,27 @@ const TRANSFERS = [
   {
     photo: "/images/destination/transfer-car.png",
     photoAlt: "Private Innova Crysta on the road to Kanha",
+    title: "Arrival at the Wilderness",
     date: "Dec 1",
     from: "Raipur",
     to: "Kanha National Park",
     time: "7:59 AM – 12:23 PM",
+    /** Car sits near the start; orange pin marks departure city. */
+    progress: "start" as const,
+    reversed: false,
   },
   {
     photo: "/images/destination/transfer-jeep.png",
     photoAlt: "Safari jeep on a forest track",
+    title: "Departure from the Wild",
     date: "Dec 6",
-    from: "Kanha National Park",
-    to: "Raipur",
+    // Same corridor labels as Figma; car is flipped near Kanha for the return.
+    from: "Raipur",
+    to: "Kanha National Park",
     time: "9:30 AM – 1:47 PM",
+    /** Car sits near Kanha, flipped toward Raipur; orange pin at the park. */
+    progress: "end" as const,
+    reversed: true,
   },
 ] as const;
 
@@ -470,7 +479,7 @@ export function DestinationPage() {
 
           <div className={styles.transferGrid}>
             {TRANSFERS.map((leg) => (
-              <article key={leg.date + leg.from} className={styles.transferCard}>
+              <article key={leg.date + leg.title} className={styles.transferCard}>
                 <div className={styles.transferPhoto}>
                   <Image
                     className={styles.transferPhotoImg}
@@ -480,21 +489,31 @@ export function DestinationPage() {
                     sizes="251px"
                   />
                 </div>
-                <div>
-                  <h3 className={styles.transferTitle}>Private car</h3>
+                <div className={styles.transferBody}>
+                  <h3 className={styles.transferTitle}>{leg.title}</h3>
                   <p className={styles.transferDate}>{leg.date}</p>
-                  <div className={styles.route}>
-                    <p className={styles.routePlace}>{leg.from}</p>
+                  <div
+                    className={styles.route}
+                    data-progress={leg.progress}
+                    data-reversed={leg.reversed ? "true" : "false"}
+                  >
                     <div className={styles.routeTrack} aria-hidden>
-                      <img
-                        className={styles.routeCar}
-                        src="/images/destination/icon-car-sprite.png"
-                        alt=""
-                        width={72}
-                        height={27}
-                      />
+                      <span className={styles.routeDot} />
+                      <span className={styles.routeLine} />
+                      <span className={styles.routeCar} aria-hidden>
+                        <img
+                          className={styles.routeCarImg}
+                          src="/images/destination/icon-car-sprite.png"
+                          alt=""
+                          width={72}
+                          height={72}
+                        />
+                      </span>
                     </div>
-                    <p className={styles.routePlace}>{leg.to}</p>
+                    <div className={styles.routePlaces}>
+                      <p className={styles.routePlace}>{leg.from}</p>
+                      <p className={styles.routePlace}>{leg.to}</p>
+                    </div>
                   </div>
                   <p className={styles.routeTime}>
                     <img

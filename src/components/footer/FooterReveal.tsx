@@ -20,7 +20,7 @@ const NAV_LINKS = [
 ];
 
 const EXPERIENCE_LINKS = [
-  { label: "Guided Wildlife Tours", href: "#tours" },
+  { label: "Guided Wildlife Tours", href: "/world" },
   { label: "Offsites in the Wilderness", href: "#offsites" },
   { label: "Wildlife Stories That Teach", href: "#stories" },
   { label: "Corporate Learning", href: "#learning" },

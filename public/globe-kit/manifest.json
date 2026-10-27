@@ -1,0 +1,278 @@
+{
+  "name": "globe-kit",
+  "description": "Binary assets for the Wildefy globe section (GlobeSection, Globe3D, landscapes, illustratedWorld, wildlife, globeJourney).",
+  "count": 45,
+  "totalBytes": 42493312,
+  "files": [
+    {
+      "path": "earth.jpg",
+      "url": "/globe-kit/earth.jpg",
+      "bytes": 512606,
+      "contentType": "image/jpeg"
+    },
+    {
+      "path": "galapagos.jpg",
+      "url": "/globe-kit/galapagos.jpg",
+      "bytes": 401896,
+      "contentType": "image/jpeg"
+    },
+    {
+      "path": "mara.jpg",
+      "url": "/globe-kit/mara.jpg",
+      "bytes": 300941,
+      "contentType": "image/jpeg"
+    },
+    {
+      "path": "real-bamboo.png",
+      "url": "/globe-kit/real-bamboo.png",
+      "bytes": 1361040,
+      "contentType": "image/png"
+    },
+    {
+      "path": "real-bark-sal.jpg",
+      "url": "/globe-kit/real-bark-sal.jpg",
+      "bytes": 322868,
+      "contentType": "image/jpeg"
+    },
+    {
+      "path": "real-bark-trunk.jpg",
+      "url": "/globe-kit/real-bark-trunk.jpg",
+      "bytes": 333123,
+      "contentType": "image/jpeg"
+    },
+    {
+      "path": "real-bark.jpg",
+      "url": "/globe-kit/real-bark.jpg",
+      "bytes": 346293,
+      "contentType": "image/jpeg"
+    },
+    {
+      "path": "real-forest-floor-red.jpg",
+      "url": "/globe-kit/real-forest-floor-red.jpg",
+      "bytes": 383930,
+      "contentType": "image/jpeg"
+    },
+    {
+      "path": "real-forest-floor.jpg",
+      "url": "/globe-kit/real-forest-floor.jpg",
+      "bytes": 308409,
+      "contentType": "image/jpeg"
+    },
+    {
+      "path": "real-grass.png",
+      "url": "/globe-kit/real-grass.png",
+      "bytes": 1318153,
+      "contentType": "image/png"
+    },
+    {
+      "path": "real-leaves-sal-green.png",
+      "url": "/globe-kit/real-leaves-sal-green.png",
+      "bytes": 1662509,
+      "contentType": "image/png"
+    },
+    {
+      "path": "real-leaves-sal.png",
+      "url": "/globe-kit/real-leaves-sal.png",
+      "bytes": 1702771,
+      "contentType": "image/png"
+    },
+    {
+      "path": "real-leaves-teak.png",
+      "url": "/globe-kit/real-leaves-teak.png",
+      "bytes": 1330440,
+      "contentType": "image/png"
+    },
+    {
+      "path": "real-river-sand.jpg",
+      "url": "/globe-kit/real-river-sand.jpg",
+      "bytes": 369943,
+      "contentType": "image/jpeg"
+    },
+    {
+      "path": "real-river-water.jpg",
+      "url": "/globe-kit/real-river-water.jpg",
+      "bytes": 213872,
+      "contentType": "image/jpeg"
+    },
+    {
+      "path": "svalbard.jpg",
+      "url": "/globe-kit/svalbard.jpg",
+      "bytes": 264100,
+      "contentType": "image/jpeg"
+    },
+    {
+      "path": "tiger.jpg",
+      "url": "/globe-kit/tiger.jpg",
+      "bytes": 172817,
+      "contentType": "image/jpeg"
+    },
+    {
+      "path": "wildlife/african-elephant.png",
+      "url": "/globe-kit/wildlife/african-elephant.png",
+      "bytes": 1011450,
+      "contentType": "image/png"
+    },
+    {
+      "path": "wildlife/chital-grazing.png",
+      "url": "/globe-kit/wildlife/chital-grazing.png",
+      "bytes": 902553,
+      "contentType": "image/png"
+    },
+    {
+      "path": "wildlife/chital.png",
+      "url": "/globe-kit/wildlife/chital.png",
+      "bytes": 1075635,
+      "contentType": "image/png"
+    },
+    {
+      "path": "wildlife/giraffe.png",
+      "url": "/globe-kit/wildlife/giraffe.png",
+      "bytes": 747322,
+      "contentType": "image/png"
+    },
+    {
+      "path": "wildlife/iguana.png",
+      "url": "/globe-kit/wildlife/iguana.png",
+      "bytes": 718438,
+      "contentType": "image/png"
+    },
+    {
+      "path": "wildlife/indian-elephant-resting.png",
+      "url": "/globe-kit/wildlife/indian-elephant-resting.png",
+      "bytes": 1506261,
+      "contentType": "image/png"
+    },
+    {
+      "path": "wildlife/indian-elephant-standing.png",
+      "url": "/globe-kit/wildlife/indian-elephant-standing.png",
+      "bytes": 1081482,
+      "contentType": "image/png"
+    },
+    {
+      "path": "wildlife/lion.png",
+      "url": "/globe-kit/wildlife/lion.png",
+      "bytes": 842706,
+      "contentType": "image/png"
+    },
+    {
+      "path": "wildlife/polarbear.png",
+      "url": "/globe-kit/wildlife/polarbear.png",
+      "bytes": 870230,
+      "contentType": "image/png"
+    },
+    {
+      "path": "wildlife/reindeer.png",
+      "url": "/globe-kit/wildlife/reindeer.png",
+      "bytes": 824725,
+      "contentType": "image/png"
+    },
+    {
+      "path": "wildlife/safari-jeep.png",
+      "url": "/globe-kit/wildlife/safari-jeep.png",
+      "bytes": 2054984,
+      "contentType": "image/png"
+    },
+    {
+      "path": "wildlife/sealion.png",
+      "url": "/globe-kit/wildlife/sealion.png",
+      "bytes": 796985,
+      "contentType": "image/png"
+    },
+    {
+      "path": "wildlife/tiger.png",
+      "url": "/globe-kit/wildlife/tiger.png",
+      "bytes": 200932,
+      "contentType": "image/png"
+    },
+    {
+      "path": "wildlife/tortoise.png",
+      "url": "/globe-kit/wildlife/tortoise.png",
+      "bytes": 867560,
+      "contentType": "image/png"
+    },
+    {
+      "path": "wildlife/walrus.png",
+      "url": "/globe-kit/wildlife/walrus.png",
+      "bytes": 782768,
+      "contentType": "image/png"
+    },
+    {
+      "path": "wildlife/zebra.png",
+      "url": "/globe-kit/wildlife/zebra.png",
+      "bytes": 858769,
+      "contentType": "image/png"
+    },
+    {
+      "path": "world-acacia.png",
+      "url": "/globe-kit/world-acacia.png",
+      "bytes": 2415478,
+      "contentType": "image/png"
+    },
+    {
+      "path": "world-booby.png",
+      "url": "/globe-kit/world-booby.png",
+      "bytes": 1343182,
+      "contentType": "image/png"
+    },
+    {
+      "path": "world-cactus.png",
+      "url": "/globe-kit/world-cactus.png",
+      "bytes": 2426426,
+      "contentType": "image/png"
+    },
+    {
+      "path": "world-eagle.png",
+      "url": "/globe-kit/world-eagle.png",
+      "bytes": 1583600,
+      "contentType": "image/png"
+    },
+    {
+      "path": "world-fish-eagle.png",
+      "url": "/globe-kit/world-fish-eagle.png",
+      "bytes": 1354208,
+      "contentType": "image/png"
+    },
+    {
+      "path": "world-galapagos.jpg",
+      "url": "/globe-kit/world-galapagos.jpg",
+      "bytes": 387636,
+      "contentType": "image/jpeg"
+    },
+    {
+      "path": "world-india.jpg",
+      "url": "/globe-kit/world-india.jpg",
+      "bytes": 392602,
+      "contentType": "image/jpeg"
+    },
+    {
+      "path": "world-mara.jpg",
+      "url": "/globe-kit/world-mara.jpg",
+      "bytes": 398657,
+      "contentType": "image/jpeg"
+    },
+    {
+      "path": "world-sal.png",
+      "url": "/globe-kit/world-sal.png",
+      "bytes": 2007509,
+      "contentType": "image/png"
+    },
+    {
+      "path": "world-svalbard.jpg",
+      "url": "/globe-kit/world-svalbard.jpg",
+      "bytes": 343107,
+      "contentType": "image/jpeg"
+    },
+    {
+      "path": "world-tern.png",
+      "url": "/globe-kit/world-tern.png",
+      "bytes": 992162,
+      "contentType": "image/png"
+    },
+    {
+      "path": "world-tundra.png",
+      "url": "/globe-kit/world-tundra.png",
+      "bytes": 2400234,
+      "contentType": "image/png"
+    }
+  ]
+}

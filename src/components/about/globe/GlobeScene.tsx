@@ -311,7 +311,9 @@ export default function GlobeScene({
     <div className={styles.interactive}>
       <Canvas
         dpr={[1, 2]}
-        camera={{ position: [0, 0, 3.1], fov: 42 }}
+        // Mild left look + right Earth offset → left hemisphere fills
+        // the right half of the stage (half-globe composition).
+        camera={{ position: [-0.15, 0.02, 2.95], fov: 42 }}
         gl={{ antialias: true, alpha: true }}
       >
         <ambientLight intensity={0.55} />
@@ -321,15 +323,17 @@ export default function GlobeScene({
           intensity={0.3}
           color="#7fb79a"
         />
-        <Suspense fallback={null}>
-          <Earth
-            stage={stage}
-            controls={{ orientation, dragging, revision, surface }}
-            color={color}
-            reduced={reduced}
-          />
-        </Suspense>
-        <Atmosphere />
+        <group position={[0.72, 0, 0]}>
+          <Suspense fallback={null}>
+            <Earth
+              stage={stage}
+              controls={{ orientation, dragging, revision, surface }}
+              color={color}
+              reduced={reduced}
+            />
+          </Suspense>
+          <Atmosphere />
+        </group>
       </Canvas>
       <div
         ref={surface}

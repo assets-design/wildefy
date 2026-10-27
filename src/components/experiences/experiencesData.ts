@@ -43,7 +43,7 @@ export const EXPERIENCES: Experience[] = [
     description:
       "Explore extraordinary wildlife habitats through guided safaris and personalised journeys across India and international destinations.",
     cta: "Explore Tours",
-    href: "/3d",
+    href: "/world",
     image: "/images/experiences/tours.png",
     imageAlt: "Elephants on a guided safari viewed from a vehicle",
     enterFrom: "right",

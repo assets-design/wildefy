@@ -1,0 +1,39 @@
+/* Header + footer chrome around the scroll globe (matches /3d + destination). */
+.page {
+  position: relative;
+  min-height: 100vh;
+  background: #0f1412;
+  color: #f3ebdd;
+}
+
+.header {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 40;
+  height: min(140px, 18vh);
+  pointer-events: none;
+}
+
+.header :global(.stage-frame),
+.header :global(.stage),
+.headerInner {
+  height: 100%;
+}
+
+.headerInner {
+  position: relative;
+  width: 1920px;
+  max-width: none;
+  pointer-events: none;
+}
+
+.headerInner :global(.site-header),
+.headerInner :global(.site-header a),
+.headerInner :global(.menu-toggle) {
+  pointer-events: auto;
+}
+
+.footer {
+  position: relative;
+  z-index: 2;
+}

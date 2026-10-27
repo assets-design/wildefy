@@ -16,15 +16,9 @@
   background: var(--globe-bg);
 }
 
-/* Tall scroll runway — sticky stage pins while user scrolls down through 6 cards */
-.wrap {
-  position: relative;
-  width: 100%;
-}
-
+/* Pinned 100vh stage (GSAP ScrollTrigger) — half-globe + left cards */
 .sticky {
-  position: sticky;
-  top: 0;
+  position: relative;
   height: 100vh;
   height: 100dvh;
   max-height: 100vh;
@@ -33,7 +27,7 @@
   isolation: isolate;
   background:
     radial-gradient(
-      ellipse at 50% 55%,
+      ellipse at 62% 55%,
       #1a3329 0%,
       var(--globe-bg) 55%,
       #06110e 100%
@@ -57,12 +51,20 @@
 .sceneFrame {
   position: absolute;
   inset: 0;
+  /* Full-bleed on mobile; desktop biases the WebGL frame right */
 }
 
 @media (min-width: 768px) {
   .sceneFrame {
-    left: 8%;
-    right: 8%;
+    left: 12%;
+    right: -8%;
+  }
+}
+
+@media (min-width: 1200px) {
+  .sceneFrame {
+    left: 14%;
+    right: -10%;
   }
 }
 
@@ -79,10 +81,11 @@
 
 .dragSurface {
   position: absolute;
-  left: 50%;
+  /* Hit target over the visible portion of the right-biased globe */
+  left: 58%;
   top: 50%;
-  width: 88.8cqh;
-  height: 88.8cqh;
+  width: min(90cqh, 72cqw);
+  height: min(90cqh, 72cqw);
   transform: translate(-50%, -50%);
   border-radius: 50%;
   clip-path: circle(50%);
@@ -91,11 +94,19 @@
   cursor: grab;
 }
 
+@media (max-width: 767px) {
+  .dragSurface {
+    left: 50%;
+    width: 88.8cqh;
+    height: 88.8cqh;
+  }
+}
+
 .dragSurface[data-dragging="true"] {
   cursor: grabbing;
 }
 
-/* —— Cards: scroll-driven slide inside the sticky 100vh stage —— */
+/* —— Cards: scroll up the left side of the half-globe —— */
 .card {
   position: absolute;
   z-index: 20;
@@ -116,7 +127,7 @@
   backdrop-filter: blur(14px);
   box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.55);
   --card-y: 0px;
-  transform: translateY(calc(-50% + var(--card-y)));
+  transform: translate3d(0, calc(-50% + var(--card-y)), 0);
   will-change: transform, opacity;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
@@ -233,8 +244,9 @@
 
 @media (min-width: 768px) {
   .card {
-    width: min(440px, 36vw);
-    left: 5%;
+    /* Sit in the open left field beside the right half-globe */
+    width: min(420px, 34vw);
+    left: clamp(1.25rem, 5vw, 4.5rem);
     right: auto;
     max-height: min(78vh, calc(100dvh - 5rem));
     padding: 1.5rem 1.75rem;
@@ -242,7 +254,7 @@
 
   .cardLeft,
   .cardRight {
-    left: 5%;
+    left: clamp(1.25rem, 5vw, 4.5rem);
     right: auto;
   }
 
@@ -267,7 +279,8 @@
   .card,
   .cardLeft,
   .cardRight {
-    left: 7%;
+    left: clamp(2rem, 7vw, 6.5rem);
+    width: min(440px, 32vw);
   }
 }
 
@@ -275,7 +288,7 @@
   .card {
     top: auto;
     bottom: 3.25rem;
-    transform: translateY(var(--card-y));
+    transform: translate3d(0, var(--card-y), 0);
   }
 }
 

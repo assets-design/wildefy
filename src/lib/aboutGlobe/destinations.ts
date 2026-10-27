@@ -170,14 +170,13 @@ export function orientationsFor(dests: Destination[]) {
   return out;
 }
 
-/** Map scroll progress [0..1] to a stage float [0..n-1] with holds at each stop. */
+/**
+ * Map scroll progress [0..1] → stage float [0..n-1].
+ * Linear so the globe, arcs, and tracker scrub 1:1 with scroll
+ * (no compressed “race” between destinations).
+ */
 export function stageFromProgress(p: number, n: number) {
-  const s = Math.min(Math.max(p, 0), 1) * (n - 1);
-  const i = Math.min(Math.floor(s), n - 2);
-  const f = s - i;
-  // Longer hold at each stop so every card stays readable while scrolling.
-  const t = Math.min(Math.max((f - 0.35) / 0.3, 0), 1);
-  return i + t * t * (3 - 2 * t);
+  return Math.min(Math.max(p, 0), 1) * (n - 1);
 }
 
 /**
