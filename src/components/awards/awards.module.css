@@ -1,0 +1,628 @@
+/*
+  Awards + Sustainability — Figma 627:409 (6081×1003).
+  1920 design-px = 100vw, 1000 design-px = 100vh.
+*/
+
+.section {
+  position: relative;
+  width: 100%;
+}
+
+.viewport {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  height: 100svh;
+  overflow: hidden;
+}
+
+.track {
+  display: flex;
+  flex-wrap: nowrap;
+  height: 100%;
+  width: max-content;
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+}
+
+.panel {
+  position: relative;
+  flex: 0 0 auto;
+  /* 6081 / 1920 — must stay wider than the viewport for horizontal travel */
+  width: 316.72vw;
+  min-width: 316.72vw;
+  height: 100%;
+  overflow: hidden;
+  color: #ffffff;
+  background: #24483a url("/images/awards-figma/bg.png") repeat-x left top / 141vw 100%;
+}
+
+/* —— Photo cutouts —— */
+.cheetahs,
+.giraffe,
+.tiger {
+  position: absolute;
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
+}
+
+.cheetahs img,
+.giraffe img,
+.tiger img {
+  position: absolute;
+  max-width: none;
+  display: block;
+}
+
+.cheetahs {
+  left: 0;
+  top: 45.4vh;
+  width: 55.94vw;
+  height: 54.6vh;
+}
+
+.cheetahs img {
+  left: -0.56%;
+  top: -13.23%;
+  width: 109.27%;
+  height: 132.17%;
+}
+
+.giraffe {
+  left: 131.15vw;
+  top: 11.23vh;
+  width: 30vw;
+  height: 88.8vh;
+}
+
+.giraffe img {
+  left: -25.93%;
+  top: 0;
+  width: 154.21%;
+  height: 100%;
+}
+
+.tiger {
+  left: 276.51vw;
+  top: 35.6vh;
+  width: 40.21vw;
+  height: 64.7vh;
+}
+
+.tiger img {
+  left: -32.76%;
+  top: -5.46%;
+  width: 132.76%;
+  height: 105.48%;
+}
+
+/* —— Awards heading —— */
+.laurel {
+  position: absolute;
+  top: 6.8vh;
+  width: 5.94vw;
+  height: 23vh;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.laurel img {
+  position: absolute;
+  left: -61.87%;
+  top: -20.46%;
+  width: 434.89%;
+  height: 144.01%;
+  max-width: none;
+  display: block;
+}
+
+.laurelLeft {
+  left: 56.51vw;
+}
+
+.laurelRight {
+  left: 124.74vw;
+  transform: scaleX(-1);
+}
+
+.headingGroup {
+  position: absolute;
+  left: 62.45vw;
+  top: 11.2vh;
+  width: 56.35vw;
+  text-align: center;
+}
+
+.heading {
+  margin: 0;
+  color: var(--color-heading-cream, #fff);
+  font-family: var(--font-display);
+  font-size: clamp(36px, 3.75vw, 72px);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: 0;
+  text-transform: capitalize;
+}
+
+.subtitle {
+  margin: 2.2vh 0 0;
+  color: var(--color-heading-cream, #fff);
+  font-family: var(--font-body);
+  font-size: 1.04vw;
+  font-weight: 400;
+  line-height: 1.35;
+  letter-spacing: 0;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+/* —— Certificates (Figma gaps ≈ 50px / 2.6vw) —— */
+.cert {
+  position: absolute;
+  top: 32.8vh;
+  height: 53.76vh;
+  width: auto;
+  object-fit: contain;
+  display: block;
+}
+
+.certA {
+  left: 58.8vw;
+  width: 18.67vw;
+}
+
+.certB {
+  left: 80.04vw;
+  width: 18.67vw;
+}
+
+.certC {
+  left: 101.29vw;
+  width: 21.11vw;
+}
+
+/* —— Sustainability hold (1 viewport) —— */
+/*
+  Hold starts after giraffe (~161vw). When track x = -hold.offsetLeft,
+  this stage fills the viewport. Vertical storytelling scrubs here
+  before horizontal travel continues to the tiger.
+*/
+.sustainHold {
+  position: absolute;
+  left: 166.61vw;
+  top: 0;
+  width: 100vw;
+  height: 100%;
+  z-index: 2;
+  box-sizing: border-box;
+}
+
+.sustainStage {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.95fr) minmax(0, 1.05fr);
+  align-items: center;
+  gap: clamp(12px, 1.6vw, 36px);
+  width: 100%;
+  height: 100%;
+  padding: 6vh clamp(16px, 2.4vw, 48px) 6vh clamp(20px, 3vw, 56px);
+  box-sizing: border-box;
+  /* Visible so arc tips + disc seats are not clipped */
+  overflow: visible;
+}
+
+.sustainLeft {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  max-width: min(42vw, 100%);
+  min-width: 0;
+  z-index: 2;
+}
+
+.susHeading {
+  margin: 0;
+  color: var(--color-heading-cream, #fff);
+  font-family: var(--font-display);
+  font-size: clamp(28px, 3.4vw, 64px);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: 0;
+  text-transform: capitalize;
+}
+
+.susHeadingLine {
+  display: block;
+  white-space: nowrap;
+}
+
+.susCopy {
+  margin: 2.4vh 0 0;
+  max-width: 36vw;
+  color: var(--color-heading-cream, #fff);
+  font-family: var(--font-body);
+  font-size: clamp(13px, 1.02vw, 20px);
+  font-weight: 400;
+  line-height: 1.45;
+  letter-spacing: 0;
+  text-transform: capitalize;
+}
+
+/* Grid spacer — orbit is positioned against the hold, not this cell */
+.sustainCenter {
+  position: relative;
+  height: 100%;
+  min-width: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/*
+  Orbit box: perfect square, geometric center = page center.
+  Right half-circle tips touch viewport top & bottom.
+  Disc left/top % are polar coords on this same box → on the white line.
+  Horizontal placement ~Figma (circle center ≈ 28.4vw into the hold).
+*/
+.orbit {
+  position: absolute;
+  left: 28.4vw;
+  top: 50%;
+  /* Full viewport square — white arc tips touch top & bottom */
+  width: 100vh;
+  width: 100svh;
+  height: 100vh;
+  height: 100svh;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 3;
+}
+
+.arc,
+.imageStack {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.arc {
+  overflow: visible;
+  z-index: 1;
+}
+
+.arc path {
+  fill: none;
+  stroke: #ffffff;
+  stroke-width: 2;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.imageStack {
+  z-index: 2;
+}
+
+.stackImg {
+  position: absolute;
+  /* Default seat: active at rightmost arc point (angle 0) */
+  left: 100%;
+  top: 50%;
+  width: min(15.1vw, 290px);
+  aspect-ratio: 1;
+  height: auto;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+  opacity: 0;
+  will-change: left, top, transform, opacity;
+  transform: translate3d(-50%, -50%, 0) scale(0.55);
+  transform-origin: center center;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
+}
+
+/*
+  SSR / pre-JS fallback (text 01): lion active at center, toucan at bottom tip.
+  Tip seats inset (~58°) so the full circle stays visible on the white line.
+*/
+.stackImg[data-index="0"] {
+  left: 100%;
+  top: 50%;
+  opacity: 1;
+  transform: translate3d(-50%, -50%, 0) scale(1);
+  z-index: 3;
+}
+
+.stackImg[data-index="1"] {
+  left: 76.6%;
+  top: 88.3%;
+  opacity: 1;
+  transform: translate3d(-50%, -50%, 0) scale(0.55);
+  z-index: 2;
+}
+
+.sustainRight {
+  position: relative;
+  height: 100%;
+  min-width: 0;
+  max-width: 34vw;
+  z-index: 2;
+  overflow: hidden;
+}
+
+.textStack {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.textCard {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(10px, 1.1vw, 22px);
+  width: 100%;
+  max-width: 100%;
+  margin-top: 0;
+  opacity: 0;
+  transform: translate3d(0, calc(-50% + 88px), 0);
+  will-change: transform, opacity;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.textCard[data-index="0"] {
+  opacity: 1;
+  transform: translate3d(0, calc(-50% + 0px), 0);
+}
+
+.textCard[aria-hidden="false"] {
+  pointer-events: auto;
+}
+
+.number {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(42px, 6.4vw, 120px);
+  font-weight: 700;
+  line-height: 0.9;
+  color: #fff;
+  white-space: nowrap;
+}
+
+.divider {
+  width: 2px;
+  height: clamp(48px, 9.5vh, 96px);
+  background: rgba(255, 255, 255, 0.85);
+  flex-shrink: 0;
+}
+
+.item {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.itemTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(18px, 1.85vw, 36px);
+  font-weight: 500;
+  line-height: 1.15;
+  letter-spacing: 0;
+  text-transform: capitalize;
+  color: var(--color-heading-cream, #fff);
+}
+
+.itemCopy {
+  margin: 1vh 0 0;
+  font-family: var(--font-body);
+  font-size: clamp(12px, 0.98vw, 18px);
+  font-weight: 400;
+  line-height: 1.4;
+  letter-spacing: 0;
+  text-transform: capitalize;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+@media (max-width: 1400px) {
+  .sustainStage {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr) minmax(0, 1fr);
+    gap: 12px;
+    padding-inline: 20px 28px;
+  }
+
+  .stackImg {
+    width: min(16vw, 240px);
+  }
+}
+
+@media (max-width: 1023px) {
+  .viewport {
+    height: auto;
+    overflow: visible;
+  }
+
+  .track {
+    flex-direction: column;
+    width: 100%;
+    transform: none !important;
+  }
+
+  .panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    min-width: 0;
+    height: auto;
+    padding: 56px 20px 64px;
+    box-sizing: border-box;
+    gap: 28px;
+    background-size: cover;
+  }
+
+  .cheetahs,
+  .giraffe,
+  .tiger,
+  .laurel,
+  .headingGroup,
+  .sustainHold {
+    position: relative;
+    left: auto;
+    top: auto;
+    width: 100%;
+    height: auto;
+  }
+
+  .cheetahs img,
+  .giraffe img,
+  .tiger img,
+  .laurel img {
+    position: relative;
+    left: auto;
+    top: auto;
+    width: 100%;
+    height: auto;
+  }
+
+  .headingGroup {
+    order: 1;
+  }
+
+  .cheetahs {
+    order: 2;
+    max-width: 520px;
+  }
+
+  .heading,
+  .susHeading {
+    font-size: clamp(36px, 9vw, 56px);
+  }
+
+  .susHeadingLine {
+    white-space: normal;
+  }
+
+  .subtitle,
+  .susCopy,
+  .itemCopy {
+    font-size: 15px;
+    white-space: normal;
+  }
+
+  .laurel,
+  .arc {
+    display: none;
+  }
+
+  .cert {
+    position: relative;
+    top: auto;
+    left: auto;
+    width: min(76vw, 320px);
+    height: auto;
+    order: 3;
+  }
+
+  .giraffe {
+    order: 4;
+    max-width: 420px;
+  }
+
+  .sustainHold {
+    order: 5;
+    margin-top: 24px;
+  }
+
+  .sustainStage {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 28px;
+    height: auto;
+    padding: 0;
+    overflow: visible;
+  }
+
+  .sustainLeft,
+  .sustainRight {
+    max-width: none;
+  }
+
+  .susCopy {
+    max-width: none;
+  }
+
+  .sustainCenter {
+    display: none;
+  }
+
+  .orbit {
+    position: relative;
+    left: auto;
+    top: auto;
+    width: 100%;
+    height: auto;
+    transform: none;
+  }
+
+  .imageStack {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+    inset: auto;
+    width: 100%;
+    height: auto;
+  }
+
+  .stackImg {
+    position: relative;
+    left: auto !important;
+    top: auto !important;
+    width: min(52vw, 220px);
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .textStack {
+    position: relative;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+
+  .textCard {
+    position: relative;
+    top: auto;
+    left: auto;
+    opacity: 1 !important;
+    transform: none !important;
+    grid-template-columns: auto auto minmax(0, 1fr);
+  }
+
+  .number {
+    font-size: 56px;
+  }
+
+  .itemTitle {
+    font-size: 26px;
+  }
+
+  .tiger {
+    order: 6;
+    max-width: 520px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .track {
+    transform: none !important;
+  }
+}
