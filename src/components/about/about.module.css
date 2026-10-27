@@ -14,7 +14,7 @@
   color: var(--about-ink);
   font-family: var(--font-body);
   min-height: 100vh;
-  overflow-x: hidden;
+  /* No overflow here — overflow-x/y on this wrapper makes a scrollport and breaks the globe sticky stage. */
 }
 
 .page :global(a:focus-visible),

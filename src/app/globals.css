@@ -43,6 +43,19 @@ html {
   height: 100%;
 }
 
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
+html.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+html.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
 body {
   margin: 0;
   min-height: 100%;
@@ -1215,18 +1228,76 @@ body {
   display: flex;
   height: 100%;
   width: max-content;
-  will-change: transform;
 }
 
 .sx-panel {
   position: relative;
   flex: none;
-  width: 410.94vw;
-  min-width: 410.94vw;
+  /* Trimmed to last content (cockatoo) — no empty sky at scroll end */
+  width: 388vw;
+  min-width: 388vw;
   height: 100%;
   overflow: hidden;
-  background: url("/images/story-figma/sky.png") left top / 100% 100% no-repeat;
   color: #0c0d0c;
+  background: #dfe8ec;
+}
+
+/* Three parallax layers — bg / imagery / content pan separately */
+.sx-layer {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  will-change: transform;
+}
+
+.sx-layer--bg {
+  z-index: 0;
+  /* Wider than the panel so slower parallax never shows empty edges */
+  width: 125%;
+  left: 0;
+  /* Figma 609:770 — base sky only; soft clouds live in .sx-layer--clouds */
+  background: url("/images/story-figma/sky-base.png") left top / 100% 100% no-repeat;
+  pointer-events: none;
+}
+
+/* Soft fluffy clouds sit above the sky, below story imagery */
+.sx-layer--clouds {
+  z-index: 1;
+  width: 125%;
+  left: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.sx-sky-cloud {
+  position: absolute;
+  width: 11.85%;
+  height: 52.1%;
+  overflow: hidden;
+  mix-blend-mode: soft-light;
+  pointer-events: none;
+}
+
+.sx-sky-cloud img {
+  position: absolute;
+  left: -16.25%;
+  top: -13.82%;
+  width: 132.6%;
+  height: 135.89%;
+  max-width: none;
+  display: block;
+  object-fit: cover;
+}
+
+.sx-layer--images {
+  z-index: 2;
+  pointer-events: none;
+}
+
+.sx-layer--content {
+  z-index: 3;
 }
 
 /* Framed image crops replicate the Figma fills. */
@@ -1419,10 +1490,13 @@ body {
 }
 
 .sx-hummingbird {
+  /* Clears ~301vw; conversation copy starts just after */
   left: 249.22vw;
   top: 0;
   width: 44.48vw;
   height: 74.9vh;
+  z-index: 1;
+  pointer-events: none;
 }
 
 .sx-hummingbird img {
@@ -1433,10 +1507,12 @@ body {
 }
 
 .sx-cockatoo {
-  left: 379.27vw;
+  left: 364vw;
   top: 19vh;
   width: 21.88vw;
   height: 81vh;
+  z-index: 1;
+  pointer-events: none;
 }
 
 .sx-cockatoo img {
@@ -1475,11 +1551,12 @@ body {
 }
 
 .sx-heading--conversation {
-  left: 296vw;
-  top: 8vh;
-  width: 72vw;
+  left: 306vw;
+  top: 6vh;
+  width: 64vw;
   align-items: center;
   text-align: center;
+  z-index: 2;
 }
 
 .sx-lead {
@@ -1503,12 +1580,13 @@ body {
 }
 
 .sx-lead--conversation {
-  left: 309.69vw;
-  top: 30vh;
-  width: 44.69vw;
+  left: 316vw;
+  top: 20vh;
+  width: 44vw;
+  z-index: 2;
   text-align: center;
-  font-size: 1.1vw;
-  line-height: 1.5;
+  font-size: 1.05vw;
+  line-height: 1.4;
   max-width: none;
 }
 
@@ -1531,8 +1609,9 @@ body {
 }
 
 .sx-value {
-  top: 37.3vh;
-  width: 8.8vw;
+  top: 30vh;
+  width: 8.5vw;
+  z-index: 2;
 }
 
 .sx-pillar-title,
@@ -1548,7 +1627,8 @@ body {
 }
 
 .sx-value-title {
-  margin-top: 6vh;
+  margin-top: 1.6vh;
+  font-size: 1.65vw;
 }
 
 .sx-pillar-copy {
@@ -1677,20 +1757,21 @@ body {
 
 .sx-footer {
   position: absolute;
-  left: 311.2vw;
-  top: 64.1vh;
-  width: 41.61vw;
+  left: 316vw;
+  top: 52vh;
+  width: 44vw;
   text-align: center;
   font-family: var(--font-body);
   font-size: 1.04vw;
   font-weight: 500;
-  line-height: 1.45;
+  line-height: 1.35;
   text-transform: none;
   color: #000000;
+  z-index: 2;
 }
 
 .sx-footer p {
-  margin: 0 0 2.4vh;
+  margin: 0 0 1vh;
 }
 
 @media (max-width: 1023px) {
@@ -1715,11 +1796,23 @@ body {
     padding: 64px 20px 72px;
     box-sizing: border-box;
     gap: 26px;
-    background-size: cover;
-    background-position: center top;
+    background: url("/images/story-figma/sky-base.png") center top / cover no-repeat;
   }
 
-  .sx-panel > * {
+  /* Unwrap parallax layers so mobile order still works */
+  .sx-layer--images,
+  .sx-layer--content {
+    display: contents;
+  }
+
+  .sx-layer--bg,
+  .sx-layer--clouds {
+    display: none;
+  }
+
+  .sx-panel > *:not(.sx-layer),
+  .sx-layer--images > *,
+  .sx-layer--content > * {
     position: relative !important;
     left: auto !important;
     top: auto !important;
@@ -1739,7 +1832,7 @@ body {
   }
 
   .sx-heading--conversation {
-    order: 10;
+    order: 11;
     margin-top: 36px;
   }
 
@@ -1752,7 +1845,7 @@ body {
   }
 
   .sx-lead--conversation {
-    order: 11;
+    order: 12;
   }
 
   .sx-darter-stage {
@@ -1786,15 +1879,16 @@ body {
     display: none;
   }
 
-  .sx-pillar,
-  .sx-value {
+  .sx-pillar {
     width: 100%;
     max-width: 320px;
     order: 4;
   }
 
   .sx-value {
-    order: 12;
+    width: 100%;
+    max-width: 320px;
+    order: 13;
   }
 
   .sx-icon {
@@ -1863,7 +1957,7 @@ body {
   }
 
   .sx-hummingbird {
-    order: 13;
+    order: 10;
     width: min(84vw, 440px);
     height: auto;
     aspect-ratio: 1.5;
@@ -1896,7 +1990,9 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sx-track {
+  .sx-track,
+  .sx-layer,
+  .sx-layer--clouds {
     transform: none !important;
   }
 

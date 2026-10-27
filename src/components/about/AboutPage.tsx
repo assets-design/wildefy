@@ -1,11 +1,18 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import { FooterReveal } from "@/components/footer/FooterReveal";
 import { StageFrame } from "@/components/layout/StageFrame";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { EVERY_DOT, HERO, NUMBERS_STORY, PLANET } from "./aboutData";
 import styles from "./about.module.css";
+
+const GlobeJourney = dynamic(
+  () =>
+    import("./globe/GlobeJourney").then((m) => m.GlobeJourney),
+  { ssr: false },
+);
 
 /**
  * About Us — Figma node 585:563
@@ -154,6 +161,9 @@ export function AboutPage() {
           </div>
         </div>
       </section>
+
+      {/* —— 3D globe journey (from Lovable Pixel Perfect Replica 95) —— */}
+      <GlobeJourney />
 
       <FooterReveal />
     </div>

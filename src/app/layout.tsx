@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Script from "next/script";
 import { CustomCursor } from "@/components/cursor/CustomCursor";
+import { SmoothScroll } from "@/components/SmoothScroll";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -24,8 +25,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Script id="stage-scale" strategy="beforeInteractive">
           {stageScript}
         </Script>
-        {children}
-        <CustomCursor />
+        <SmoothScroll>
+          {children}
+          <CustomCursor />
+        </SmoothScroll>
       </body>
     </html>
   );

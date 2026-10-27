@@ -1,0 +1,314 @@
+/*
+  About globe journey — sticky 100vh stage, cards always in-frame
+*/
+
+.journey {
+  --globe-bg: #0a1814;
+  --globe-fg: #f5f2ea;
+  --globe-muted: rgba(245, 242, 234, 0.72);
+  --globe-card: rgba(18, 40, 32, 0.72);
+  --globe-border: rgba(245, 242, 234, 0.14);
+  --globe-marker: #f9a01f;
+
+  position: relative;
+  z-index: 2;
+  color: var(--globe-fg);
+  background: var(--globe-bg);
+}
+
+/* Tall scroll runway — sticky stage pins while user scrolls down through 6 cards */
+.wrap {
+  position: relative;
+  width: 100%;
+}
+
+.sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100dvh;
+  max-height: 100vh;
+  max-height: 100dvh;
+  overflow: hidden;
+  isolation: isolate;
+  background:
+    radial-gradient(
+      ellipse at 50% 55%,
+      #1a3329 0%,
+      var(--globe-bg) 55%,
+      #06110e 100%
+    );
+}
+
+.reducedStack {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+  padding: 4rem 1.5rem 5rem;
+  max-width: 40rem;
+  margin: 0 auto;
+}
+
+.reducedCard {
+  padding: 1.5rem 0;
+  border-bottom: 1px solid var(--globe-border);
+}
+
+.sceneFrame {
+  position: absolute;
+  inset: 0;
+}
+
+@media (min-width: 768px) {
+  .sceneFrame {
+    left: 8%;
+    right: 8%;
+  }
+}
+
+.interactive {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  container-type: size;
+}
+
+.interactive :global(canvas) {
+  touch-action: pan-y !important;
+}
+
+.dragSurface {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 88.8cqh;
+  height: 88.8cqh;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  clip-path: circle(50%);
+  touch-action: none;
+  user-select: none;
+  cursor: grab;
+}
+
+.dragSurface[data-dragging="true"] {
+  cursor: grabbing;
+}
+
+/* —— Cards: scroll-driven slide inside the sticky 100vh stage —— */
+.card {
+  position: absolute;
+  z-index: 20;
+  left: 1rem;
+  right: 1rem;
+  top: 50%;
+  bottom: auto;
+  max-width: none;
+  max-height: calc(100vh - 5.5rem);
+  max-height: calc(100dvh - 5.5rem);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--globe-card);
+  border: 1px solid var(--globe-border);
+  border-radius: 1.25rem;
+  padding: 1.25rem 1.4rem;
+  backdrop-filter: blur(14px);
+  box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.55);
+  --card-y: 0px;
+  transform: translateY(calc(-50% + var(--card-y)));
+  will-change: transform, opacity;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+.editorial {
+  background: rgba(18, 40, 32, 0.55);
+}
+
+.cardInner {
+  /* Motion comes from the article transform driven by scroll progress */
+}
+
+.destName {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(1.75rem, 4.5vw, 3.5rem);
+  letter-spacing: -0.01em;
+  line-height: 1.05;
+  color: var(--globe-fg);
+}
+
+.destLesson {
+  margin: 0.85rem 0 0;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(1.2rem, 2.6vw, 2rem);
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--globe-fg);
+}
+
+.paras {
+  margin-top: 1rem;
+}
+
+.para {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: clamp(0.8125rem, 1.1vw, 0.95rem);
+  line-height: 1.5;
+  color: rgba(245, 242, 234, 0.9);
+  text-transform: capitalize;
+}
+
+.para + .para {
+  margin-top: 0.75rem;
+}
+
+.takeawayGroup {
+  margin-top: 1.15rem;
+}
+
+.takeaway {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: clamp(0.8125rem, 1.1vw, 0.95rem);
+  font-style: italic;
+  line-height: 1.5;
+  color: rgba(245, 242, 234, 0.75);
+  text-transform: capitalize;
+}
+
+.takeaway + .takeaway {
+  margin-top: 0.3rem;
+}
+
+.eyebrow {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--globe-marker);
+}
+
+.blurb {
+  margin: 0.5rem 0 0;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--globe-muted);
+}
+
+.dots {
+  position: absolute;
+  bottom: 1.25rem;
+  left: 50%;
+  z-index: 10;
+  display: flex;
+  gap: 0.5rem;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.dot,
+.dotActive {
+  display: block;
+  height: 4px;
+  border-radius: 999px;
+  transition: width 0.45s ease, background 0.45s ease;
+}
+
+.dot {
+  width: 12px;
+  background: rgba(245, 242, 234, 0.25);
+}
+
+.dotActive {
+  width: 32px;
+  background: var(--globe-marker);
+}
+
+@media (min-width: 768px) {
+  .card {
+    width: min(440px, 36vw);
+    left: 5%;
+    right: auto;
+    max-height: min(78vh, calc(100dvh - 5rem));
+    padding: 1.5rem 1.75rem;
+  }
+
+  .cardLeft,
+  .cardRight {
+    left: 5%;
+    right: auto;
+  }
+
+  .destLesson {
+    margin-top: 1.15rem;
+  }
+
+  .paras {
+    margin-top: 1.25rem;
+  }
+
+  .para + .para {
+    margin-top: 0.9rem;
+  }
+
+  .takeawayGroup {
+    margin-top: 1.35rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .card,
+  .cardLeft,
+  .cardRight {
+    left: 7%;
+  }
+}
+
+@media (max-width: 767px) {
+  .card {
+    top: auto;
+    bottom: 3.25rem;
+    transform: translateY(var(--card-y));
+  }
+}
+
+@media (min-width: 768px) and (max-height: 780px) {
+  .card {
+    max-height: calc(100dvh - 4.5rem);
+    padding: 1.25rem 1.4rem;
+  }
+
+  .destName {
+    font-size: 2.25rem;
+  }
+
+  .destLesson {
+    font-size: 1.45rem;
+    margin-top: 0.65rem;
+  }
+
+  .paras {
+    margin-top: 0.85rem;
+  }
+
+  .para + .para {
+    margin-top: 0.55rem;
+  }
+
+  .para,
+  .takeaway {
+    font-size: 0.84rem;
+    line-height: 1.4;
+  }
+
+  .takeawayGroup {
+    margin-top: 0.85rem;
+  }
+}
