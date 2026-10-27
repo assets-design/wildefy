@@ -34,6 +34,8 @@
   --color-white: #ffffff;
   --color-bg: #000000;
   --color-focus: #f9a01f;
+  /* Shared surface for Gallery + §2→§3 reveal fill (must match to blend) */
+  --gallery-surface: #eef3f4;
 }
 
 html {
@@ -1530,6 +1532,8 @@ body {
   top: 40vh;
   width: 113.13vw;
   height: 60vh;
+  /* Above boardrooms white cloud; below headline / copy / CTA */
+  z-index: 1;
   /* Soft top so the photo crop never reads as a hard cloud cut */
   -webkit-mask-image: linear-gradient(
     to bottom,
@@ -2221,27 +2225,29 @@ body {
   them via GSAP timeScale.
 */
 .gallery-section {
+  /* Equal top/bottom band so both marquee rows sit fully inside the loop */
+  --gallery-edge: clamp(72px, 11vh, 128px);
+  --gallery-gap: clamp(32px, 5vh, 56px);
   position: relative;
+  /* Above Experiences so after the cloud reveal, Gallery content rides on this sky */
+  z-index: 4;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 32px;
-  min-height: 100vh;
-  min-height: 100svh;
-  padding: 0;
+  align-items: stretch;
+  gap: var(--gallery-gap);
+  /* Taller than one viewport so extra edge padding never clips the strips */
+  min-height: 118vh;
+  min-height: 118svh;
+  padding: var(--gallery-edge) 0;
   overflow: hidden;
-  background: #cfe0e2;
+  /* Same token as .handoffSoftFill — reveal + gallery must blend */
+  background: var(--gallery-surface);
   box-sizing: border-box;
 }
 
 .gallery-bg {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
-  pointer-events: none;
+  display: none;
 }
 
 .gallery-strip {
@@ -2257,10 +2263,10 @@ body {
 .gallery-strip-track {
   display: flex;
   flex-direction: row;
-  gap: clamp(12px, 1.1vw, 20px);
+  gap: clamp(10px, 0.9vw, 16px);
   width: max-content;
   will-change: transform;
-  padding-left: clamp(12px, 1.1vw, 20px);
+  padding-left: clamp(10px, 0.9vw, 16px);
   box-sizing: border-box;
 }
 
@@ -2268,12 +2274,13 @@ body {
   display: flex;
   flex-direction: row;
   flex: none;
-  gap: clamp(12px, 1.1vw, 20px);
+  gap: clamp(10px, 0.9vw, 16px);
 }
 
 .gallery-tile {
   flex: none;
-  width: clamp(200px, 18.6vw, 356px);
+  /* Smaller cards — full height visible inside the padded loop */
+  width: clamp(148px, 13.2vw, 240px);
   aspect-ratio: 5 / 4;
   height: auto;
   border-radius: 10px;
@@ -2288,6 +2295,8 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
+  flex: 1 1 auto;
   text-align: center;
   max-width: 920px;
   margin: 0 auto;
@@ -2372,13 +2381,15 @@ body {
 
 @media (max-width: 1023px) {
   .gallery-section {
+    --gallery-edge: 52px;
+    --gallery-gap: 32px;
     min-height: 0;
-    padding: 28px 0 32px;
-    gap: 36px;
+    padding: var(--gallery-edge) 0;
+    gap: var(--gallery-gap);
   }
 
   .gallery-tile {
-    width: clamp(140px, 42vw, 220px);
+    width: clamp(120px, 34vw, 168px);
     border-radius: 8px;
   }
 

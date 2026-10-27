@@ -141,9 +141,10 @@ export function NatGeoCloudDissolve({ progress, className }: Props) {
         }
 
         vec4 texPixel = texture2D(u_image, imgUv);
-        // Lift toward bright white clouds (Experiences → Story handoff)
-        texPixel.rgb = mix(vec3(1.0), texPixel.rgb, 0.55);
-        texPixel.rgb = max(texPixel.rgb, vec3(0.92));
+        // Lift toward Gallery surface (#eef3f4) so dissolve blends with §3
+        vec3 gallerySurface = vec3(0.933, 0.953, 0.957);
+        texPixel.rgb = mix(gallerySurface, texPixel.rgb, 0.45);
+        texPixel.rgb = max(texPixel.rgb, gallerySurface * 0.98);
 
         vec2 vCenter = (uv - 0.5) * 2.0;
         float vignette = 1.0 - dot(vCenter, vCenter) * 0.22;
@@ -160,7 +161,7 @@ export function NatGeoCloudDissolve({ progress, className }: Props) {
         float bottomMistGrad = smoothstep(0.35, 0.95, 1.0 - uv.y);
         float mistNoise = fbm(vec3(uv.x * 4.0 + u_time * 0.04, (1.0 - uv.y) * 3.5, 30.0));
         float bottomMistAlpha = smoothstep(0.45, 0.85, bottomMistGrad + mistNoise * 0.35);
-        vec3 mistColor = vec3(0.96, 0.98, 0.99);
+        vec3 mistColor = vec3(0.933, 0.953, 0.957);
 
         float alpha = clamp(1.0 - blot, 0.0, 1.0) * u_opacity;
         vec3 finalRgb = mix(texPixel.rgb, texPixel.rgb * 0.45, edge * 0.4);
@@ -246,14 +247,18 @@ export function NatGeoCloudDissolve({ progress, className }: Props) {
       if (cancelled || !program || !texture) return;
       const p = Math.min(1, Math.max(0, progressRef.current));
 
-      // Keep canvas mapped (never display:none) — wildfy re-entrancy rule
+      // Keep canvas mapped (never display:none) — wildfy re-entrancy rule.
+      // Still run the RAF loop when fully dissolved so reverse scroll can
+      // re-show the veil without waiting for a remount.
       if (p >= 0.995) {
         canvas.style.visibility = "hidden";
         canvas.style.opacity = "0";
         return;
       }
-      canvas.style.visibility = "visible";
-      canvas.style.opacity = "1";
+      if (canvas.style.visibility === "hidden" || canvas.style.opacity === "0") {
+        canvas.style.visibility = "visible";
+        canvas.style.opacity = "1";
+      }
 
       time += 0.016;
       gl.viewport(0, 0, canvas.width, canvas.height);

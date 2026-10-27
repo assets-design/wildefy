@@ -154,16 +154,19 @@ export function Conservation() {
 
     const apply = (progress: number) => {
       const t = progress * STEPS;
+      // Opposite arc travel vs previous (scroll down moved cards "right").
+      const seatT = -t;
+      const slideT = ((-t % STEPS) + STEPS) % STEPS;
       orbits.forEach((orbit, index) => {
         const home = WEDGES[index].homeSlot;
         const homePolar = HOME_POLAR[home];
         // CSS already seats the card at homePolar; only rotate the delta.
-        const { angle, opacity } = poseAtSeat(home + t);
+        const { angle, opacity } = poseAtSeat(home + seatT);
         orbit.style.transform = `rotate(${-(angle - homePolar)}deg)`;
         orbit.style.opacity = String(opacity);
       });
       slides.forEach((slide, index) => {
-        const { opacity, y } = slideMotion(t, index);
+        const { opacity, y } = slideMotion(slideT, index);
         slide.style.opacity = String(opacity);
         slide.style.transform = `translate3d(0, ${y}px, 0)`;
         slide.setAttribute("aria-hidden", opacity < 0.45 ? "true" : "false");
@@ -185,9 +188,14 @@ export function Conservation() {
           duration: { min: 0.2, max: 0.55 },
           delay: 0.06,
           ease: "power2.inOut",
+          // Snap with scroll direction so reverse (bottom → top) does not
+          // fight Lenis and yank back to the next-down wedge.
+          directional: true,
         },
         onUpdate: (self) => apply(self.progress),
         onRefresh: (self) => apply(self.progress),
+        onEnterBack: (self) => apply(self.progress),
+        onLeaveBack: () => apply(0),
       });
 
       apply(trigger.progress);

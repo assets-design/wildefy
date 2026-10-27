@@ -96,7 +96,7 @@ export const EXPERIENCES: Experience[] = [
     /* Lower-left / mid → settle on the right */
     projection: { xVw: -0.38, yVh: 0.26, fromScale: 0.3 },
     coords: { lat: 27.9881, lng: 86.925 },
-    window: { from: 0.66, hold: 0.82, to: 0.88 },
+    window: { from: 0.66, hold: 0.78, to: 0.84 },
     stage: "waterfalls",
   },
   {
@@ -119,7 +119,8 @@ export const EXPERIENCES: Experience[] = [
     /* Lower-center → settle on the left */
     projection: { xVw: 0.3, yVh: 0.3, fromScale: 0.26 },
     coords: { lat: 64.1466, lng: -21.9426 },
-    window: { from: 0.88, hold: 0.97, to: 1 },
+    /* Long hold so the 4th card is fully readable before cloud close begins */
+    window: { from: 0.84, hold: 0.92, to: 0.995 },
     stage: "snow",
   },
 ];
@@ -128,6 +129,6 @@ export const EXPERIENCES: Experience[] = [
 export const STAGE_LABELS = [
   { id: "mountains", label: "Mountains", from: 0.15, to: 0.42 },
   { id: "forest", label: "Forest", from: 0.42, to: 0.66 },
-  { id: "waterfalls", label: "Rivers", from: 0.66, to: 0.88 },
-  { id: "snow", label: "Snow", from: 0.88, to: 1 },
+  { id: "waterfalls", label: "Rivers", from: 0.66, to: 0.84 },
+  { id: "snow", label: "Snow", from: 0.84, to: 1 },
 ] as const;

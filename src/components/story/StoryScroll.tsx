@@ -19,8 +19,8 @@ const LAYER_IMAGES = 0.82;
 const LAYER_SLIDE_CLOUDS = 1;
 const LAYER_CONTENT = 1;
 
-/** Scrub lag — same in both scroll directions so reverse mirrors forward. */
-const STORY_SCRUB = 0.55;
+/** Light scrub — keep reverse (bottom→top) as tight as forward. */
+const STORY_SCRUB = 0.3;
 
 /**
  * Soft-cloud patches. Compact sizes avoid hard rectangular cuts.
@@ -277,6 +277,7 @@ export function StoryScroll() {
         };
 
         const storyTrigger = ScrollTrigger.create({
+          id: "story-pin",
           trigger: section,
           start: "top top",
           end: () =>
@@ -286,6 +287,7 @@ export function StoryScroll() {
           scrub: STORY_SCRUB,
           anticipatePin: 1,
           invalidateOnRefresh: true,
+          fastScrollEnd: true,
           onUpdate: (self) => {
             killThirdCoast();
             applyProgress(self.progress);
@@ -297,7 +299,11 @@ export function StoryScroll() {
             killThirdCoast();
             applyProgress(self.progress);
           },
-          // End / start snaps also go through applyProgress so reverse re-entry matches.
+          // Bidirectional snaps — reverse re-entry must rebuild bird reveal + pan.
+          onEnter: (self) => {
+            killThirdCoast();
+            applyProgress(self.progress);
+          },
           onLeave: () => {
             killThirdCoast();
             applyProgress(1);
@@ -395,15 +401,6 @@ export function StoryScroll() {
                   />
                 </div>
               </div>
-              <div className="sx-camp">
-                <img
-                  src="/images/story-figma/camp.png"
-                  alt=""
-                  width={2172}
-                  height={724}
-                  draggable={false}
-                />
-              </div>
             </div>
 
             {/* Part 2b — white clouds lead; content layer follows after */}
@@ -445,6 +442,19 @@ export function StoryScroll() {
 
             {/* Part 3 — editorial scroll content (lags behind slide clouds) */}
             <div className="sx-layer sx-layer--content">
+              {/*
+                Camp / ridge photo sits in the content stack (above slide
+                clouds) so silhouettes read in front of the white mist.
+              */}
+              <div className="sx-camp" aria-hidden="true">
+                <img
+                  src="/images/story-figma/camp.png"
+                  alt=""
+                  width={2172}
+                  height={724}
+                  draggable={false}
+                />
+              </div>
               <h2 className="sx-heading sx-heading--ordinary">
                 What Happens When We Step
                 <br />

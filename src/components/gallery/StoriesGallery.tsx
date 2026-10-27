@@ -137,24 +137,23 @@ export function StoriesGallery() {
 
     const ctx = gsap.context(() => {
       // Top ← left, bottom → right — always opposite.
+      // Lower duration = faster idle loop; scroll boosts timeScale further.
       const top = setupInfiniteStrip(topTrack, {
         direction: -1,
-        duration: 38,
+        duration: 18,
       });
       const bottom = setupInfiniteStrip(bottomTrack, {
         direction: 1,
-        duration: 42,
+        duration: 20,
       });
 
       const velProxy = { v: 0 };
       const syncSpeed = () => {
-        const boost = gsap.utils.clamp(-3, 3, velProxy.v / 800);
-        const speed = gsap.utils.clamp(0.45, 3.4, 1 + Math.abs(boost));
-        // Same timeScale sign keeps each strip on its built-in direction
-        // (left vs right). Negative boost (scroll up) reverses both.
-        const scrollDir = boost >= 0 ? 1 : -1;
-        top.tween.timeScale(speed * scrollDir);
-        bottom.tween.timeScale(speed * scrollDir);
+        const boost = gsap.utils.clamp(-5, 5, velProxy.v / 420);
+        // Speed only — never flip strip direction on reverse scroll.
+        const speed = gsap.utils.clamp(0.7, 5.5, 1 + Math.abs(boost));
+        top.tween.timeScale(speed);
+        bottom.tween.timeScale(speed);
       };
 
       top.tween.timeScale(1);
@@ -231,15 +230,6 @@ export function StoriesGallery() {
       aria-label="Stories beyond the frame"
       ref={sectionRef}
     >
-      <img
-        className="gallery-bg"
-        src="/images/story/bg-3.png"
-        alt=""
-        width={3286}
-        height={925}
-        draggable={false}
-      />
-
       <div className="gallery-strip gallery-strip--top">
         <div className="gallery-strip-track">
           <StripSet images={TOP_IMAGES} />

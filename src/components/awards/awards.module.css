@@ -157,29 +157,31 @@
   white-space: nowrap;
 }
 
-/* —— Certificates (Figma gaps ≈ 50px / 2.6vw) —— */
+/*
+  Certificates — centered between the laurels / heading band.
+  Band ≈ 62.45vw → 124.74vw (center 93.6vw). Equal widths + equal gaps
+  so the trio sits in the middle (was shifted left under the heading).
+*/
 .cert {
   position: absolute;
   top: 32.8vh;
   height: 53.76vh;
-  width: auto;
+  width: 18.67vw;
   object-fit: contain;
+  object-position: center;
   display: block;
 }
 
 .certA {
-  left: 58.8vw;
-  width: 18.67vw;
+  left: 62.92vw;
 }
 
 .certB {
-  left: 80.04vw;
-  width: 18.67vw;
+  left: 84.26vw; /* 62.92 + 18.67 + 2.67 gap */
 }
 
 .certC {
-  left: 101.29vw;
-  width: 21.11vw;
+  left: 105.6vw; /* 84.26 + 18.67 + 2.67 gap → group ends ~124.3vw at right laurel */
 }
 
 /* —— Sustainability hold (1 viewport) —— */

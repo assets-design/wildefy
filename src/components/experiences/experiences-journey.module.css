@@ -186,7 +186,7 @@
   overflow: hidden;
 }
 
-/* Bridges Experiences → Story as one veil (scrubbed forward + reverse) */
+/* Temporary §2→§3 veil only — lifts with Gallery; does not continue into §4 */
 .cloudHandoffFixed {
   position: fixed;
   inset: 0;
@@ -198,7 +198,33 @@
   overflow: hidden;
 }
 
+/* Same as --gallery-surface / .gallery-section — reveal blends into Gallery */
+.handoffSoftFill {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: var(--gallery-surface, #eef3f4);
+  pointer-events: none;
+}
+
+.handoffLastFrame {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  pointer-events: none;
+  user-select: none;
+  background: #0a1f18;
+}
+
 .natGeoCloudCanvas {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
   display: block;
   width: 100%;
   height: 100%;

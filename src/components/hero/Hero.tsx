@@ -135,27 +135,62 @@ export function Hero() {
     updateDistances();
 
     const ctx = gsap.context(() => {
+      /**
+       * Experiences underlaps Hero (-100vh) at z-index 3. Keep it hidden for
+       * almost the entire hero pin so reverse scroll can show bird/cloud —
+       * otherwise §2 white clouds sit on top (stuck fog in home.mp4).
+       */
+      const EXP_FADE_FROM = 0.92;
+      const syncExperiencesVisibility = (
+        progress: number,
+        direction: number,
+      ) => {
+        if (!experiences) return;
+        // Forward: fade §2 in at the end. Reverse: keep §2 clear so Hero
+        // bird/cloud exit is visible (was covered by white fog in home.mp4).
+        const from = direction < 0 ? 0.97 : EXP_FADE_FROM;
+        const t =
+          progress <= from ? 0 : (progress - from) / Math.max(0.001, 1 - from);
+        gsap.set(experiences, { autoAlpha: Math.min(1, Math.max(0, t)) });
+      };
+
+      const syncHeroEdge = (progress: number, direction = 1) => {
+        if (progress < distances.birdStart * 0.9) {
+          gsap.set(cloud, { autoAlpha: 0 });
+        }
+        syncExperiencesVisibility(progress, direction);
+      };
+
       const timeline = gsap.timeline({
         defaults: { ease: "none" },
         scrollTrigger: {
+          id: "hero-pin",
           trigger: sticky,
           start: "top top",
           end: () => `+=${Math.round(window.innerHeight * PIN_VH)}`,
           pin: true,
           pinSpacing: true,
-          scrub: 0.65,
+          scrub: 0.45,
           invalidateOnRefresh: true,
           anticipatePin: 1,
           onRefreshInit: updateDistances,
           onUpdate: (self) => {
-            // Keep cloud hidden until the rise begins (no load FOUC).
-            if (self.progress < distances.birdStart * 0.9) {
-              gsap.set(cloud, { autoAlpha: 0 });
-            }
+            syncHeroEdge(self.progress, self.direction);
+          },
+          onRefresh: (self) => {
+            syncHeroEdge(self.progress, self.direction);
           },
           onLeave: () => {
             if (experiences) gsap.set(experiences, { autoAlpha: 1 });
-            gsap.set(cloud, { autoAlpha: 1 });
+          },
+          onEnterBack: (self) => {
+            if (experiences) gsap.set(experiences, { autoAlpha: 0 });
+            syncHeroEdge(self.progress, -1);
+          },
+          onLeaveBack: () => {
+            syncHeroEdge(0, -1);
+            gsap.set(bg, { autoAlpha: 1 });
+            if (experiences) gsap.set(experiences, { autoAlpha: 0 });
           },
         },
       });
@@ -221,9 +256,16 @@ export function Hero() {
       );
 
       /*
-        Cloud ENTER: full cloud field rises from bottom as bird exits.
-        One image only — soft top & bottom edges, no overlay layers.
+        Cloud: rise with bird exit → cover handoff → clear so Experiences
+        owns the viewport. All on one scrubbed timeline so reverse scroll
+        rebuilds the same beats without a second ST fighting these props.
       */
+      // Remaining pin after bird-start — always sums to 1 with birdStart.
+      const afterBird = () => Math.max(0.2, 1 - distances.birdStart);
+      const riseA = () => afterBird() * 0.4;
+      const riseB = () => afterBird() * 0.35;
+      const clearDur = () => afterBird() * 0.25;
+
       timeline.to(
         cloud,
         {
@@ -241,16 +283,23 @@ export function Hero() {
               x: () => distances.cloudDriftX * 0.25,
               y: () => distances.cloudYMid,
               scale: 1.08,
-              duration: () => Math.max(0.22, exitDur() * 0.45),
+              duration: riseA,
               ease: "none",
             },
             {
               autoAlpha: 1,
               x: () => distances.cloudDriftX * 0.55,
               y: () => distances.cloudYHigh,
-              // Scale up so dense mid covers the full screen when text enters.
               scale: () => distances.cloudScaleHigh,
-              duration: () => Math.max(0.2, exitDur() * 0.55),
+              duration: riseB,
+              ease: "none",
+            },
+            {
+              autoAlpha: 0,
+              x: () => distances.cloudDriftX * 0.35,
+              y: () => distances.cloudYHigh - window.innerHeight * 0.08,
+              scale: 1.35,
+              duration: clearDur,
               ease: "none",
             },
           ],
@@ -259,84 +308,21 @@ export function Hero() {
         0,
       );
 
-      // Section 2 content fades in ON TOP of the cloud background.
-      if (experiences) {
-        timeline.to(
-          experiences,
-          {
-            keyframes: [
-              {
-                autoAlpha: 0,
-                duration: () =>
-                  Math.max(0.7, distances.birdStart + exitDur() * 0.38),
-                ease: "none",
-              },
-              {
-                autoAlpha: 1,
-                duration: 0.24,
-                ease: "none",
-              },
-            ],
-            immediateRender: false,
-          },
-          0,
-        );
-      }
+      // Fade the green hero photo as Experiences takes over (same pin window).
+      timeline.fromTo(
+        bg,
+        { autoAlpha: 1 },
+        {
+          autoAlpha: 0,
+          duration: 0.28,
+          ease: "none",
+          immediateRender: false,
+        },
+        0.72,
+      );
 
-      // Through Section 2: gentle zoom-out backdrop — never mist over content.
-      // The cloud stays settled behind §2 all the way to its bottom edge;
-      // continuity into the story sequence is handed off to .story-cloud-lip.
-      if (experiences) {
-        // Kill the green hero photo as soon as §2 owns the screen.
-        gsap.fromTo(
-          bg,
-          { autoAlpha: 1 },
-          {
-            autoAlpha: 0,
-            ease: "none",
-            immediateRender: false,
-            scrollTrigger: {
-              trigger: experiences,
-              start: "top 70%",
-              end: "top 10%",
-              scrub: 0.35,
-            },
-          },
-        );
-
-        // Hold clouds only through the 3D journey entrance, then clear so
-        // the terrain canvas owns the viewport for the rest of §2.
-        gsap.fromTo(
-          cloud,
-          {
-            x: () => distances.cloudDriftX * 0.55,
-            y: () => distances.cloudYHigh,
-            scale: () => distances.cloudScaleHigh,
-            autoAlpha: 1,
-            transformOrigin: "50% 40%",
-          },
-          {
-            x: () => distances.cloudDriftX * 0.35,
-            y: () => distances.cloudYHigh - window.innerHeight * 0.08,
-            scale: 1.35,
-            autoAlpha: 0,
-            transformOrigin: "50% 35%",
-            ease: "none",
-            immediateRender: false,
-            scrollTrigger: {
-              trigger: experiences,
-              start: "top top",
-              end: "top+=35% top",
-              scrub: 0.65,
-            },
-          },
-        );
-
-        // No fade-out at the §2 bottom: the same cloud field must still be
-        // behind the last §2 rows at the section's bottom edge. As the
-        // story section enters, its lip (same clouds-section.png) takes
-        // over in the same white register, so the join has no gap.
-      }
+      // Experiences visibility is driven in syncExperiencesVisibility (not a
+      // competing timeline tween) so reverse scroll cannot leave §2 stuck opaque.
 
       // Re-assert load state after ScrollTriggers register.
       gsap.set(cloud, {

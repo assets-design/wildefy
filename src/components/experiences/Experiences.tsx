@@ -15,7 +15,11 @@ import {
   EXPERIENCES,
   type Experience,
 } from "@/components/experiences/experiencesData";
-import { ExperiencesScrollVideo } from "@/components/experiences/ExperiencesScrollVideo";
+import {
+  ExperiencesScrollVideo,
+  SCRUB_FRAME_COUNT,
+  frameSrc,
+} from "@/components/experiences/ExperiencesScrollVideo";
 import {
   ExperiencesCloudReveal,
   easeCloudReveal,
@@ -25,10 +29,12 @@ import styles from "./experiences-journey.module.css";
 
 gsap.registerPlugin(ScrollTrigger);
 
-/** Softer scrub — cards ease in slowly with scroll. */
-const SCRUB_LAG = 1.15;
+/** Near-direct scrub so bottom→top mirrors top→bottom without laggy proxies. */
+const SCRUB_LAG = 0.35;
 /** Cloud dissolve completes in the first stretch after Experiences hits the viewport. */
 const CLOUD_REVEAL_VH = 0.85;
+/** Last scrub frame — only plate under the cloud veil (no mid-swap). */
+const LAST_FRAME_SRC = frameSrc(SCRUB_FRAME_COUNT);
 const HOLD_SCALE = 1;
 /** First portion of each card’s enter window = pin only, then the card appears. */
 const PIN_LEAD = 0.34;
@@ -270,11 +276,10 @@ export function Experiences() {
   const [progress, setProgress] = useState(0);
   const [cloudReveal, setCloudReveal] = useState(0);
   /**
-   * One shared veil between Experiences → Story.
-   * 0 = clear, 1 = full white cover (closes at end of Experiences,
-   * then dissolves as Story begins — not two separate clouds).
+   * Experiences → Gallery (§3) handoff (0→1 across the join):
+   * last §2 frame holds, clouds close, then dissolve to reveal Gallery.
    */
-  const [handoffCover, setHandoffCover] = useState(0);
+  const [handoffP, setHandoffP] = useState(0);
   const [reducedMotion, setReducedMotion] = useState(false);
   const [booting, setBooting] = useState(true);
   const [failed, setFailed] = useState(false);
@@ -315,99 +320,101 @@ export function Experiences() {
       if (handoffPending < 0) return;
       const next = handoffPending;
       handoffPending = -1;
-      setHandoffCover(next);
+      setHandoffP(next);
     };
 
-    // Arrival reveal — scrub both directions (enter + reverse to Hero).
-    const cloudProxy = { p: 0 };
-    const cloudTween = gsap.to(cloudProxy, {
-      p: 1,
-      ease: "none",
-      scrollTrigger: {
-        trigger: wrap,
-        start: "top top",
-        end: () => `+=${Math.round(window.innerHeight * CLOUD_REVEAL_VH)}`,
-        scrub: 0.35,
-        invalidateOnRefresh: true,
-      },
-      onUpdate: () => {
-        cloudPending = easeCloudReveal(cloudProxy.p);
-        if (!cloudRaf) cloudRaf = window.requestAnimationFrame(flushCloud);
+    const queueCloud = (v: number) => {
+      cloudPending = v;
+      if (!cloudRaf) cloudRaf = window.requestAnimationFrame(flushCloud);
+    };
+    const queueProgress = (v: number) => {
+      pending = v;
+      if (!raf) raf = window.requestAnimationFrame(flushProgress);
+    };
+    const queueHandoff = (v: number) => {
+      handoffPending = Math.min(1, Math.max(0, v));
+      if (!handoffRaf) handoffRaf = window.requestAnimationFrame(flushHandoff);
+    };
+
+    const applyCloudProgress = (raw: number) => {
+      // When Hero pin owns the screen, don't keep a full white §2 veil.
+      const heroPin = ScrollTrigger.getById("hero-pin");
+      if (heroPin?.isActive && heroPin.progress < 0.9) {
+        queueCloud(1);
+        return;
+      }
+      queueCloud(easeCloudReveal(raw));
+    };
+
+    const cloudTrigger = ScrollTrigger.create({
+      id: "experiences-cloud",
+      trigger: wrap,
+      start: "top top",
+      end: () => `+=${Math.round(window.innerHeight * CLOUD_REVEAL_VH)}`,
+      scrub: SCRUB_LAG,
+      invalidateOnRefresh: true,
+      onUpdate: (self) => applyCloudProgress(self.progress),
+      onRefresh: (self) => applyCloudProgress(self.progress),
+      onEnterBack: (self) => applyCloudProgress(self.progress),
+      onLeaveBack: () => {
+        const heroPin = ScrollTrigger.getById("hero-pin");
+        queueCloud(heroPin?.isActive ? 1 : 0);
       },
     });
 
     /*
-      ONE continuous handoff (forward + reverse scrub):
-        first stretch  : white veil closes over Experiences (full cover before unpin)
-        second stretch : same veil dissolves into Story
-      No second cloud layer — scrubbing up reverses the same timeline.
+      §2 → §3 (Gallery) cloud close — ONLY after the 4th card is fully held.
+      Start is locked to wrap progress past card hold (+ short beat), so the
+      closing veil never begins while Corporate Learning is still entering.
     */
-    const coverDist = () =>
-      Math.round(window.innerHeight * CLOUD_REVEAL_VH * 1.2);
-    const openDist = () => Math.round(window.innerHeight * CLOUD_REVEAL_VH);
-
-    const coverFromHandoffP = (raw: number) => {
-      const p = Math.min(1, Math.max(0, raw));
-      const closeShare = coverDist() / Math.max(coverDist() + openDist(), 1);
-      if (p <= closeShare) {
-        return easeCloudReveal(p / Math.max(closeShare, 0.001));
-      }
-      return (
-        1 -
-        easeCloudReveal((p - closeShare) / Math.max(1 - closeShare, 0.001))
-      );
+    const fourthCard = EXPERIENCES[EXPERIENCES.length - 1];
+    const handoffStartProgress = () => {
+      const travel = Math.max(1, wrap.offsetHeight - window.innerHeight);
+      // Fully held, then a short readable beat before clouds start closing.
+      const startP = Math.min(0.992, fourthCard.window.hold + 0.035);
+      return Math.round(travel * startP);
     };
 
-    const handoffProxy = { p: 0 };
-    const handoffTween = gsap.to(handoffProxy, {
-      p: 1,
-      ease: "none",
-      scrollTrigger: {
-        trigger: wrap,
-        start: () => `bottom-=${coverDist()} bottom`,
-        endTrigger: "#our-story",
-        end: () => `top+=${openDist()} top`,
-        scrub: 0.4,
-        invalidateOnRefresh: true,
-      },
-      onUpdate: () => {
-        handoffPending = coverFromHandoffP(handoffProxy.p);
-        if (!handoffRaf) handoffRaf = window.requestAnimationFrame(flushHandoff);
-      },
+    const handoffTrigger = ScrollTrigger.create({
+      id: "experiences-gallery-handoff",
+      trigger: wrap,
+      start: () => `top+=${handoffStartProgress()} top`,
+      endTrigger: "#gallery",
+      // Hold until Gallery has fully claimed the viewport (no green shell flash).
+      end: () => `top+=${Math.round(window.innerHeight * 0.08)} top`,
+      scrub: SCRUB_LAG,
+      invalidateOnRefresh: true,
+      onUpdate: (self) => queueHandoff(self.progress),
+      onRefresh: (self) => queueHandoff(self.progress),
+      onEnterBack: (self) => queueHandoff(self.progress),
+      onLeaveBack: () => queueHandoff(0),
+      onLeave: () => queueHandoff(1),
     });
 
-    // Progress 0→1 is locked to this section’s pin runway (background + cards).
-    const proxy = { progress: 0 };
-    const tween = gsap.to(proxy, {
-      progress: 1,
-      ease: "none",
-      scrollTrigger: {
-        trigger: wrap,
-        start: "top top",
-        end: "bottom bottom",
-        scrub: SCRUB_LAG,
-        invalidateOnRefresh: true,
-      },
-      onUpdate: () => {
-        pending = proxy.progress;
-        if (!raf) raf = window.requestAnimationFrame(flushProgress);
-      },
+    const progressTrigger = ScrollTrigger.create({
+      id: "experiences-progress",
+      trigger: wrap,
+      start: "top top",
+      end: "bottom bottom",
+      scrub: SCRUB_LAG,
+      invalidateOnRefresh: true,
+      onUpdate: (self) => queueProgress(self.progress),
+      onRefresh: (self) => queueProgress(self.progress),
+      onEnterBack: (self) => queueProgress(self.progress),
+      onLeaveBack: () => queueProgress(0),
     });
 
-    setProgress(proxy.progress);
-    setCloudReveal(easeCloudReveal(cloudProxy.p));
-    setHandoffCover(coverFromHandoffP(handoffProxy.p));
+    applyCloudProgress(cloudTrigger.progress);
+    queueHandoff(handoffTrigger.progress);
+    queueProgress(progressTrigger.progress);
 
     return () => {
       if (raf) window.cancelAnimationFrame(raf);
       if (cloudRaf) window.cancelAnimationFrame(cloudRaf);
       if (handoffRaf) window.cancelAnimationFrame(handoffRaf);
-      cloudTween.scrollTrigger?.kill();
-      cloudTween.kill();
-      handoffTween.scrollTrigger?.kill();
-      handoffTween.kill();
-      tween.scrollTrigger?.kill();
-      tween.kill();
+      cloudTrigger.kill();
+      handoffTrigger.kill();
+      progressTrigger.kill();
     };
   }, [reducedMotion]);
 
@@ -421,8 +428,43 @@ export function Experiences() {
     setBooting(false);
   }, []);
 
-  const snowActive = progress >= 0.88;
+  const snowActive = progress >= EXPERIENCES[EXPERIENCES.length - 1].window.from;
   const mapPin = mapPinForProgress(progress);
+
+  /**
+   * Close: last §2 frame + clouds over Experiences.
+   * Open: fade that plate into Gallery soft colour; keep Gallery ABOVE the veil
+   * so bottom strips stay full-colour (not washed out by the fixed overlay).
+   */
+  const handoffClose = 0.4;
+  const handoffEase = (t: number) => easeCloudReveal(Math.min(1, Math.max(0, t)));
+  let lastFrameOpacity = 0;
+  let cloudDissolve = 1;
+  let veilOpacity = 0;
+  /** 80 while covering §2; drop under Gallery (z-index 4) once opening. */
+  let handoffZ = 80;
+  if (handoffP > 0.01 && handoffP < 0.999) {
+    if (handoffP <= handoffClose) {
+      const t = handoffEase(handoffP / handoffClose);
+      lastFrameOpacity = t;
+      cloudDissolve = 1 - t;
+      veilOpacity = 1;
+      handoffZ = 80;
+    } else {
+      const t = handoffEase((handoffP - handoffClose) / (1 - handoffClose));
+      // Open onto Gallery colour — drop snow plate quickly, keep soft fill.
+      lastFrameOpacity = Math.max(0, 1 - t / 0.4);
+      cloudDissolve = Math.min(1, t / 0.55);
+      veilOpacity = t < 0.6 ? 1 : 1 - handoffEase((t - 0.6) / 0.4);
+      handoffZ = 3; // below .gallery-section (z-index: 4)
+    }
+  } else if (handoffP >= 0.999) {
+    lastFrameOpacity = 0;
+    cloudDissolve = 1;
+    veilOpacity = 0;
+    handoffZ = 3;
+  }
+  const hideExperiencesScene = handoffP > 0.12;
 
   if (reducedMotion || failed) {
     return (
@@ -461,9 +503,29 @@ export function Experiences() {
       id="experiences"
       aria-label="Four ways to experience the wild"
       ref={sectionRef}
+      style={
+        hideExperiencesScene
+          ? { background: "var(--gallery-surface, #eef3f4)" }
+          : undefined
+      }
     >
-      <div className={styles.wrap} ref={wrapRef}>
-        <div className={styles.sticky}>
+      <div
+        className={styles.wrap}
+        ref={wrapRef}
+        style={
+          hideExperiencesScene
+            ? { background: "var(--gallery-surface, #eef3f4)" }
+            : undefined
+        }
+      >
+        <div
+          className={styles.sticky}
+          style={{
+            opacity: hideExperiencesScene ? 0 : 1,
+            visibility: hideExperiencesScene ? "hidden" : "visible",
+            pointerEvents: hideExperiencesScene ? "none" : undefined,
+          }}
+        >
           <div className={styles.scene}>
             <ExperiencesScrollVideo
               progress={progress}
@@ -493,7 +555,7 @@ export function Experiences() {
           <div
             className={styles.overlay}
             style={{
-              opacity: Math.max(0, 1 - handoffCover * 1.15),
+              opacity: Math.max(0, 1 - lastFrameOpacity * 1.05),
             }}
           >
             <header
@@ -566,20 +628,32 @@ export function Experiences() {
       </div>
 
       {/*
-        wildfy-style NatGeo FBM dissolve into Story (third section).
-        cover 0→1 closes, then 1→0 opens — same organic smoke as
-        WildernessJourneyEngine / NatGeoCloudTransitionEngine.
+        Single-plate veil: last Experiences frame + clouds only.
+        No mid-reveal swap to sky photo (that caused the colour jump).
       */}
       <div
         className={styles.cloudHandoffFixed}
         aria-hidden="true"
         style={{
-          opacity: handoffCover > 0.02 ? 1 : 0,
-          visibility: handoffCover > 0.02 ? "visible" : "hidden",
+          opacity: veilOpacity > 0.02 ? veilOpacity : 0,
+          visibility: veilOpacity > 0.02 ? "visible" : "hidden",
           pointerEvents: "none",
+          zIndex: handoffZ,
         }}
       >
-        <NatGeoCloudDissolve progress={1 - handoffCover} />
+        {/* Opaque soft fill so cloud holes never flash §2 or a second photo */}
+        <div className={styles.handoffSoftFill} />
+        <img
+          className={styles.handoffLastFrame}
+          src={LAST_FRAME_SRC}
+          alt=""
+          width={1920}
+          height={1080}
+          draggable={false}
+          decoding="async"
+          style={{ opacity: lastFrameOpacity }}
+        />
+        <NatGeoCloudDissolve progress={cloudDissolve} />
       </div>
     </section>
   );

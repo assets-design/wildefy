@@ -12,8 +12,8 @@ export default function HomePage() {
     <JourneyShell>
       <Hero />
       <Experiences />
-      <StoryScroll />
       <StoriesGallery />
+      <StoryScroll />
       <Conservation />
       <AwardsScroll />
       <FooterReveal />

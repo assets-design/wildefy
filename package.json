@@ -3,8 +3,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev2": "next dev -p 3001",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "start2": "next start -p 3001"
   },
   "dependencies": {
     "@react-three/fiber": "^9.8.2",

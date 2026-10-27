@@ -213,6 +213,15 @@ export function AwardsScroll() {
             // Re-run mapping after layout changes
             self.update();
           },
+          // Re-apply mapping when re-entering from below so reverse scroll
+          // does not leave slides/track stuck at the end pose.
+          onEnterBack: (self) => {
+            self.update();
+          },
+          onLeaveBack: () => {
+            gsap.set(track, { x: 0, force3D: true });
+            applyVertical(0);
+          },
         });
 
         const refresh = () => ScrollTrigger.refresh();

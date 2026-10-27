@@ -120,6 +120,14 @@ export function FooterReveal() {
             invalidateOnRefresh: true,
             // Below map pin so destination map refresh wins layout order
             refreshPriority: -1,
+            // Scrub already reverses; snap edge states when leaving upward
+            // so CTA/glass are not stuck mid-pose above the footer.
+            onLeaveBack: () => {
+              gsap.set(title, { y: opts.titleY, opacity: 0 });
+              gsap.set(button, { y: 20, opacity: 0 });
+              gsap.set(glass, { yPercent: 105 });
+              gsap.set(media, { scale: 1.03 });
+            },
           },
         });
 
