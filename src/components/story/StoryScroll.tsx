@@ -11,25 +11,23 @@ const CLOUD_REVEAL_VH = 0.85;
 
 /**
  * Parallax travel factors.
- * Content travels 100%. Soft clouds follow the sky with a short delay after bg.
+ * Content = 100%. Clouds crawl vs content so slide motion is obvious.
  */
-const LAYER_BG = 0.8;
-const LAYER_CLOUDS = 0.88;
+const LAYER_BG = 0.76;
+const LAYER_CLOUDS = 0.32;
 const LAYER_IMAGES = 0.82;
+const LAYER_SLIDE_CLOUDS = 1;
 const LAYER_CONTENT = 1;
 
-/** Catch-up durations — clouds ease after background has already started. */
-const LAG_BG = 0.28;
-const LAG_CLOUDS = 0.5;
-const LAG_IMAGES = 0.38;
-const LAG_CONTENT = 0.48;
+/** Scrub lag — same in both scroll directions so reverse mirrors forward. */
+const STORY_SCRUB = 0.55;
 
-/** Figma 609:770 soft-cloud placements (frame 8260×1000). */
-const SKY_CLOUDS = [
-  { left: "17.13%", top: "15.7%" },
-  { left: "43.54%", top: "41.7%" },
-  { left: "72.36%", top: "6.5%" },
-] as const;
+/**
+ * Soft-cloud patches. Compact sizes avoid hard rectangular cuts.
+ * `depth` adds extra local drift while the slide pans.
+ */
+/* First slide uses one dedicated cloud only — no soft sky patches */
+const SKY_CLOUDS = [] as const;
 
 function prefersReducedMotion() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -133,8 +131,24 @@ export function StoryScroll() {
           section.querySelector<HTMLElement>(".sx-layer--clouds");
         const layerImages =
           section.querySelector<HTMLElement>(".sx-layer--images");
+        const layerSlideClouds = section.querySelector<HTMLElement>(
+          ".sx-layer--slide-clouds",
+        );
         const layerContent =
           section.querySelector<HTMLElement>(".sx-layer--content");
+        const cloudNodes = Array.from(
+          section.querySelectorAll<HTMLElement>(".sx-sky-cloud"),
+        );
+        /* First + second: +10% with pan, hold on stop */
+        const slideClouds = [
+          section.querySelector<HTMLElement>(".sx-bottom-cloud"),
+          section.querySelector<HTMLElement>(".sx-boardrooms-cloud"),
+        ].filter(Boolean) as HTMLElement[];
+        /* Third: +10% with pan, then another +10% coast after scroll stops */
+        const thirdCloud = section.querySelector<HTMLElement>(
+          ".sx-conversation-cloud",
+        );
+
         const bird = section.querySelector<HTMLElement>(".sx-darter");
         if (
           !viewport ||
@@ -142,6 +156,7 @@ export function StoryScroll() {
           !layerBg ||
           !layerClouds ||
           !layerImages ||
+          !layerSlideClouds ||
           !layerContent
         )
           return;
@@ -152,27 +167,41 @@ export function StoryScroll() {
         const getRevealRun = () =>
           Math.max(420, Math.round(window.innerHeight * CLOUD_REVEAL_VH));
 
-        gsap.set([layerBg, layerClouds, layerImages, layerContent], {
-          x: 0,
-          force3D: true,
-        });
+        gsap.set(
+          [layerBg, layerClouds, layerImages, layerSlideClouds, layerContent],
+          {
+            x: 0,
+            force3D: true,
+          },
+        );
+        gsap.set(cloudNodes, { x: 0, y: 0, force3D: true });
+        gsap.set(slideClouds, { x: 0, y: 0, force3D: true });
+        if (thirdCloud) gsap.set(thirdCloud, { x: 0, y: 0, force3D: true });
 
-        const toBg = gsap.quickTo(layerBg, "x", {
-          duration: LAG_BG,
-          ease: "power2.out",
-        });
-        const toClouds = gsap.quickTo(layerClouds, "x", {
-          duration: LAG_CLOUDS,
-          ease: "power2.out",
-        });
-        const toImages = gsap.quickTo(layerImages, "x", {
-          duration: LAG_IMAGES,
-          ease: "power2.out",
-        });
-        const toContent = gsap.quickTo(layerContent, "x", {
-          duration: LAG_CONTENT,
-          ease: "power2.out",
-        });
+        let thirdBaseX = 0;
+        let thirdIdleTimer = 0;
+        let thirdCoast: gsap.core.Tween | null = null;
+
+        const killThirdCoast = () => {
+          if (thirdIdleTimer) {
+            window.clearTimeout(thirdIdleTimer);
+            thirdIdleTimer = 0;
+          }
+          thirdCoast?.kill();
+          thirdCoast = null;
+        };
+
+        const coastThirdAfterStop = () => {
+          if (!thirdCloud) return;
+          thirdCoast?.kill();
+          const extra = Math.round(thirdCloud.offsetWidth * 0.1);
+          thirdCoast = gsap.to(thirdCloud, {
+            x: thirdBaseX - extra,
+            duration: 2.4,
+            ease: "power2.out",
+            force3D: true,
+          });
+        };
 
         if (bird) {
           gsap.set(bird, {
@@ -185,6 +214,7 @@ export function StoryScroll() {
           });
         }
 
+        /** Immediate set — mirrors scroll progress both directions (no quickTo lag). */
         const applyProgress = (progress: number) => {
           const revealPx = getRevealRun();
           const travelPx = getTravel();
@@ -208,11 +238,42 @@ export function StoryScroll() {
               ? 0
               : (p - revealEnd) / Math.max(0.0001, 1 - revealEnd);
 
-          // Sky first, then soft clouds (delayed), then images / content.
-          toBg(-travelPx * LAYER_BG * panT);
-          toClouds(-travelPx * LAYER_CLOUDS * panT);
-          toImages(-travelPx * LAYER_IMAGES * panT);
-          toContent(-travelPx * LAYER_CONTENT * panT);
+          gsap.set(layerBg, { x: -travelPx * LAYER_BG * panT, force3D: true });
+          gsap.set(layerClouds, {
+            x: -travelPx * LAYER_CLOUDS * panT,
+            force3D: true,
+          });
+          gsap.set(layerImages, {
+            x: -travelPx * LAYER_IMAGES * panT,
+            force3D: true,
+          });
+          gsap.set(layerSlideClouds, {
+            x: -travelPx * LAYER_SLIDE_CLOUDS * panT,
+            force3D: true,
+          });
+          gsap.set(layerContent, {
+            x: -travelPx * LAYER_CONTENT * panT,
+            force3D: true,
+          });
+
+          cloudNodes.forEach((node, i) => {
+            const depth = SKY_CLOUDS[i]?.depth ?? 0.9;
+            gsap.set(node, {
+              x: -(travelPx * 0.2 * depth * panT),
+              y: Math.sin(panT * Math.PI * 1.2 + i * 0.9) * 12 * depth,
+              force3D: true,
+            });
+          });
+
+          slideClouds.forEach((el) => {
+            const extra = Math.round(el.offsetWidth * 0.1) * panT;
+            gsap.set(el, { x: -extra, force3D: true });
+          });
+
+          if (thirdCloud) {
+            thirdBaseX = -Math.round(thirdCloud.offsetWidth * 0.1) * panT;
+            gsap.set(thirdCloud, { x: thirdBaseX, force3D: true });
+          }
         };
 
         const storyTrigger = ScrollTrigger.create({
@@ -222,30 +283,39 @@ export function StoryScroll() {
             `+=${Math.max(1, Math.round(getRevealRun() + getTravel()))}`,
           pin: true,
           pinSpacing: true,
+          scrub: STORY_SCRUB,
           anticipatePin: 1,
           invalidateOnRefresh: true,
           onUpdate: (self) => {
+            killThirdCoast();
             applyProgress(self.progress);
+            if (thirdCloud) {
+              thirdIdleTimer = window.setTimeout(coastThirdAfterStop, 160);
+            }
           },
           onRefresh: (self) => {
+            killThirdCoast();
             applyProgress(self.progress);
           },
+          // End / start snaps also go through applyProgress so reverse re-entry matches.
           onLeave: () => {
-            // Snap layers to the end so nothing bleeds into the next section
-            const travelPx = getTravel();
-            gsap.set(layerBg, { x: -travelPx * LAYER_BG });
-            gsap.set(layerClouds, { x: -travelPx * LAYER_CLOUDS });
-            gsap.set(layerImages, { x: -travelPx * LAYER_IMAGES });
-            gsap.set(layerContent, { x: -travelPx * LAYER_CONTENT });
+            killThirdCoast();
+            applyProgress(1);
           },
           onLeaveBack: () => {
-            gsap.set([layerBg, layerClouds, layerImages, layerContent], {
-              x: 0,
-            });
+            killThirdCoast();
+            applyProgress(0);
+          },
+          onEnterBack: (self) => {
+            killThirdCoast();
+            applyProgress(self.progress);
           },
         });
 
         applyProgress(storyTrigger.progress);
+        if (thirdCloud) {
+          thirdIdleTimer = window.setTimeout(coastThirdAfterStop, 400);
+        }
 
         let refreshQueued = false;
         const refresh = () => {
@@ -262,6 +332,7 @@ export function StoryScroll() {
         ro.observe(panel);
 
         return () => {
+          killThirdCoast();
           ro.disconnect();
           window.removeEventListener("load", refresh);
           storyTrigger.kill();
@@ -291,7 +362,12 @@ export function StoryScroll() {
                 <div
                   key={i}
                   className={`sx-sky-cloud sx-sky-cloud--${i + 1}`}
-                  style={{ left: cloud.left, top: cloud.top }}
+                  style={{
+                    left: cloud.left,
+                    top: cloud.top,
+                    ["--cloud-size" as string]: String(cloud.size),
+                    ["--cloud-delay" as string]: `${i * 0.55}s`,
+                  }}
                 >
                   <img
                     src="/images/story-figma/clouds-soft-light.png"
@@ -330,7 +406,44 @@ export function StoryScroll() {
               </div>
             </div>
 
-            {/* Part 3 — editorial scroll content (+ hummingbird, locked to content so it never drifts under copy) */}
+            {/* Part 2b — white clouds lead; content layer follows after */}
+            <div
+              className="sx-layer sx-layer--slide-clouds"
+              aria-hidden="true"
+            >
+              <div className="sx-bottom-cloud">
+                <img
+                  src="/images/story-figma/cloud-bottom-white.png"
+                  alt=""
+                  width={1024}
+                  height={544}
+                  draggable={false}
+                  decoding="async"
+                />
+              </div>
+              <div className="sx-boardrooms-cloud">
+                <img
+                  src="/images/story-figma/cloud-boardrooms-white.png"
+                  alt=""
+                  width={1200}
+                  height={600}
+                  draggable={false}
+                  decoding="async"
+                />
+              </div>
+              <div className="sx-conversation-cloud">
+                <img
+                  src="/images/story-figma/cloud-bottom-white.png"
+                  alt=""
+                  width={1024}
+                  height={544}
+                  draggable={false}
+                  decoding="async"
+                />
+              </div>
+            </div>
+
+            {/* Part 3 — editorial scroll content (lags behind slide clouds) */}
             <div className="sx-layer sx-layer--content">
               <h2 className="sx-heading sx-heading--ordinary">
                 What Happens When We Step
@@ -399,7 +512,7 @@ export function StoryScroll() {
                 </div>
               ))}
 
-              {/* Bird beat first — conversation copy follows to the right */}
+              {/* Bird beat — conversation copy follows to the right */}
               <div className="sx-hummingbird">
                 <img
                   src="/images/story-figma/hummingbird-photo.png"

@@ -217,7 +217,7 @@ body {
   will-change: transform;
 }
 
-/* Transparent bird — base holds body+shoulders; outer wing tips sweep. */
+/* Transparent bird — flower stays put; flyer rises from below on load. */
 .hero-bird {
   position: absolute;
   inset: 0;
@@ -240,9 +240,25 @@ body {
   user-select: none;
 }
 
-.hero-bird-base {
-  /* Base sits above tips so underlapped hinge stays covered during sweep */
+/* Top flower only — clipped so it never rides the load-in */
+.hero-bird-flower {
+  z-index: 3;
+  clip-path: inset(0% 22% 46% 22%);
+}
+
+/* Bird body + wings — rises from bottom to the flower */
+.hero-bird-flyer {
+  position: absolute;
+  inset: 0;
   z-index: 2;
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+}
+
+.hero-bird-base {
+  /* Hide the flower on the flying base so it doesn't double the static one */
+  z-index: 2;
+  clip-path: inset(30% 0% 0% 0%);
 }
 
 .hero-bird-wing {
@@ -252,18 +268,17 @@ body {
 }
 
 /*
-  Mid-wing hinges: tips underlap the base at the cut so rotation never
-  opens a background gap. Roots stay fixed on the base layer.
+  Shoulder hinges — full-wing swing (not tip-only), slow continuous flap.
 */
 .hero-bird-wing--left {
-  transform-origin: 35% 65.72%;
-  animation: hero-wing-sweep-left 2.2s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+  transform-origin: 38% 58%;
+  animation: hero-wing-sweep-left 3.8s cubic-bezier(0.4, 0.05, 0.55, 0.95) infinite;
   will-change: transform;
 }
 
 .hero-bird-wing--right {
-  transform-origin: 64.8% 65.72%;
-  animation: hero-wing-sweep-right 2.2s cubic-bezier(0.45, 0.05, 0.55, 0.95) 0.05s infinite;
+  transform-origin: 62% 58%;
+  animation: hero-wing-sweep-right 3.8s cubic-bezier(0.4, 0.05, 0.55, 0.95) 0.12s infinite;
   will-change: transform;
 }
 
@@ -272,16 +287,13 @@ body {
   100% {
     transform: rotateZ(0deg);
   }
-  25% {
-    /* Forward — outer tip toward beak (in-plane; base covers underlap) */
-    transform: rotateZ(-2deg);
+  30% {
+    /* Whole feather forward toward the flower */
+    transform: rotateZ(-12deg);
   }
-  50% {
-    transform: rotateZ(0deg);
-  }
-  75% {
-    /* Backward — outer tip toward tail */
-    transform: rotateZ(1.5deg);
+  65% {
+    /* Whole feather back toward the tail */
+    transform: rotateZ(8deg);
   }
 }
 
@@ -290,14 +302,11 @@ body {
   100% {
     transform: rotateZ(0deg);
   }
-  25% {
-    transform: rotateZ(2deg);
+  30% {
+    transform: rotateZ(12deg);
   }
-  50% {
-    transform: rotateZ(0deg);
-  }
-  75% {
-    transform: rotateZ(-1.5deg);
+  65% {
+    transform: rotateZ(-8deg);
   }
 }
 
@@ -588,6 +597,7 @@ body {
   }
 
   .hero-bird,
+  .hero-bird-flyer,
   .site-header,
   .journey-backdrop-photo,
   .journey-cloud,
@@ -600,6 +610,14 @@ body {
   .hero-bird-wing--right {
     animation: none !important;
     transform: none !important;
+  }
+
+  .hero-bird-flower {
+    display: none !important;
+  }
+
+  .hero-bird-base {
+    clip-path: none !important;
   }
 
   .journey-cloud {
@@ -1265,30 +1283,73 @@ body {
 /* Soft fluffy clouds sit above the sky, below story imagery */
 .sx-layer--clouds {
   z-index: 1;
-  width: 125%;
-  left: 0;
+  width: 135%;
+  left: -2%;
   pointer-events: none;
   overflow: visible;
+  /* Kill soft-cloud bleed under boardrooms / hummingbird */
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    #000 0%,
+    #000 18%,
+    rgba(0, 0, 0, 0.35) 26%,
+    transparent 34%
+  );
+  mask-image: linear-gradient(
+    90deg,
+    #000 0%,
+    #000 18%,
+    rgba(0, 0, 0, 0.35) 26%,
+    transparent 34%
+  );
 }
 
 .sx-sky-cloud {
+  --cloud-size: 1;
+  --cloud-delay: 0s;
   position: absolute;
-  width: 11.85%;
-  height: 52.1%;
-  overflow: hidden;
-  mix-blend-mode: soft-light;
+  /*
+    Tall enough to hold a full cloud puff. Soft oval mask only —
+    never a short box that slices top/bottom into hard lines.
+  */
+  width: calc(16% * var(--cloud-size));
+  height: calc(58% * var(--cloud-size));
+  overflow: visible;
+  opacity: 1;
+  /* Keep luminance; lift toward pure white */
+  mix-blend-mode: screen;
   pointer-events: none;
+  -webkit-mask-image: radial-gradient(
+    ellipse 58% 48% at 50% 50%,
+    #000 0%,
+    #000 28%,
+    rgba(0, 0, 0, 0.65) 52%,
+    rgba(0, 0, 0, 0.2) 72%,
+    transparent 100%
+  );
+  mask-image: radial-gradient(
+    ellipse 58% 48% at 50% 50%,
+    #000 0%,
+    #000 28%,
+    rgba(0, 0, 0, 0.65) 52%,
+    rgba(0, 0, 0, 0.2) 72%,
+    transparent 100%
+  );
 }
 
 .sx-sky-cloud img {
   position: absolute;
-  left: -16.25%;
-  top: -13.82%;
-  width: 132.6%;
-  height: 135.89%;
+  /* Oversize the texture so the soft mask reveals a full cloud, not a crop strip */
+  left: -35%;
+  top: -30%;
+  width: 170%;
+  height: 160%;
   max-width: none;
   display: block;
   object-fit: cover;
+  object-position: 45% 40%;
+  /* Push texture to pure white cloud body */
+  filter: brightness(1.55) contrast(1.12) saturate(0) opacity(0.95);
 }
 
 .sx-layer--images {
@@ -1296,8 +1357,15 @@ body {
   pointer-events: none;
 }
 
-.sx-layer--content {
+/* White slide clouds — pan ahead of editorial content */
+.sx-layer--slide-clouds {
   z-index: 3;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.sx-layer--content {
+  z-index: 4;
 }
 
 /* Framed image crops replicate the Figma fills. */
@@ -1480,6 +1548,21 @@ body {
   top: 40vh;
   width: 113.13vw;
   height: 60vh;
+  /* Soft top so the photo crop never reads as a hard cloud cut */
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(0, 0, 0, 0.35) 8%,
+    #000 22%,
+    #000 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(0, 0, 0, 0.35) 8%,
+    #000 22%,
+    #000 100%
+  );
 }
 
 .sx-camp img {
@@ -1495,7 +1578,7 @@ body {
   top: 0;
   width: 44.48vw;
   height: 74.9vh;
-  z-index: 1;
+  z-index: 2;
   pointer-events: none;
 }
 
@@ -1504,6 +1587,32 @@ body {
   top: 0;
   width: 135.54%;
   height: 103.06%;
+}
+
+/*
+  Third slide — white cloud behind hummingbird → Perspective.
+  Same scroll-linked +10% drift as the first two clouds.
+*/
+.sx-conversation-cloud {
+  position: absolute;
+  left: 248vw;
+  top: 22vh;
+  z-index: 1;
+  width: min(78vw, 1240px);
+  height: auto;
+  pointer-events: none;
+  opacity: 1;
+  overflow: visible;
+}
+
+.sx-conversation-cloud img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: none;
+  object-fit: contain;
+  object-position: center center;
+  opacity: 1;
 }
 
 .sx-cockatoo {
@@ -1522,6 +1631,32 @@ body {
   height: 101.67%;
 }
 
+/*
+  First slide — single white cloud in Explore → Boardrooms marked band.
+  Fixed placement only — no animation.
+*/
+.sx-bottom-cloud {
+  position: absolute;
+  left: 68vw;
+  top: 18vh;
+  z-index: 1;
+  width: min(78vw, 1240px);
+  height: auto;
+  pointer-events: none;
+  opacity: 1;
+  overflow: visible;
+}
+
+.sx-bottom-cloud img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: none;
+  object-fit: contain;
+  object-position: center center;
+  opacity: 1;
+}
+
 .sx-heading {
   position: absolute;
   margin: 0;
@@ -1532,6 +1667,7 @@ body {
   line-height: 1.1;
   letter-spacing: 0;
   text-transform: capitalize;
+  z-index: 2;
 }
 
 .sx-heading--ordinary {
@@ -1548,6 +1684,7 @@ body {
   width: 56vw;
   align-items: flex-start;
   text-align: left;
+  z-index: 2;
 }
 
 .sx-heading--conversation {
@@ -1561,6 +1698,7 @@ body {
 
 .sx-lead {
   position: absolute;
+  z-index: 2;
   margin: 0;
   font-family: var(--font-body);
   font-weight: 400;
@@ -1571,7 +1709,8 @@ body {
 
 .sx-lead--ordinary {
   left: 41.82vw;
-  top: 38vh;
+  /* Even vertical rhythm: title → lead ≈ lead → pillars (44.6vh) */
+  top: 30vh;
   width: 46.61vw;
   text-align: center;
   font-size: 1.2vw;
@@ -1600,6 +1739,7 @@ body {
 .sx-pillar,
 .sx-value {
   position: absolute;
+  z-index: 2;
   top: 44.6vh;
   width: 14.17vw;
   display: flex;
@@ -1644,6 +1784,7 @@ body {
 
 .sx-boardrooms-copy {
   position: absolute;
+  z-index: 2;
   left: 100.42vw;
   top: 28vh;
   width: 53.02vw;
@@ -1662,8 +1803,9 @@ body {
 
 .sx-cta {
   position: absolute;
+  z-index: 2;
   left: 100.42vw;
-  top: 43.1vh;
+  top: 52vh;
   display: inline-flex;
   align-items: center;
   gap: 0;
@@ -1711,8 +1853,35 @@ body {
   border-radius: 50px;
 }
 
+/*
+  Second slide — white cloud in the marked right projection
+  (behind Alongside / The Bridge). Fixed placement only.
+*/
+.sx-boardrooms-cloud {
+  position: absolute;
+  left: 172vw;
+  top: 6vh;
+  z-index: 1;
+  width: min(72vw, 1120px);
+  height: auto;
+  pointer-events: none;
+  opacity: 1;
+  overflow: visible;
+}
+
+.sx-boardrooms-cloud img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: none;
+  object-fit: contain;
+  object-position: center center;
+  opacity: 1;
+}
+
 .sx-milestone {
   position: absolute;
+  z-index: 2;
   top: 15.6vh;
   display: flex;
   flex-direction: column;
@@ -1801,6 +1970,7 @@ body {
 
   /* Unwrap parallax layers so mobile order still works */
   .sx-layer--images,
+  .sx-layer--slide-clouds,
   .sx-layer--content {
     display: contents;
   }
@@ -1812,6 +1982,7 @@ body {
 
   .sx-panel > *:not(.sx-layer),
   .sx-layer--images > *,
+  .sx-layer--slide-clouds > *,
   .sx-layer--content > * {
     position: relative !important;
     left: auto !important;
@@ -1916,6 +2087,7 @@ body {
 
   .sx-cta {
     order: 7;
+    margin-top: 28px;
   }
 
   .sx-cta-body,
@@ -1994,6 +2166,18 @@ body {
   .sx-layer,
   .sx-layer--clouds {
     transform: none !important;
+  }
+
+  .sx-sky-cloud,
+  .sx-sky-cloud img,
+  .sx-bottom-cloud,
+  .sx-bottom-cloud img,
+  .sx-boardrooms-cloud,
+  .sx-boardrooms-cloud img,
+  .sx-conversation-cloud,
+  .sx-conversation-cloud img {
+    transform: none !important;
+    animation: none !important;
   }
 
   .sx-darter,
@@ -2332,213 +2516,8 @@ body {
 }
 
 /*
-  Conservation — standalone vertical section (not in Awards scroll).
-  Large perfect circle + concentric amber arc / appointment nodes,
-  sized like the earlier conservation layout, hero backdrop.
-*/
-.resp-section {
-  position: relative;
-  min-height: 100vh;
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: clamp(36px, 5vh, 64px);
-  overflow: hidden;
-  padding: clamp(56px, 8vh, 96px) clamp(20px, 4vw, 72px);
-  background: #0a1f18 url("/images/hero/hero%20bg.png") center / cover no-repeat;
-  color: #ffffff;
-  box-sizing: border-box;
-}
-
-.resp-header {
-  margin: 0;
-  width: 100%;
-  max-width: 1100px;
-  text-align: center;
-}
-
-.resp-heading {
-  margin: 0 auto;
-  max-width: none;
-  color: #ffffff;
-  font-family: var(--font-display);
-  font-size: clamp(36px, 4.2vw, 72px);
-  font-weight: 500;
-  line-height: 1.12;
-  letter-spacing: 0;
-  text-shadow: 0 4px 18px rgba(0, 0, 0, 0.55);
-}
-
-.resp-heading-line {
-  display: block;
-  white-space: nowrap;
-}
-
-.resp-body {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  gap: 0;
-  width: 100%;
-  max-width: 1560px;
-  position: relative;
-}
-
-/* Scales wildfy 350×260 geometry; canopy stays a perfect circle */
-.resp-graphic {
-  position: relative;
-  width: min(52vw, 720px);
-  aspect-ratio: 350 / 260;
-  height: auto;
-  flex-shrink: 0;
-}
-
-.resp-canopy {
-  position: absolute;
-  /* 98/350, 38/260, 184/350 — same ratios as wildfy */
-  left: 28%;
-  top: 14.615%;
-  width: 52.571%;
-  aspect-ratio: 1;
-  height: auto;
-  border-radius: 50%;
-  overflow: hidden;
-  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.5);
-  z-index: 2;
-}
-
-.resp-canopy-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.resp-arcs {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 3;
-  overflow: visible;
-}
-
-.resp-badges {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  width: min(42vw, 520px);
-  height: min(38.57vw, 534px); /* match graphic height: 720 * 260/350 */
-  max-height: 100%;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  text-align: left;
-  flex-shrink: 0;
-}
-
-.resp-badge {
-  display: flex;
-  align-items: center;
-  gap: clamp(16px, 1.6vw, 28px);
-  padding: clamp(14px, 2vh, 22px) clamp(22px, 2.4vw, 40px) clamp(14px, 2vh, 22px)
-    clamp(14px, 1.4vw, 22px);
-  background: #ffffff;
-  border-radius: 9999px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
-  min-height: clamp(92px, 13vh, 124px);
-  box-sizing: border-box;
-}
-
-.resp-badge-icon {
-  width: clamp(64px, 6.2vw, 92px);
-  height: clamp(64px, 6.2vw, 92px);
-  border-radius: 50%;
-  object-fit: contain;
-  flex-shrink: 0;
-  display: block;
-}
-
-.resp-badge-text {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  min-width: 0;
-}
-
-.resp-badge-title {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: clamp(18px, 1.5vw, 28px);
-  font-weight: 500;
-  color: #0c0d0c;
-  line-height: 1.15;
-  letter-spacing: 0;
-}
-
-.resp-badge-copy {
-  margin: 6px 0 0;
-  font-family: var(--font-body);
-  font-size: clamp(13px, 0.95vw, 17px);
-  font-weight: 400;
-  color: #262826;
-  line-height: 1.35;
-  letter-spacing: 0;
-}
-
-@media (max-width: 1023px) {
-  .resp-section {
-    min-height: 0;
-    padding: 48px 20px 56px;
-    gap: 28px;
-  }
-
-  .resp-heading {
-    font-size: clamp(22px, 5.8vw, 40px);
-  }
-
-  .resp-body {
-    flex-direction: column;
-    gap: 28px;
-  }
-
-  .resp-arcs {
-    display: none;
-  }
-
-  .resp-graphic {
-    width: min(72vw, 380px);
-    aspect-ratio: 1;
-  }
-
-  .resp-canopy {
-    position: relative;
-    left: auto;
-    top: auto;
-    width: 100%;
-  }
-
-  .resp-badges {
-    width: min(100%, 420px);
-    height: auto;
-    gap: 14px;
-  }
-
-  .resp-badge {
-    border-radius: 36px;
-    min-height: 0;
-  }
-}
-/*
-  Awards + Sustainability — second horizontal sequence, rebuilt from
-  the Figma frame (6081x1003). One wide panel; design coordinates map
-  at 1920px = 100vw, 1000px = 100vh. Original Figma assets live in
-  /images/awards-figma/ (certificates, laurel crop, photo cutouts,
-  circular photos, background texture).
+  Awards + Sustainability — Figma 627:409 / 506:347+348 (6081×1003).
+  One wide panel; 1920px = 100vw, 1000px = 100vh.
 */
 .awards-scroll {
   position: relative;
@@ -2566,15 +2545,14 @@ body {
   color: #ffffff;
 }
 
-/* Figma awards / giraffe / sustainability strip */
+/* Full Figma strip width so giraffe → tiger never clip */
 .awards-panel--journey {
-  width: 241.54vw;
-  min-width: 241.54vw;
+  width: 316.72vw;
+  min-width: 316.72vw;
   background: #24483a url("/images/awards-figma/bg.png") repeat-x left top / 141vw 100%;
 }
 
-/* Framed photo crops replicate the Figma image fills: a wrapper with
-   hidden overflow and the image scaled/offset by percentage. */
+/* Framed photo crops replicate the Figma image fills. */
 .awd-cheetahs,
 .awd-giraffe,
 .awd-tiger {
@@ -2595,7 +2573,7 @@ body {
 .awd-cheetahs {
   left: 0;
   top: 45.4vh;
-  width: 42.65vw;
+  width: 55.94vw;
   height: 54.6vh;
 }
 
@@ -2607,9 +2585,9 @@ body {
 }
 
 .awd-giraffe {
-  left: 100vw;
+  left: 131.15vw;
   top: 11.23vh;
-  width: 22.88vw;
+  width: 30vw;
   height: 88.8vh;
 }
 
@@ -2621,9 +2599,9 @@ body {
 }
 
 .awd-tiger {
-  left: 210.88vw;
+  left: 276.51vw;
   top: 35.6vh;
-  width: 30.66vw;
+  width: 40.21vw;
   height: 64.7vh;
 }
 
@@ -2634,11 +2612,10 @@ body {
   height: 105.48%;
 }
 
-/* Laurel branches: the Figma crop of the transparent laurel asset. */
 .awd-laurel {
   position: absolute;
   top: 6.8vh;
-  width: 4.52vw;
+  width: 5.94vw;
   height: 23vh;
   overflow: hidden;
   pointer-events: none;
@@ -2655,19 +2632,19 @@ body {
 }
 
 .awd-laurel--left {
-  left: 43.08vw;
+  left: 56.51vw;
 }
 
 .awd-laurel--right {
-  left: 90.59vw;
+  left: 118.8vw;
   transform: scaleX(-1);
 }
 
 .awd-heading-group {
   position: absolute;
-  left: 47.66vw;
+  left: 62.42vw;
   top: 11.2vh;
-  width: 42.97vw;
+  width: 56.35vw;
   text-align: center;
 }
 
@@ -2675,18 +2652,18 @@ body {
   margin: 0;
   color: var(--color-heading-cream);
   font-family: var(--font-display);
-  font-size: clamp(36px, 3.2vw, 64px);
-  font-weight: 400;
+  font-size: clamp(36px, 3.75vw, 72px);
+  font-weight: 600;
   line-height: 1.15;
   letter-spacing: 0;
   text-transform: capitalize;
 }
 
 .awd-subtitle {
-  margin: 3.1vh 0 0;
+  margin: 2.2vh 0 0;
   color: var(--color-heading-cream);
   font-family: var(--font-body);
-  font-size: 0.79vw;
+  font-size: 1.04vw;
   font-weight: 400;
   line-height: 1.35;
   letter-spacing: 0;
@@ -2694,7 +2671,6 @@ body {
   white-space: nowrap;
 }
 
-/* Certificates at their Figma boxes (tops/bottoms aligned). */
 .awd-cert {
   position: absolute;
   top: 32.8vh;
@@ -2705,34 +2681,37 @@ body {
 }
 
 .awd-cert--1 {
-  left: 44.84vw;
+  left: 58.8vw;
+  width: 18.67vw;
 }
 
 .awd-cert--2 {
-  left: 61.04vw;
+  left: 80.04vw;
+  width: 18.67vw;
 }
 
 .awd-cert--3 {
-  left: 77.24vw;
+  left: 101.29vw;
+  width: 21.11vw;
 }
 
-/* Sustainability zone. */
 .awd-arc {
   position: absolute;
-  left: 169.34vw;
-  top: 54vh;
-  width: 42.29vw;
+  left: 166.61vw;
+  top: 0.1vh;
+  width: 55.47vw;
   height: auto;
   opacity: 0.35;
   transform: rotate(-90deg) scaleY(-1);
+  transform-origin: center center;
   pointer-events: none;
 }
 
 .awd-sus-heading-group {
   position: absolute;
-  left: 129.87vw;
+  left: 170.26vw;
   top: 34.7vh;
-  width: 30.94vw;
+  width: 40.57vw;
   text-align: center;
 }
 
@@ -2740,8 +2719,8 @@ body {
   margin: 0;
   color: var(--color-heading-cream);
   font-family: var(--font-display);
-  font-size: clamp(36px, 3.2vw, 64px);
-  font-weight: 400;
+  font-size: clamp(36px, 3.75vw, 72px);
+  font-weight: 600;
   line-height: 1.15;
   letter-spacing: 0;
   text-transform: capitalize;
@@ -2751,7 +2730,7 @@ body {
   margin: 3vh 0 0;
   color: var(--color-heading-cream);
   font-family: var(--font-body);
-  font-size: 0.79vw;
+  font-size: 1.04vw;
   font-weight: 400;
   line-height: 1.4;
   letter-spacing: 0;
@@ -2768,36 +2747,36 @@ body {
 }
 
 .awd-circle--lion {
-  left: 159.41vw;
+  left: 208.96vw;
   top: 5.2vh;
-  width: 7.58vw;
+  width: 9.95vw;
 }
 
 .awd-circle--toucan {
-  left: 163.14vw;
+  left: 213.85vw;
   top: 35.6vh;
-  width: 11.52vw;
+  width: 15.1vw;
 }
 
 .awd-circle--buffalo {
-  left: 159.41vw;
+  left: 208.96vw;
   top: 75.9vh;
-  width: 7.58vw;
+  width: 9.95vw;
 }
 
 .awd-number {
   position: absolute;
-  left: 177.56vw;
+  left: 232.76vw;
   top: 41vh;
   font-family: var(--font-display);
-  font-size: 5.96vw;
+  font-size: 7.81vw;
   font-weight: 700;
   line-height: 1;
 }
 
 .awd-line {
   position: absolute;
-  left: 184.83vw;
+  left: 242.29vw;
   top: 46.9vh;
   width: 2px;
   height: 9.5vh;
@@ -2806,16 +2785,16 @@ body {
 
 .awd-item {
   position: absolute;
-  left: 186.02vw;
+  left: 243.85vw;
   top: 46.3vh;
-  width: 23.19vw;
+  width: 30.42vw;
 }
 
 .awd-item-title {
   margin: 0;
   font-family: var(--font-display);
-  font-size: 1.7vw;
-  font-weight: 400;
+  font-size: 1.98vw;
+  font-weight: 500;
   line-height: 1.15;
   letter-spacing: 0;
   text-transform: capitalize;
@@ -2825,7 +2804,7 @@ body {
 .awd-item-copy {
   margin: 1.2vh 0 0;
   font-family: var(--font-body);
-  font-size: 0.79vw;
+  font-size: 1.04vw;
   font-weight: 400;
   line-height: 1.4;
   letter-spacing: 0;
@@ -2990,6 +2969,12 @@ body {
   z-index: 0;
   overflow: hidden;
   will-change: transform;
+  /* Always show landscape — never a blank black frame while video loads */
+  background-color: #1a1a1a;
+  background-image: url("/images/footer/landscape-poster.png");
+  background-size: cover;
+  background-position: center 45%;
+  background-repeat: no-repeat;
 }
 
 .footer-reveal-video,
@@ -3004,10 +2989,18 @@ body {
 
 .footer-reveal-video {
   z-index: 1;
+  /* Invisible until a real frame paints — poster/bg stays visible underneath */
+  opacity: 0;
+  transition: opacity 0.45s ease;
+}
+
+.footer-reveal-video.is-ready {
+  opacity: 1;
 }
 
 .footer-reveal-poster {
   z-index: 0;
+  opacity: 1;
 }
 
 .footer-reveal-veil {

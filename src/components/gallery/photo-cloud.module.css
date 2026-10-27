@@ -1,0 +1,129 @@
+.page {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #000;
+  color: #fff;
+}
+
+.title {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.stage {
+  position: absolute;
+  inset: 0;
+  perspective: 1100px;
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+}
+
+.dragging {
+  cursor: grabbing;
+}
+
+.world {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.tileBtn {
+  position: absolute;
+  padding: 0;
+  border: 0;
+  background: #111;
+  cursor: inherit;
+  transform-style: preserve-3d;
+}
+
+.tileBtn:focus-visible {
+  outline: 2px solid #f9a01f;
+  outline-offset: 3px;
+}
+
+.tile {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.tileBtn:hover .tile,
+.tileBtn:focus-visible .tile {
+  transform: scale(1.06);
+}
+
+.dragging .tileBtn:hover .tile {
+  transform: none;
+}
+
+.viewer {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 96px 24px 48px;
+  border: 0;
+  background: rgba(0, 0, 0, 0.72);
+  cursor: zoom-out;
+}
+
+.viewerImage {
+  width: min(68vmin, 640px);
+  height: min(68vmin, 640px);
+  object-fit: cover;
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.65);
+  animation: come-forward 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+}
+
+.nav {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+}
+
+.nav :global(.site-header),
+.nav :global(.nav-links a),
+.nav :global(.logo),
+.nav :global(.menu-toggle),
+.nav :global(.mobile-menu) {
+  pointer-events: auto;
+}
+
+@keyframes come-forward {
+  from {
+    transform: scale(0.42);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tile,
+  .viewerImage {
+    transition: none;
+    animation: none;
+  }
+}

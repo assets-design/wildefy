@@ -11,7 +11,7 @@ const linksLeft = [
 
 const linksRight = [
   { label: "Destination", href: "/destination", x: 1169.813 },
-  { label: "Gallery", href: "/#gallery", x: 1343.813 },
+  { label: "Gallery", href: "/gallery", x: 1343.813 },
   { label: "Contact us", href: "/#contact", x: 1474.813 },
 ] as const;
 

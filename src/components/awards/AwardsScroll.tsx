@@ -10,12 +10,11 @@ function prefersReducedMotion() {
 }
 
 /*
-  Horizontal sequence:
+  Horizontal sequence (Figma 627:409 / 506:347+348, 6081px → 316.72vw):
     1. Recognising The Eye Behind The Lens (awards + certificates)
     2. Giraffe portrait
-    3. Sustainability — Protecting What Matters
-  Awards zones use Figma 506:347 coords at 1920px = 100vw.
-  Responsibility lives in its own vertical Conservation section.
+    3. Sustainability — Protecting What Matters + tiger
+  Conservation stays in its own vertical section above this.
 */
 export function AwardsScroll() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -65,6 +64,9 @@ export function AwardsScroll() {
           invalidateOnRefresh: true,
           onUpdate: (self) => applyProgress(self.progress),
           onRefresh: (self) => applyProgress(self.progress),
+          onLeave: () => applyProgress(1),
+          onLeaveBack: () => applyProgress(0),
+          onEnterBack: (self) => applyProgress(self.progress),
         });
 
         applyProgress(awardsTrigger.progress);

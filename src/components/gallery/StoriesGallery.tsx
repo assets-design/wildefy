@@ -253,7 +253,7 @@ export function StoriesGallery() {
           From quiet encounters to extraordinary moments, explore the wild
           through Hymakar&rsquo;s lens.
         </p>
-        <a className="gallery-cta" href="#gallery">
+        <a className="gallery-cta" href="/gallery">
           <span className="gallery-cta-body">Explore Gallery</span>
           <span className="gallery-cta-mark" aria-hidden="true">
             <img

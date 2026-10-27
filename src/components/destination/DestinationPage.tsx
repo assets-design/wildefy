@@ -9,7 +9,7 @@ import { StageFrame } from "@/components/layout/StageFrame";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import {
   MapRouteArrow,
-  dayFromProgress,
+  dayFromScrollProgress,
   progressForDay,
   scrollToRouteProgress,
 } from "./MapRouteArrow";
@@ -117,7 +117,8 @@ const MAP_STOPS: MapStop[] = [
       { icon: ICON_WALK, label: "Checkout & farewell" },
       { icon: ICON_SUNSET, label: "9:30 AM transfer to Raipur" },
     ],
-    card: { left: (17 / ART_W) * 100, top: (2409 / ART_H) * 100 },
+    /* Lifted slightly so Day 6 card stays fully in-frame at max pan */
+    card: { left: (17 / ART_W) * 100, top: (2280 / ART_H) * 100 },
   },
 ];
 
@@ -199,20 +200,19 @@ export function DestinationPage() {
 
     const applyProgress = (scrollProgress: number) => {
       if (clickingRef.current) return;
-      // Map scroll → route so Day 6 has a dwell after the tracker arrives
       const routeP = scrollToRouteProgress(scrollProgress);
       setRouteProgress(routeP);
-      setActiveDay(dayFromProgress(routeP));
+      // Card day follows scroll checkpoints so Day N stays until Day N+1
+      setActiveDay(dayFromScrollProgress(scrollProgress));
     };
 
     const getScrollRun = () => {
       const stageH = stage.offsetHeight;
       const viewH = viewport.clientHeight || window.innerHeight;
-      // Extra runway: pan the tall map + readable time per day, including Day 6 hold
-      return Math.max(
-        stageH - viewH + window.innerHeight * 3.2,
-        viewH * 4.2,
-      );
+      const panDistance = Math.max(0, stageH - viewH);
+      // Pan the tall art + compact day hops. Day 6 arrives late in the pin
+      // so Experiences follows almost immediately (normal scroll).
+      return panDistance + viewH * 2.6;
     };
 
     const trigger = ScrollTrigger.create({
@@ -221,17 +221,24 @@ export function DestinationPage() {
       end: () => `+=${Math.round(getScrollRun())}`,
       pin: true,
       pinSpacing: true,
-      scrub: reduceMotion ? false : 0.4,
-      anticipatePin: 1,
+      scrub: reduceMotion ? false : 0.25,
+      anticipatePin: 0.5,
       invalidateOnRefresh: true,
+      refreshPriority: 1,
       onUpdate: (self) => applyProgress(self.progress),
       onRefresh: (self) => applyProgress(self.progress),
+      onLeave: () => {
+        setRouteProgress(1);
+        setActiveDay(6);
+      },
     });
 
     applyProgress(trigger.progress);
-    ScrollTrigger.refresh();
+    // Single deferred refresh after layout — avoid refresh storms mid-scroll
+    const refreshId = window.setTimeout(() => ScrollTrigger.refresh(), 60);
 
     return () => {
+      window.clearTimeout(refreshId);
       if (clickTimerRef.current != null) {
         window.clearTimeout(clickTimerRef.current);
         clickTimerRef.current = null;
@@ -243,7 +250,6 @@ export function DestinationPage() {
   const selectDay = (day: number) => {
     const journey = journeyRef.current;
     if (!journey) return;
-    // progressForDay returns scroll progress (with Day 6 dwell accounted for)
     const scrollTarget = progressForDay(day);
     const routeTarget = scrollToRouteProgress(scrollTarget);
     setActiveDay(day);
@@ -255,26 +261,35 @@ export function DestinationPage() {
 
     const st = ScrollTrigger.getAll().find((t) => t.trigger === journey);
     if (st) {
-      const scrollTo = st.start + (st.end - st.start) * scrollTarget;
-      window.scrollTo({
-        top: scrollTo,
-        behavior: reduceMotion ? "auto" : "smooth",
-      });
+      const top = st.start + (st.end - st.start) * scrollTarget;
+      const lenis = (
+        window as Window & { __lenis?: { scrollTo: (v: number, o?: object) => void } }
+      ).__lenis;
+      if (lenis) {
+        lenis.scrollTo(top, {
+          duration: reduceMotion ? 0 : 1.05,
+          force: true,
+        });
+      } else {
+        window.scrollTo({
+          top,
+          behavior: reduceMotion ? "auto" : "smooth",
+        });
+      }
     }
 
     clickTimerRef.current = window.setTimeout(
       () => {
         clickingRef.current = false;
         clickTimerRef.current = null;
-        // Re-sync from live ScrollTrigger so scrub doesn't stay stuck
         const live = ScrollTrigger.getAll().find((t) => t.trigger === journey);
         if (live) {
           const routeP = scrollToRouteProgress(live.progress);
           setRouteProgress(routeP);
-          setActiveDay(dayFromProgress(routeP));
+          setActiveDay(dayFromScrollProgress(live.progress));
         }
       },
-      reduceMotion ? 50 : 900,
+      reduceMotion ? 50 : 1100,
     );
   };
 
@@ -359,9 +374,19 @@ export function DestinationPage() {
                 stageRef={stageRef}
                 viewportRef={viewportRef}
               />
+            </div>
 
+            {/*
+              Cards live on the viewport (not the panning stage) so the active
+              day stays on screen until the next day arrives — they no longer
+              scroll away with the map mid-journey.
+            */}
+            <div className={styles.mapCardsLayer}>
               {MAP_STOPS.map((stop) => {
                 const isActive = activeDay === stop.id;
+                // Keep horizontal placement; clamp vertical into the readable band
+                const top = Math.min(56, Math.max(8, stop.card.top * 0.62));
+                const left = Math.min(58, Math.max(2, stop.card.left));
                 return (
                   <article
                     key={stop.id}
@@ -376,8 +401,8 @@ export function DestinationPage() {
                         : styles.glassCard
                     }
                     style={{
-                      left: `${stop.card.left}%`,
-                      top: `${stop.card.top}%`,
+                      left: `${left}%`,
+                      top: `${top}%`,
                     }}
                   >
                     <div className={styles.glassCardInner}>

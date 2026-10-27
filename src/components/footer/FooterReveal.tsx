@@ -15,7 +15,7 @@ const NAV_LINKS = [
   { label: "Our Story", href: "/about" },
   { label: "Experiences", href: "/#experiences" },
   { label: "Destination", href: "/destination" },
-  { label: "Gallery", href: "/#gallery" },
+  { label: "Gallery", href: "/gallery" },
   { label: "Contact us", href: "/#contact" },
 ];
 
@@ -69,12 +69,26 @@ export function FooterReveal() {
     const video = videoRef.current;
     if (!section || !pin || !cta || !glass || !media) return;
 
-    video?.play().catch(() => {});
+    const markVideoReady = () => {
+      video?.classList.add("is-ready");
+    };
+    if (video) {
+      if (video.readyState >= 2) markVideoReady();
+      video.addEventListener("loadeddata", markVideoReady);
+      video.addEventListener("playing", markVideoReady);
+      video.play().catch(() => {});
+    }
+
+    const clearVideoListeners = () => {
+      if (!video) return;
+      video.removeEventListener("loadeddata", markVideoReady);
+      video.removeEventListener("playing", markVideoReady);
+    };
 
     if (prefersReducedMotion()) {
       gsap.set(cta, { clearProps: "all", opacity: 1, y: 0 });
       gsap.set(glass, { clearProps: "all", yPercent: 0 });
-      return;
+      return clearVideoListeners;
     }
 
     const ctx = gsap.context(() => {
@@ -102,8 +116,10 @@ export function FooterReveal() {
             pin: pin,
             pinSpacing: true,
             scrub: opts.scrub,
-            anticipatePin: 1,
+            anticipatePin: 0.5,
             invalidateOnRefresh: true,
+            // Below map pin so destination map refresh wins layout order
+            refreshPriority: -1,
           },
         });
 
@@ -122,8 +138,20 @@ export function FooterReveal() {
         // Hold CTA composition briefly before footer begins.
         tl.to({}, { duration: 0.12 }, 0.28);
 
-        // Stage 3 — glass rises from bottom to final ~70vh coverage.
+        // Stage 3 — glass rises; hide headline + CTA as the container enters.
         tl.to(glass, { yPercent: 0, duration: 0.5 }, 0.4);
+        tl.to(
+          title,
+          { opacity: 0, y: -24, duration: 0.22 },
+          0.4,
+        );
+        tl.to(
+          button,
+          { opacity: 0, y: -16, duration: 0.2 },
+          0.42,
+        );
+        // Keep CTA non-interactive once hidden under the glass
+        tl.set(cta, { pointerEvents: "none" }, 0.55);
 
         // Settle hold so reverse scroll can park near the 70% checkpoint.
         tl.to({}, { duration: 0.14 });
@@ -135,15 +163,18 @@ export function FooterReveal() {
       };
 
       mm.add("(min-width: 768px)", () =>
-        buildTimeline({ endVh: 2.05, scrub: 0.7, titleY: 40 }),
+        buildTimeline({ endVh: 1.85, scrub: 0.45, titleY: 40 }),
       );
 
       mm.add("(max-width: 767px)", () =>
-        buildTimeline({ endVh: 1.55, scrub: 0.55, titleY: 28 }),
+        buildTimeline({ endVh: 1.45, scrub: 0.4, titleY: 28 }),
       );
     }, section);
 
-    return () => ctx.revert();
+    return () => {
+      clearVideoListeners();
+      ctx.revert();
+    };
   }, []);
 
   return (

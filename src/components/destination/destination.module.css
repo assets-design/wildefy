@@ -108,7 +108,8 @@
 
 /* —— Itinerary —— */
 .itinerary {
-  padding: clamp(3.5rem, 6vw, 5.5rem) 0 clamp(4rem, 7vw, 6rem);
+  /* 30px gap between map and Experiences */
+  padding: clamp(3.5rem, 6vw, 5.5rem) 0 30px;
   background: #fff;
 }
 
@@ -156,8 +157,15 @@
 .mapFrame {
   position: relative;
   width: 100%;
-  height: min(92vh, 980px);
+  /* Sticky map fills the viewport while ScrollTrigger pins the journey */
+  height: 100vh;
+  height: 100dvh;
+  min-height: 100vh;
   overflow: hidden;
+  /* Contain blink GIFs + stage translate — no leak into Experiences white */
+  clip-path: inset(0 round 0);
+  contain: paint;
+  isolation: isolate;
   background: #f2f0e9;
   border-radius: 0;
 }
@@ -167,7 +175,8 @@
   left: 0;
   top: 0;
   width: 100%;
-  aspect-ratio: 1680 / 2852;
+  /* Match map-bg.png so pin % = art % (no cover crop drift) */
+  aspect-ratio: 2485 / 4095;
   will-change: transform;
   isolation: isolate;
 }
@@ -176,7 +185,7 @@
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: fill;
   object-position: center top;
   pointer-events: none;
   user-select: none;
@@ -190,35 +199,42 @@
   overflow: visible;
 }
 
-/* Only the active day's card is visible */
+/* Viewport-fixed card stack — does not pan with the map stage */
+.mapCardsLayer {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+}
+
+/* Only the active day's card is visible — opacity-only to avoid ghost stacks */
 .glassCard {
   position: absolute;
   z-index: 4;
   width: min(37.5%, 630px);
+  max-width: calc(100% - 1.5rem);
   min-height: 12%;
   padding: clamp(1rem, 1.6vw, 1.75rem) clamp(1rem, 1.8vw, 1.85rem);
   border-radius: 22px;
-  background: rgba(104, 104, 104, 0.2);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: rgba(104, 104, 104, 0.28);
+  /* Full frosted blur behind every map card */
+  backdrop-filter: blur(40px) saturate(140%);
+  -webkit-backdrop-filter: blur(40px) saturate(140%);
   color: #000;
   box-sizing: border-box;
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  transform: translate3d(0, 8px, 0);
   transition:
-    opacity 0.45s ease,
-    visibility 0.45s ease,
-    transform 0.45s ease,
-    box-shadow 0.45s ease;
+    opacity 0.35s ease,
+    visibility 0.35s ease,
+    box-shadow 0.35s ease;
 }
 
 .glassCardActive {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
-  transform: translate3d(0, 0, 0);
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12);
   z-index: 6;
 }
@@ -233,7 +249,8 @@
   margin: 0;
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: clamp(1.15rem, 1.85vw, 2.125rem);
+  /* 15% smaller than previous map-card type */
+  font-size: clamp(0.9775rem, 1.5725vw, 1.80625rem);
   line-height: 1.2;
   text-transform: capitalize;
   color: #000;
@@ -243,7 +260,7 @@
   margin: 0;
   max-width: 28rem;
   font-family: var(--font-body);
-  font-size: clamp(0.85rem, 1.15vw, 1.375rem);
+  font-size: clamp(0.7225rem, 0.9775vw, 1.16875rem);
   font-weight: 400;
   line-height: 1.35;
   text-transform: capitalize;
@@ -267,7 +284,7 @@
   width: clamp(5.5rem, 8.5vw, 10.5rem);
   text-align: center;
   font-family: var(--font-body);
-  font-size: clamp(0.75rem, 1.05vw, 1.25rem);
+  font-size: clamp(0.6375rem, 0.8925vw, 1.0625rem);
   line-height: 1.25;
   text-transform: capitalize;
   color: #000;
@@ -279,22 +296,38 @@
   object-fit: contain;
 }
 
-/* Red blinking dots — centered in the orange/white route rings */
-.mapBlinkDot {
+/* Zero-size anchors sit on painted ring centers */
+.mapBlinkAnchor {
   position: absolute;
-  width: clamp(16px, 1.9%, 24px);
-  height: auto;
-  aspect-ratio: 1;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  z-index: 5;
+  pointer-events: none;
+}
+
+/*
+ * Red blinking dots — dead-center of each orange ring cream hole.
+ * vw (not %) keeps width===height on the tall map stage.
+ */
+.mapBlinkDot {
+  --blink: clamp(13px, 1.2vw, 20px);
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--blink);
+  height: var(--blink);
   max-width: none;
   margin: 0;
   padding: 0;
   border: 0;
-  /* left/top = ring center; translate centers the GIF on that point */
+  border-radius: 50%;
+  object-fit: contain;
+  object-position: center;
   transform: translate(-50%, -50%);
   pointer-events: none;
-  /* GIF frames use black/off — screen drops black so only the red pulse shows */
-  mix-blend-mode: screen;
-  z-index: 2;
+  /* Avoid mix-blend screen — it painted rings into the white gap below the map */
 }
 
 /* Red route tracker arrow — scrubbed along MotionPath */
@@ -316,6 +349,9 @@
 .experiences {
   background: var(--dest-orange);
   padding: clamp(3.5rem, 6vw, 5.5rem) 0;
+  /* Keep section solid so pin-unpin never flashes a black void through */
+  position: relative;
+  z-index: 1;
 }
 
 .experiencesHead {
@@ -368,6 +404,8 @@
 .transfers {
   background: #fff;
   padding: clamp(3.5rem, 6vw, 5.5rem) 0 clamp(4rem, 7vw, 6rem);
+  position: relative;
+  z-index: 1;
 }
 
 .transfersHead {
@@ -544,7 +582,9 @@
   }
 
   .mapFrame {
-    height: min(78vh, 820px);
+    height: 100vh;
+    height: 100dvh;
+    min-height: 100vh;
   }
 
   .glassCard {
@@ -553,16 +593,16 @@
   }
 
   .glassHeadline {
-    font-size: clamp(1rem, 2.4vw, 1.45rem);
+    font-size: clamp(0.85rem, 2.04vw, 1.2325rem);
   }
 
   .glassStay {
-    font-size: clamp(0.78rem, 1.6vw, 1rem);
+    font-size: clamp(0.663rem, 1.36vw, 0.85rem);
   }
 
   .glassBeat {
     width: clamp(4.5rem, 12vw, 7.5rem);
-    font-size: clamp(0.7rem, 1.5vw, 0.9rem);
+    font-size: clamp(0.595rem, 1.275vw, 0.765rem);
   }
 
   .experienceGrid {
@@ -586,7 +626,9 @@
   }
 
   .mapFrame {
-    height: min(70vh, 640px);
+    height: 100vh;
+    height: 100dvh;
+    min-height: 100vh;
   }
 
   .glassCard {
