@@ -141,10 +141,10 @@ export function NatGeoCloudDissolve({ progress, className }: Props) {
         }
 
         vec4 texPixel = texture2D(u_image, imgUv);
-        // Lift toward Gallery surface (#eef3f4) so dissolve blends with §3
-        vec3 gallerySurface = vec3(0.933, 0.953, 0.957);
-        texPixel.rgb = mix(gallerySurface, texPixel.rgb, 0.45);
-        texPixel.rgb = max(texPixel.rgb, gallerySurface * 0.98);
+        // Soft lift toward sky plate mid-tone (bg-3) — holes show the image under
+        vec3 skyLift = vec3(0.78, 0.86, 0.88);
+        texPixel.rgb = mix(skyLift, texPixel.rgb, 0.72);
+        texPixel.rgb = max(texPixel.rgb, skyLift * 0.92);
 
         vec2 vCenter = (uv - 0.5) * 2.0;
         float vignette = 1.0 - dot(vCenter, vCenter) * 0.22;
@@ -161,7 +161,7 @@ export function NatGeoCloudDissolve({ progress, className }: Props) {
         float bottomMistGrad = smoothstep(0.35, 0.95, 1.0 - uv.y);
         float mistNoise = fbm(vec3(uv.x * 4.0 + u_time * 0.04, (1.0 - uv.y) * 3.5, 30.0));
         float bottomMistAlpha = smoothstep(0.45, 0.85, bottomMistGrad + mistNoise * 0.35);
-        vec3 mistColor = vec3(0.933, 0.953, 0.957);
+        vec3 mistColor = vec3(0.85, 0.80, 0.74);
 
         float alpha = clamp(1.0 - blot, 0.0, 1.0) * u_opacity;
         vec3 finalRgb = mix(texPixel.rgb, texPixel.rgb * 0.45, edge * 0.4);

@@ -230,6 +230,16 @@ export function StoriesGallery() {
       aria-label="Stories beyond the frame"
       ref={sectionRef}
     >
+      <img
+        className="gallery-bg"
+        src="/images/story/bg-3.png"
+        alt=""
+        width={3286}
+        height={925}
+        draggable={false}
+        decoding="async"
+      />
+
       <div className="gallery-strip gallery-strip--top">
         <div className="gallery-strip-track">
           <StripSet images={TOP_IMAGES} />

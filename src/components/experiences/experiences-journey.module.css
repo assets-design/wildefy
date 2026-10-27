@@ -198,12 +198,15 @@
   overflow: hidden;
 }
 
-/* Same as --gallery-surface / .gallery-section — reveal blends into Gallery */
+/* Same sky plate as .gallery-bg — cloud holes dissolve onto the image */
 .handoffSoftFill {
   position: absolute;
   inset: 0;
   z-index: 0;
-  background: var(--gallery-surface, #eef3f4);
+  background-color: var(--gallery-surface, #eef3f4);
+  background-image: url("/images/story/bg-3.png");
+  background-size: cover;
+  background-position: center;
   pointer-events: none;
 }
 

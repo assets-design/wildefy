@@ -3,6 +3,7 @@
 import { useLayoutEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { StoryCloudTransition } from "@/components/story/StoryCloudTransition";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -357,6 +358,9 @@ export function StoryScroll() {
       ref={sectionRef}
     >
       <div className="sx-viewport">
+        {/* Fresh cloudy open + close for §4 Our Story */}
+        <StoryCloudTransition sectionRef={sectionRef} />
+
         <div className="sx-track">
           <article className="sx-panel">
             {/* Part 1a — sky base (Figma image 22) */}

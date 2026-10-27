@@ -1,0 +1,154 @@
+/* Full-section cloud enter / exit veil — tone variants per homepage stage */
+
+.host {
+  position: absolute;
+  inset: 0;
+  z-index: 28;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.gate {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: hidden;
+  transform-origin: 50% 45%;
+  will-change: transform, opacity;
+}
+
+.gateEnter {
+  z-index: 28;
+  transform-origin: 50% 40%;
+}
+
+.gateExit {
+  z-index: 30;
+  transform-origin: 50% 60%;
+}
+
+.fill {
+  position: absolute;
+  inset: 0;
+}
+
+.mist,
+.mistAlt {
+  position: absolute;
+  inset: -8%;
+  width: 116%;
+  height: 116%;
+  object-fit: cover;
+  object-position: center 42%;
+  pointer-events: none;
+  filter: brightness(1.22) contrast(1.08) saturate(0.35);
+}
+
+.mist {
+  opacity: 0.95;
+}
+
+.mistAlt {
+  inset: -18% -12% -10%;
+  width: 124%;
+  height: 124%;
+  object-position: 60% 55%;
+  opacity: 0.55;
+  transform: scaleX(-1);
+  filter: brightness(1.28) contrast(1.05) saturate(0.3) blur(1px);
+}
+
+.bankTop,
+.bankBottom {
+  position: absolute;
+  left: 50%;
+  width: 190vw;
+  max-width: none;
+  height: auto;
+  pointer-events: none;
+  filter: brightness(1.2) contrast(1.1) saturate(0.35);
+}
+
+.bankTop {
+  top: -28%;
+  transform: translateX(-50%) scaleY(-1);
+  opacity: 0.92;
+}
+
+.bankBottom {
+  bottom: -32%;
+  transform: translateX(-50%);
+  opacity: 0.98;
+}
+
+/* Soft cool white — Gallery / Story sky stages */
+.toneSky .fill {
+  background: #eef3f4;
+}
+
+.toneSky .mist,
+.toneSky .mistAlt,
+.toneSky .bankTop,
+.toneSky .bankBottom {
+  filter: brightness(1.18) contrast(1.06) saturate(0.4);
+}
+
+/* Warm cream — Story conversation / soft editorial */
+.toneCream .fill {
+  background: #f5f0e6;
+}
+
+.toneCream .mist,
+.toneCream .mistAlt {
+  filter: brightness(1.12) contrast(1.04) saturate(0.55) sepia(0.12);
+}
+
+.toneCream .bankTop,
+.toneCream .bankBottom {
+  filter: brightness(1.1) contrast(1.05) saturate(0.5) sepia(0.1);
+}
+
+/* Bright mist — default clean dissolve */
+.toneMist .fill {
+  background: #f7f9fc;
+}
+
+/* Deep forest edge — Conservation */
+.toneForest .fill {
+  background: #0c1c14;
+}
+
+.toneForest .mist,
+.toneForest .mistAlt {
+  filter: brightness(0.72) contrast(1.12) saturate(0.25);
+  opacity: 0.88;
+}
+
+.toneForest .mistAlt {
+  opacity: 0.5;
+}
+
+.toneForest .bankTop,
+.toneForest .bankBottom {
+  filter: brightness(0.7) contrast(1.1) saturate(0.3);
+  opacity: 0.85;
+}
+
+/* Amber awards strip */
+.toneAmber .fill {
+  background: #1a2e24;
+}
+
+.toneAmber .mist,
+.toneAmber .mistAlt {
+  filter: brightness(0.85) contrast(1.08) saturate(0.45) sepia(0.2);
+}
+
+.toneAmber .bankTop,
+.toneAmber .bankBottom {
+  filter: brightness(0.82) contrast(1.06) saturate(0.4) sepia(0.15);
+}

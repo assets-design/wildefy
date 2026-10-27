@@ -505,7 +505,12 @@ export function Experiences() {
       ref={sectionRef}
       style={
         hideExperiencesScene
-          ? { background: "var(--gallery-surface, #eef3f4)" }
+          ? {
+              backgroundColor: "var(--gallery-surface, #eef3f4)",
+              backgroundImage: 'url("/images/story/bg-3.png")',
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }
           : undefined
       }
     >
@@ -514,7 +519,12 @@ export function Experiences() {
         ref={wrapRef}
         style={
           hideExperiencesScene
-            ? { background: "var(--gallery-surface, #eef3f4)" }
+            ? {
+                backgroundColor: "var(--gallery-surface, #eef3f4)",
+                backgroundImage: 'url("/images/story/bg-3.png")',
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+              }
             : undefined
         }
       >
@@ -628,8 +638,8 @@ export function Experiences() {
       </div>
 
       {/*
-        Single-plate veil: last Experiences frame + clouds only.
-        No mid-reveal swap to sky photo (that caused the colour jump).
+        Single-plate veil: last Experiences frame + clouds over Gallery sky.
+        Soft fill is the same bg-3 image as .gallery-bg so dissolve lands on it.
       */}
       <div
         className={styles.cloudHandoffFixed}
@@ -641,7 +651,7 @@ export function Experiences() {
           zIndex: handoffZ,
         }}
       >
-        {/* Opaque soft fill so cloud holes never flash §2 or a second photo */}
+        {/* Same sky image as Gallery — cloud holes never flash §2 */}
         <div className={styles.handoffSoftFill} />
         <img
           className={styles.handoffLastFrame}
