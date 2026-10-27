@@ -8,13 +8,24 @@ import styles from "./conservation.module.css";
 gsap.registerPlugin(ScrollTrigger);
 
 /**
- * Figma disc seats (degrees). Cards are pre-placed in CSS; orbit rotation
- * only slides them along this arc. Scroll loops on the arc — never behind
- * the disc (no +360° long-way spin).
+ * Figma Frame 25 seats (node 631:482). CSS places each card at its designed
+ * seat; orbit rotation is only the delta from that home angle so rest pose
+ * matches the file and scroll still scrubs along the arc.
+ *
+ * Seat angles are the polar centers of those AABBs. Steps are equalized to
+ * 26.65° (span of the Figma arc) so green separators stay even while moving.
  */
-const SLOT_ANGLES = [53.21, 25.9, -0.17, -26.14, -53.39] as const;
-const SLOT_COUNT = SLOT_ANGLES.length;
-const STEPS = SLOT_COUNT; // full loop back to the first seat
+const FIGMA_ARC_TOP = 53.21;
+const FIGMA_ARC_BOTTOM = -53.39;
+const SLOT_COUNT = 5;
+const ANGLE_STEP = (FIGMA_ARC_TOP - FIGMA_ARC_BOTTOM) / (SLOT_COUNT - 1);
+const SLOT_ANGLES = Array.from(
+  { length: SLOT_COUNT },
+  (_, i) => FIGMA_ARC_TOP - i * ANGLE_STEP,
+);
+/** Polar angle of each CSS home (must match .wedgeA–E placement). */
+const HOME_POLAR = [53.21, 25.9, -0.17, -26.14, -53.39] as const;
+const STEPS = SLOT_COUNT;
 
 const WEDGES = [
   {
@@ -142,14 +153,13 @@ export function Conservation() {
     );
 
     const apply = (progress: number) => {
-      // 0→1 = one full loop along the arc
       const t = progress * STEPS;
       orbits.forEach((orbit, index) => {
         const home = WEDGES[index].homeSlot;
-        const natural = SLOT_ANGLES[home];
-        // Scroll down → seats drift toward the next index (around the arc)
+        const homePolar = HOME_POLAR[home];
+        // CSS already seats the card at homePolar; only rotate the delta.
         const { angle, opacity } = poseAtSeat(home + t);
-        orbit.style.transform = `rotate(${natural - angle}deg)`;
+        orbit.style.transform = `rotate(${-(angle - homePolar)}deg)`;
         orbit.style.opacity = String(opacity);
       });
       slides.forEach((slide, index) => {
@@ -213,7 +223,12 @@ export function Conservation() {
 
             <div className={styles.wheel}>
               {WEDGES.map((wedge) => (
-                <div key={wedge.src} className={styles.orbit} data-orbit="">
+                <div
+                  key={wedge.src}
+                  className={styles.orbit}
+                  data-orbit=""
+                  style={{ transform: "rotate(0deg)" }}
+                >
                   <div className={`${styles.wedge} ${wedge.className}`}>
                     <div className={styles.wedgeInner}>
                       <img src={wedge.src} alt={wedge.alt} draggable={false} />

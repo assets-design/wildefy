@@ -5,7 +5,8 @@ import Image from "next/image";
 import { FooterReveal } from "@/components/footer/FooterReveal";
 import { StageFrame } from "@/components/layout/StageFrame";
 import { SiteHeader } from "@/components/layout/SiteHeader";
-import { EVERY_DOT, HERO, NUMBERS_STORY, PLANET } from "./aboutData";
+import { EVERY_DOT, HERO, PLANET } from "./aboutData";
+import { NumbersJourney } from "./NumbersJourney";
 import styles from "./about.module.css";
 
 const GlobeJourney = dynamic(
@@ -87,54 +88,8 @@ export function AboutPage() {
         </div>
       </section>
 
-      {/* —— Numbers story (Frame 14 / 591:739) —— */}
-      <section
-        className={styles.numbers}
-        id="about-numbers"
-        aria-labelledby="numbers-title"
-      >
-        <div className={styles.numbersInner}>
-          <h2 id="numbers-title" className={styles.sectionTitle}>
-            {NUMBERS_STORY.title}
-          </h2>
-          <p className={styles.lead}>{NUMBERS_STORY.lead}</p>
-          <div className={styles.numbersLower}>
-            <div className={styles.numbersCopy}>
-              <h3 className={styles.subhead}>{NUMBERS_STORY.subhead}</h3>
-              <p className={styles.bodyText}>{NUMBERS_STORY.body}</p>
-            </div>
-            <div className={styles.graph} aria-hidden>
-              <div className={styles.graphTrack}>
-                <Image
-                  className={styles.graphLine}
-                  src="/images/about/graph-wave.png"
-                  alt=""
-                  width={1375}
-                  height={401}
-                  sizes="(max-width: 1023px) 100vw, 62vw"
-                />
-              </div>
-              <span className={`${styles.graphDot} ${styles.graphDot1}`}>
-                <Image src="/images/about/red-dot.png" alt="" width={49} height={50} />
-              </span>
-              <span className={`${styles.graphDot} ${styles.graphDot2}`}>
-                <Image src="/images/about/red-dot.png" alt="" width={49} height={50} />
-              </span>
-              <span className={`${styles.graphDot} ${styles.graphDot3}`}>
-                <Image src="/images/about/red-dot.png" alt="" width={49} height={50} />
-              </span>
-              <span className={styles.graphArrow}>
-                <Image
-                  src="/images/about/nav-arrow.png"
-                  alt=""
-                  width={61}
-                  height={61}
-                />
-              </span>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* —— Numbers story (Frame 14 / 591:739) — scroll-driven tracker —— */}
+      <NumbersJourney />
 
       {/* —— Spreadsheet → Planet (Frame 15 / 591:740) —— */}
       <section

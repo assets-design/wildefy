@@ -67,6 +67,11 @@
   will-change: transform, opacity;
 }
 
+/*
+ * Figma Frame 25 (631:482) — each seat keeps its exported AABB + local
+ * rotation so annular wedges match the design. All images share the same
+ * 374×320 content box (no per-seat shrink that skewed gutters).
+ */
 .wedge {
   position: absolute;
   display: flex;
@@ -98,9 +103,6 @@
 }
 
 .wedgeA .wedgeInner {
-  /* Slightly smaller than neighbors so every image↔image clear gap is ~23px */
-  width: 361px;
-  height: 309px;
   transform: rotate(90deg);
 }
 

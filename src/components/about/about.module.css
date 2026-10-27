@@ -102,8 +102,8 @@
   color: var(--about-ink);
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: clamp(2.25rem, 4.5vw, 72px);
-  line-height: normal;
+  font-size: clamp(2.4rem, 4.2vw, 4.5rem);
+  line-height: 1.05;
   text-align: center;
   text-transform: capitalize;
 }
@@ -112,8 +112,8 @@
   margin: 0;
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: clamp(1.75rem, 2.8vw, 44px);
-  line-height: normal;
+  font-size: clamp(1.4rem, 1.9vw, 2.125rem);
+  line-height: 1.15;
   text-transform: capitalize;
   color: var(--about-ink);
 }
@@ -150,7 +150,7 @@
   margin: 1.75rem 0 0;
   max-width: 446px;
   font-family: var(--font-body);
-  font-size: 20px;
+  font-size: 1.25rem;
   font-weight: 600;
   line-height: normal;
   text-transform: capitalize;
@@ -160,9 +160,9 @@
 .bodyBlock {
   margin: 2.75rem 0 0;
   font-family: var(--font-body);
-  font-size: 22px;
+  font-size: 1.125rem;
   font-weight: 400;
-  line-height: normal;
+  line-height: 1.4;
   text-transform: capitalize;
   color: var(--about-ink);
 }
@@ -194,7 +194,7 @@
   border-radius: 50px;
   background: #000000;
   font-family: var(--font-body);
-  font-size: 20px;
+  font-size: 1.125rem;
   font-weight: 500;
   text-transform: capitalize;
   transition: background 0.2s ease;
@@ -255,9 +255,9 @@
   margin: 1.25rem auto 0;
   max-width: 1265px;
   font-family: var(--font-body);
-  font-size: clamp(1rem, 1.3vw, 22px);
+  font-size: 1.125rem;
   font-weight: 400;
-  line-height: 1.35;
+  line-height: 1.4;
   text-align: center;
   text-transform: capitalize;
   color: var(--about-ink);
@@ -272,15 +272,36 @@
 }
 
 .numbersCopy {
+  position: relative;
   max-width: 747px;
+  /* Fixed slot so milestone fades never shift the graph */
+  min-height: 9.5rem;
 }
+
+.milestoneSlide {
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 100%;
+  max-width: 747px;
+  opacity: 0;
+  visibility: hidden;
+  /* Instant visibility swap. Opacity transitions inside a pinned
+     (fixed/transformed) ancestor stick mid-fade in Chromium. */
+  pointer-events: none;
+}
+
+.milestoneSlide[data-active="true"] {
+  opacity: 1;
+  visibility: visible;
+}
+
 
 .bodyText {
   margin: 1.75rem 0 0;
   font-family: var(--font-body);
-  font-size: 22px;
+  font-size: 1.125rem;
   font-weight: 400;
-  line-height: 1.35;
+  line-height: 1.4;
   text-transform: capitalize;
   color: var(--about-ink);
 }
@@ -294,20 +315,22 @@
   margin-bottom: -1rem;
 }
 
-.graphTrack {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-}
-
-.graphLine {
+.graphSvg {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: contain;
-  object-position: center;
+  overflow: visible;
   pointer-events: none;
+}
+
+.graphPath {
+  stroke: #b07a32;
+  stroke-width: 7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 18 14;
+  vector-effect: non-scaling-stroke;
 }
 
 .graphDot {
@@ -315,7 +338,9 @@
   width: clamp(28px, 2.6vw, 49px);
   height: clamp(28px, 2.6vw, 50px);
   z-index: 2;
+  transform: translate(-50%, -50%);
   animation: about-dot-pulse 1.6s ease-in-out infinite;
+  pointer-events: none;
 }
 
 .graphDot img {
@@ -324,36 +349,28 @@
   object-fit: contain;
 }
 
-/* Positions relative to graph box — from Figma 588:658 */
 .graphDot1 {
-  left: 7%;
-  top: 90%;
-  transform: translate(-50%, -50%);
   animation-delay: 0s;
 }
 
 .graphDot2 {
-  left: 53.3%;
-  top: 50%;
-  transform: translate(-50%, -50%);
   animation-delay: 0.35s;
 }
 
 .graphDot3 {
-  left: 97%;
-  top: 46%;
-  transform: translate(-50%, -50%);
   animation-delay: 0.7s;
 }
 
 .graphArrow {
   position: absolute;
-  left: 12.7%;
-  top: 61%;
-  width: clamp(40px, 4.5vw, 86px);
-  height: clamp(40px, 4.5vw, 86px);
-  z-index: 2;
-  transform: translate(-50%, -50%) rotate(44.41deg);
+  left: 0;
+  top: 0;
+  width: clamp(40px, 4.5vw, 72px);
+  height: clamp(40px, 4.5vw, 72px);
+  z-index: 3;
+  transform: translate(-50%, -50%);
+  will-change: left, top, transform;
+  pointer-events: none;
 }
 
 .graphArrow img {
@@ -378,6 +395,24 @@
   .graphDot {
     animation: none;
   }
+
+  .numbersCopy {
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+  }
+
+  .milestoneSlide,
+  .milestoneSlide[data-active="true"],
+  .milestoneSlide[data-active="false"] {
+    position: relative;
+    inset: auto;
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    pointer-events: auto;
+  }
 }
 
 /* —— Planet / metrics —— */
@@ -397,7 +432,7 @@
   margin: 1.875rem auto 0;
   max-width: 1472px;
   font-family: var(--font-body);
-  font-size: clamp(1rem, 1.3vw, 22px);
+  font-size: 1.125rem;
   font-weight: 400;
   line-height: 1.45;
   text-transform: capitalize;
@@ -429,8 +464,8 @@
   margin: 0;
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: clamp(2.75rem, 4.5vw, 72px);
-  line-height: normal;
+  font-size: clamp(2.4rem, 4.2vw, 4.5rem);
+  line-height: 1.05;
   color: var(--about-accent);
   text-transform: capitalize;
 }
@@ -438,7 +473,7 @@
 .metricLabel {
   margin: 0.35rem 0 0;
   font-family: var(--font-body);
-  font-size: 22px;
+  font-size: 1.125rem;
   font-weight: 400;
   line-height: normal;
   text-transform: capitalize;
@@ -491,6 +526,13 @@
 
   .numbersCopy {
     max-width: none;
+    min-height: 8.5rem;
+  }
+
+  /* Keep absolute stacking so fades don't shift layout on tablet */
+  .numbersCopy .milestoneSlide {
+    position: absolute;
+    inset: 0 auto auto 0;
   }
 
   .metrics {
@@ -513,11 +555,12 @@
   .bodyText,
   .lead,
   .planetBody,
-  .metricLabel {
-    font-size: 17px;
+  .metricLabel,
+  .ctaLabel {
+    font-size: 1rem;
   }
 
   .mutedLine {
-    font-size: 16px;
+    font-size: 0.9375rem;
   }
 }

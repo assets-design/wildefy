@@ -25,8 +25,20 @@ export const NUMBERS_STORY = {
   title: "The Numbers Were Never the Whole Story.",
   lead:
     "Hymakar’s 27-year corporate journey taught him that true leadership goes beyond numbers and performance. It lies in understanding people, recognising hidden potential, and helping individuals achieve what others thought was impossible.",
-  subhead: "27 Years in finance",
-  body: "Hymakar’s corporate journey was shaped by more than balance sheets and business performance.",
+  milestones: [
+    {
+      heading: "27 Years In Finance",
+      body: "Hymakar’s Corporate Journey Was Shaped By More Than Balance Sheets And Business Performance.",
+    },
+    {
+      heading: "Recognising Hidden Potential",
+      body: "True Leadership Lies In Understanding People, Recognising Their Strengths, And Helping Them Achieve What Others Thought Was Impossible.",
+    },
+    {
+      heading: "Leadership Beyond Numbers",
+      body: "The Lessons Of The Wild Reinforce The Importance Of Patience, Awareness, Trust, And Adapting To Every Situation.",
+    },
+  ],
 } as const;
 
 export const PLANET = {
