@@ -16,12 +16,16 @@ import styles from "./conservation.module.css";
 const MAX_TILT = Math.PI / 2 - 0.12;
 /** One full turn across the pinned Conservation runway. */
 const SCROLL_TURNS = Math.PI * 2;
-const EARTH_FOV = 40;
+/** Face Africa / Europe on the visible half-disc (texture seam sits at the back). */
+const SPIN_OFFSET = -Math.PI / 2;
+const EARTH_FOV = 42;
 /**
- * Exact fit: unit-sphere silhouette = circular disc.
- * Must NOT overfill — overfill turns the half-Earth into a straight pillar.
+ * Exact spherical limb fit: half-angle asin(R/d) = fov/2 → d = 1 / sin(fov/2).
+ * Keep scale ≤ 1 so the limb stays inside the view (overfill hits the square
+ * canvas edge and looks like a flat rectangular pillar).
  */
-const EARTH_CAM_Z = 1 / Math.tan(THREE.MathUtils.degToRad(EARTH_FOV / 2));
+const EARTH_CAM_Z = 1 / Math.sin(THREE.MathUtils.degToRad(EARTH_FOV / 2));
+const EARTH_MESH_SCALE = 0.995;
 
 type Orientation = {
   spin: number;
@@ -38,30 +42,50 @@ function Atmosphere() {
       blending: THREE.AdditiveBlending,
       depthWrite: false,
       vertexShader: `varying vec3 vN; void main(){ vN = normalize(normalMatrix*normal); gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
-      fragmentShader: `varying vec3 vN; void main(){ float i = pow(0.58 - dot(vN, vec3(0.0,0.0,1.0)), 5.0); gl_FragColor = vec4(0.35,0.7,1.0,1.0)*i*0.28; }`,
+      fragmentShader: `varying vec3 vN; void main(){ float i = pow(0.55 - dot(vN, vec3(0.0,0.0,1.0)), 4.5); gl_FragColor = vec4(0.4,0.75,1.0,1.0)*i*0.35; }`,
     }),
   );
   return (
-    <mesh scale={1.008} material={mat.current}>
+    <mesh scale={1.01} material={mat.current}>
       <sphereGeometry args={[1, 64, 64]} />
     </mesh>
   );
 }
 
-/** Keep the globe framed so its silhouette matches the circular disc. */
+/** Lock perspective so the unit-sphere silhouette matches the circular disc. */
 function FitDiscCamera() {
   const { camera, size } = useThree();
+
+  const apply = (cam: THREE.PerspectiveCamera, aspect: number) => {
+    cam.fov = EARTH_FOV;
+    cam.aspect = aspect;
+    cam.near = 0.1;
+    cam.far = 40;
+    cam.position.set(0, 0, EARTH_CAM_Z);
+    cam.lookAt(0, 0, 0);
+    cam.updateProjectionMatrix();
+  };
+
   useLayoutEffect(() => {
-    const persp = camera as THREE.PerspectiveCamera;
-    if (!persp.isPerspectiveCamera) return;
-    persp.fov = EARTH_FOV;
-    persp.aspect = size.width / Math.max(size.height, 1);
-    persp.position.set(0, 0, EARTH_CAM_Z);
-    persp.near = 0.1;
-    persp.far = 20;
-    persp.lookAt(0, 0, 0);
-    persp.updateProjectionMatrix();
+    const cam = camera as THREE.PerspectiveCamera;
+    if (!cam.isPerspectiveCamera) return;
+    apply(cam, size.width / Math.max(size.height, 1));
   }, [camera, size]);
+
+  useFrame(({ camera: cam, size: s }) => {
+    const persp = cam as THREE.PerspectiveCamera;
+    if (!persp.isPerspectiveCamera) return;
+    const aspect = s.width / Math.max(s.height, 1);
+    // Always re-assert — R3F can nudge aspect on resize mid-frame.
+    if (
+      Math.abs(persp.fov - EARTH_FOV) > 0.01 ||
+      Math.abs(persp.aspect - aspect) > 0.0005 ||
+      Math.abs(persp.position.z - EARTH_CAM_Z) > 0.001
+    ) {
+      apply(persp, aspect);
+    }
+  });
+
   return null;
 }
 
@@ -82,6 +106,7 @@ function EarthMesh({
   ]) as [THREE.Texture, THREE.Texture];
   map.colorSpace = THREE.SRGBColorSpace;
   map.anisotropy = 8;
+  spec.anisotropy = 8;
 
   const tiltRef = useRef<THREE.Group>(null);
   const spinRef = useRef<THREE.Group>(null);
@@ -120,7 +145,7 @@ function EarthMesh({
     }
     state.revision = revision.current;
 
-    const targetSpin = progress.current * SCROLL_TURNS;
+    const targetSpin = progress.current * SCROLL_TURNS + SPIN_OFFSET;
     const targetTilt = Math.sin(progress.current * Math.PI * 2) * 0.12;
 
     if (!state.manual && !dragging.current) {
@@ -141,27 +166,30 @@ function EarthMesh({
   });
 
   return (
-    <group ref={tiltRef}>
-      <group ref={spinRef}>
-        <mesh>
-          <sphereGeometry args={[1, 96, 96]} />
-          <meshPhongMaterial
-            map={map}
-            specularMap={spec}
-            specular={new THREE.Color("#2a4a3a")}
-            shininess={12}
-          />
-        </mesh>
-        <mesh ref={cloudsRef} scale={1.012}>
-          <sphereGeometry args={[1, 64, 64]} />
-          <meshPhongMaterial
-            map={cloudMap}
-            transparent
-            opacity={0.22}
-            depthWrite={false}
-          />
-        </mesh>
+    <group scale={EARTH_MESH_SCALE}>
+      <group ref={tiltRef}>
+        <group ref={spinRef}>
+          <mesh>
+            <sphereGeometry args={[1, 96, 96]} />
+            <meshPhongMaterial
+              map={map}
+              specularMap={spec}
+              specular={new THREE.Color("#3a5a4a")}
+              shininess={18}
+            />
+          </mesh>
+          <mesh ref={cloudsRef} scale={1.012}>
+            <sphereGeometry args={[1, 64, 64]} />
+            <meshPhongMaterial
+              map={cloudMap}
+              transparent
+              opacity={0.2}
+              depthWrite={false}
+            />
+          </mesh>
+        </group>
       </group>
+      <Atmosphere />
     </group>
   );
 }
@@ -172,7 +200,7 @@ export default function ConservationEarth({
   progress: MutableRefObject<number>;
 }) {
   const orientation = useRef<Orientation>({
-    spin: 0,
+    spin: SPIN_OFFSET,
     tilt: 0,
     manual: false,
     revision: 0,
@@ -183,7 +211,6 @@ export default function ConservationEarth({
   const surface = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Bump revision when scroll progress moves so drag yields back to scroll.
     let last = progress.current;
     let raf = 0;
     const tick = () => {
@@ -243,30 +270,27 @@ export default function ConservationEarth({
 
   return (
     <div className={styles.earthSlot}>
-      {/*
-        Inner round shell — Chrome only clips WebGL when mask + border-radius
-        sit on a transformed layer wrapping the canvas.
-      */}
       <div className={styles.earthRound}>
         <Canvas
           className={styles.earthCanvas}
           dpr={[1, 1.75]}
-          camera={{ position: [0, 0, EARTH_CAM_Z], fov: EARTH_FOV }}
-          gl={{ antialias: true, alpha: true, premultipliedAlpha: false }}
+          camera={{ position: [0, 0, EARTH_CAM_Z], fov: EARTH_FOV, near: 0.1, far: 40 }}
+          gl={{
+            antialias: true,
+            alpha: true,
+            premultipliedAlpha: false,
+            preserveDrawingBuffer: true,
+          }}
           onCreated={({ gl }) => {
             gl.setClearColor(0x000000, 0);
             gl.setClearAlpha(0);
           }}
         >
           <FitDiscCamera />
-          <ambientLight intensity={0.62} />
-          <directionalLight position={[3.2, 1.4, 2.2]} intensity={3.1} />
-          <directionalLight position={[2.2, 0.6, 3.5]} intensity={1.0} />
-          <directionalLight
-            position={[-2.4, -0.2, -1.2]}
-            intensity={0.28}
-            color="#6a9a7a"
-          />
+          <ambientLight intensity={0.75} />
+          <directionalLight position={[4, 2, 3]} intensity={2.8} />
+          <directionalLight position={[2, 1, 4]} intensity={1.2} />
+          <directionalLight position={[-2, 0.5, 1]} intensity={0.5} color="#7aaa8a" />
           <Suspense fallback={null}>
             <EarthMesh
               progress={progress}
@@ -274,7 +298,6 @@ export default function ConservationEarth({
               dragging={dragging}
               revision={revision}
             />
-            <Atmosphere />
           </Suspense>
         </Canvas>
       </div>

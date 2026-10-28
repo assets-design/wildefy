@@ -221,9 +221,9 @@ export function Conservation() {
               </div>
             </div>
 
-            <ConservationEarth progress={earthProgress} />
-
             <h2 className={styles.label}>Conservation</h2>
+
+            <ConservationEarth progress={earthProgress} />
           </div>
         </div>
 

@@ -113,9 +113,9 @@
 }
 
 /*
-  Same seat as the old white disc: full circle centered on the left edge.
-  Art clips at x=0 → only the right half shows (true half-Earth).
-  Sphere is framed to exact disc size so the right edge stays curved.
+  Full 1000 circle centered on the left edge (left: -500).
+  Art viewport clips x < 0 → perfect right half-circle.
+  Orthographic globe fills the disc; z-index covers the Conservation label.
 */
 .earthSlot {
   position: absolute;
@@ -123,7 +123,7 @@
   top: 0;
   width: 1000px;
   height: 1000px;
-  z-index: 2;
+  z-index: 4;
   touch-action: none;
   pointer-events: auto;
   background: transparent;
@@ -136,9 +136,9 @@
   overflow: hidden;
   transform: translate3d(0, 0, 0);
   isolation: isolate;
-  /* Chrome WebGL clip hack — forces canvas into the round mask */
-  -webkit-mask-image: -webkit-radial-gradient(circle, #fff 100%, #000 100%);
-  mask-image: radial-gradient(circle, #fff 100%, #000 100%);
+  /* Chrome WebGL clip — canvas stays inside the round disc */
+  -webkit-mask-image: -webkit-radial-gradient(circle, #fff 99%, #000 100%);
+  mask-image: radial-gradient(circle, #fff 99%, #000 100%);
   clip-path: circle(50% at 50% 50%);
   -webkit-clip-path: circle(50% at 50% 50%);
 }
@@ -179,7 +179,7 @@
   text-align: center;
   text-transform: capitalize;
   text-shadow: 0 2px 18px rgba(0, 0, 0, 0.55);
-  z-index: 3;
+  z-index: 1;
   pointer-events: none;
 }
 

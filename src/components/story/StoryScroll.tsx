@@ -13,7 +13,8 @@ const CLOUD_REVEAL_VH = 0.85;
  * Full horizontal travel scale per layer (relative to panel − viewport).
  * Layers start in sequence; each still uses its own distance.
  */
-const LAYER_BG = 0.92;
+/** Background pan distance — 10% slower than the previous 0.92 scale. */
+const LAYER_BG = 0.828;
 const LAYER_CLOUDS = 0.55;
 const LAYER_SLIDE_CLOUDS = 1;
 const LAYER_IMAGES = 0.88;
