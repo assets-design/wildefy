@@ -1569,11 +1569,11 @@ body {
 
 /*
   Third slide — white cloud behind hummingbird → Perspective.
-  Same scroll-linked +10% drift as the first two clouds.
+  Kept further right so it stays clear of the boardrooms (2nd) cloud.
 */
 .sx-conversation-cloud {
   position: absolute;
-  left: 248vw;
+  left: 278vw;
   top: 22vh;
   z-index: 1;
   width: min(62.4vw, 992px);

@@ -21,8 +21,8 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
     }
 
     const lenis = new Lenis({
-      // Snappier settle — long glide + coast was overshooting pin sections
-      lerp: 0.12,
+      // Softer settle — keep gliding after the wheel stops, then ease out
+      lerp: 0.075,
       wheelMultiplier: 0.82,
       touchMultiplier: 1,
       smoothWheel: true,

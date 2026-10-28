@@ -25,7 +25,7 @@ const EARTH_FOV = 42;
  * canvas edge and looks like a flat rectangular pillar).
  */
 const EARTH_CAM_Z = 1 / Math.sin(THREE.MathUtils.degToRad(EARTH_FOV / 2));
-const EARTH_MESH_SCALE = 0.995;
+const EARTH_MESH_SCALE = 1;
 
 type Orientation = {
   spin: number;

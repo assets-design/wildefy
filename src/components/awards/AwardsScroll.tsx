@@ -27,10 +27,6 @@ const H_PHASE_CONTENT = { start: 0, end: 1 };
 const H_BG_EXTRA = 0.14;
 const H_IMAGES_EXTRA = 0.08;
 const H_CONTENT_EXTRA = 0.035;
-const H_COAST_EXTRA = 0.1;
-const H_COAST_DURATION = 2.4;
-const H_COAST_STAGGER = 0.28;
-const H_COAST_IDLE_MS = 140;
 
 function prefersReducedMotion() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -236,46 +232,25 @@ export function AwardsScroll() {
           `.${styles.sustainLeft}`,
         );
 
+        const layerBase = { bg: 0, images: 0, content: 0 };
+
+        /** Parallax x only — right laurel mirror lives on the img CSS. */
+        const setContentX = (els: HTMLElement[], x: number) => {
+          els.forEach((el) => {
+            gsap.set(el, { x, force3D: true });
+          });
+        };
+
         gsap.set(track, { x: 0, force3D: true });
         if (bgPlate) gsap.set(bgPlate, { x: 0, force3D: true });
         if (tigerFrame) gsap.set(tigerFrame, { x: 0, force3D: true });
         if (tigerImg) gsap.set(tigerImg, { x: 0, force3D: true });
         gsap.set(earlyImageEls, { x: 0, force3D: true });
-        gsap.set(earlyContentEls, { x: 0, force3D: true });
-        gsap.set(lateContentEls, { x: 0, force3D: true });
+        setContentX(earlyContentEls, 0);
+        setContentX(lateContentEls, 0);
         if (sustainLeftEl) gsap.set(sustainLeftEl, { x: 0, force3D: true });
         gsap.set(hold, { autoAlpha: 1 });
         applyVertical(0);
-
-        const layerBase = { bg: 0, images: 0, content: 0 };
-        let activeImageEls: HTMLElement[] = earlyImageEls;
-        let activeContentEls: HTMLElement[] = earlyContentEls;
-        let layerMode: "early" | "late" | "freeze-early" = "early";
-        let lastPanT = 0;
-        let hScrollDir: 1 | -1 = 1;
-        let lastHorizScrolled = 0;
-        let inHorizontal = true;
-        let idleTimer = 0;
-        const coastTweens: gsap.core.Tween[] = [];
-
-        const killCoast = () => {
-          if (idleTimer) {
-            window.clearTimeout(idleTimer);
-            idleTimer = 0;
-          }
-          while (coastTweens.length) coastTweens.pop()?.kill();
-        };
-
-        const setContentX = (els: HTMLElement[], x: number) => {
-          els.forEach((el) => {
-            const flip = el.classList.contains(styles.laurelRight);
-            gsap.set(el, {
-              x,
-              scaleX: flip ? -1 : 1,
-              force3D: true,
-            });
-          });
-        };
 
         /**
          * Segment-local panT (0→1). Start together, stop one-by-one.
@@ -299,10 +274,6 @@ export function AwardsScroll() {
           if (bgPlate) gsap.set(bgPlate, { x: layerBase.bg, force3D: true });
 
           if (mode === "early" || mode === "freeze-early") {
-            layerMode = mode;
-            lastPanT = t;
-            activeImageEls = earlyImageEls;
-            activeContentEls = earlyContentEls;
             gsap.set(earlyImageEls, { x: layerBase.images, force3D: true });
             setContentX(earlyContentEls, layerBase.content);
             // Keep hold copy + tiger frame/img unshifted so vertical stays clean
@@ -314,9 +285,6 @@ export function AwardsScroll() {
           }
 
           // late — tiger segment
-          layerMode = "late";
-          lastPanT = t;
-          activeContentEls = lateContentEls;
           gsap.set(earlyImageEls, { x: 0, force3D: true });
           setContentX(earlyContentEls, 0);
           if (sustainLeftEl) gsap.set(sustainLeftEl, { x: 0, force3D: true });
@@ -329,7 +297,6 @@ export function AwardsScroll() {
           const settle = clamp((t - 0.72) / 0.28, 0, 1);
           const tigerX = layerBase.images * (1 - settle);
           layerBase.images = tigerX;
-          activeImageEls = tigerImg ? [tigerImg] : [];
           if (tigerImg) gsap.set(tigerImg, { x: tigerX, force3D: true });
           setContentX(lateContentEls, layerBase.content);
         };
@@ -347,80 +314,13 @@ export function AwardsScroll() {
           if (sustainLeftEl) gsap.set(sustainLeftEl, { x: 0, force3D: true });
         };
 
-        const coastHorizAfterStop = () => {
-          if (!inHorizontal) return;
-          killCoast();
-          // Tiger finished — snap flush to the right edge, no coast drift
-          if (layerMode === "late" && lastPanT >= 0.92) {
-            if (tigerFrame) gsap.set(tigerFrame, { x: 0, force3D: true });
-            if (tigerImg) {
-              coastTweens.push(
-                gsap.to(tigerImg, {
-                  x: 0,
-                  duration: 0.55,
-                  ease: "power2.out",
-                  force3D: true,
-                  overwrite: "auto",
-                }),
-              );
-            }
-            layerBase.images = 0;
-          }
-          const dir = hScrollDir;
-          const groups: { els: HTMLElement[]; base: number; order: number }[] =
-            [
-              {
-                els: bgPlate ? [bgPlate] : [],
-                base: layerBase.bg,
-                order: 0,
-              },
-              // Skip tiger img coast when settling flush at the end
-              {
-                els:
-                  layerMode === "late" && lastPanT >= 0.92
-                    ? []
-                    : activeImageEls,
-                base: layerBase.images,
-                order: 1,
-              },
-              { els: activeContentEls, base: layerBase.content, order: 2 },
-            ];
-          groups.forEach(({ els, base, order }) => {
-            if (Math.abs(base) < 1 || !els.length) return;
-            const coastX =
-              dir > 0
-                ? base - Math.abs(base) * H_COAST_EXTRA
-                : base + Math.abs(base) * H_COAST_EXTRA;
-            els.forEach((el) => {
-              const flip = el.classList.contains(styles.laurelRight);
-              coastTweens.push(
-                gsap.to(el, {
-                  x: coastX,
-                  scaleX: flip ? -1 : 1,
-                  duration: H_COAST_DURATION,
-                  delay: order * H_COAST_STAGGER,
-                  ease: "power3.out",
-                  force3D: true,
-                  overwrite: "auto",
-                }),
-              );
-            });
-          });
-        };
-
-        const scheduleCoast = () => {
-          if (!inHorizontal) return;
-          if (idleTimer) window.clearTimeout(idleTimer);
-          idleTimer = window.setTimeout(coastHorizAfterStop, H_COAST_IDLE_MS);
-        };
-
         const trigger = ScrollTrigger.create({
           trigger: section,
           start: "top top",
           end: () => `+=${Math.round(getTravel() + getVerticalPx())}`,
           pin: true,
           pinSpacing: true,
-          scrub: 1.15,
+          scrub: 1.25,
           anticipatePin: 1,
           invalidateOnRefresh: true,
           fastScrollEnd: false,
@@ -433,29 +333,19 @@ export function AwardsScroll() {
 
             if (scrolled <= holdX) {
               // Horizontal in → giraffe (layered, segment-local 0→1)
-              inHorizontal = true;
-              const horiz = scrolled;
-              if (horiz > lastHorizScrolled + 0.5) hScrollDir = 1;
-              else if (horiz < lastHorizScrolled - 0.5) hScrollDir = -1;
-              lastHorizScrolled = horiz;
-
-              killCoast();
               setTrackX(-scrolled);
               applyHorizLayers(
-                holdX > 0 ? horiz / holdX : 1,
+                holdX > 0 ? scrolled / holdX : 1,
                 holdX,
                 "early",
               );
               gsap.set(hold, { autoAlpha: 1 });
               applyVertical(0);
-              scheduleCoast();
               return;
             }
 
             if (scrolled <= holdX + verticalPx) {
               // Vertical — freeze early layers; sustain copy unshifted
-              inHorizontal = false;
-              killCoast();
               setTrackX(-holdX);
               applyHorizLayers(1, holdX, "freeze-early");
               gsap.set(hold, { autoAlpha: 1 });
@@ -465,16 +355,10 @@ export function AwardsScroll() {
             }
 
             // Horizontal out → tiger (fresh layered 0→1)
-            inHorizontal = true;
             const after = scrolled - holdX - verticalPx;
             const maxAfter = Math.max(0, travel - holdX);
             const afterClamped = Math.min(after, maxAfter);
-            const horiz = holdX + afterClamped;
-            if (horiz > lastHorizScrolled + 0.5) hScrollDir = 1;
-            else if (horiz < lastHorizScrolled - 0.5) hScrollDir = -1;
-            lastHorizScrolled = horiz;
 
-            killCoast();
             setTrackX(-(holdX + afterClamped));
             applyHorizLayers(
               maxAfter > 0 ? afterClamped / maxAfter : 1,
@@ -483,18 +367,14 @@ export function AwardsScroll() {
             );
             gsap.set(hold, { autoAlpha: 1 });
             applyVertical(VERTICAL_STEPS);
-            scheduleCoast();
           },
           onRefresh: (self) => {
-            killCoast();
             self.update();
           },
           onEnterBack: (self) => {
-            killCoast();
             self.update();
           },
           onLeaveBack: () => {
-            killCoast();
             setTrackX(0);
             resetHorizLayers();
             gsap.set(hold, { autoAlpha: 1 });
@@ -521,7 +401,6 @@ export function AwardsScroll() {
         ro.observe(hold);
 
         return () => {
-          killCoast();
           window.clearTimeout(refreshSoon);
           window.clearTimeout(refreshLater);
           window.removeEventListener("load", refresh);
@@ -564,13 +443,15 @@ export function AwardsScroll() {
               className={`${styles.laurel} ${styles.laurelLeft}`}
               aria-hidden="true"
             >
-              <img
-                src="/images/awards-figma/laurel.png"
-                alt=""
-                width={2000}
-                height={1333}
-                draggable={false}
-              />
+              <div className={styles.laurelMirror}>
+                <img
+                  src="/images/awards-figma/laurel.png"
+                  alt=""
+                  width={2000}
+                  height={1333}
+                  draggable={false}
+                />
+              </div>
             </div>
             <div className={styles.headingGroup}>
               <h2 className={styles.heading}>
@@ -585,13 +466,15 @@ export function AwardsScroll() {
               className={`${styles.laurel} ${styles.laurelRight}`}
               aria-hidden="true"
             >
-              <img
-                src="/images/awards-figma/laurel.png"
-                alt=""
-                width={2000}
-                height={1333}
-                draggable={false}
-              />
+              <div className={styles.laurelMirror}>
+                <img
+                  src="/images/awards-figma/laurel.png"
+                  alt=""
+                  width={2000}
+                  height={1333}
+                  draggable={false}
+                />
+              </div>
             </div>
 
             <img

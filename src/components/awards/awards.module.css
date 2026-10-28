@@ -151,6 +151,18 @@
 
 .laurelRight {
   left: 124.74vw;
+}
+
+/*
+  Inner mirror — GSAP parallax writes transform on .laurel; flipping a child
+  keeps the right wreath facing inward without getting wiped.
+*/
+.laurelMirror {
+  position: absolute;
+  inset: 0;
+}
+
+.laurelRight .laurelMirror {
   transform: scaleX(-1);
 }
 

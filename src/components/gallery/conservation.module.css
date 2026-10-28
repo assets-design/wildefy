@@ -7,10 +7,21 @@
 }
 
 .frame {
+  /* Desktop reference: dial fills ~half the short axis; copy sits in the right field */
   --fit: max(100vw / 1920px, 100vh / 1000px);
   position: relative;
   width: 100%;
   height: 100%;
+}
+
+/*
+  Laptop / mid desktops — keep the same visual weight as a large monitor:
+  half-Earth ~30% of width, clear green gap before the copy, no cramped dial.
+*/
+@media (min-width: 1024px) and (max-width: 1680px) {
+  .frame {
+    --fit: max(100vw / 1580px, 100vh / 940px);
+  }
 }
 
 .artViewport {
@@ -181,6 +192,8 @@
   text-shadow: 0 2px 18px rgba(0, 0, 0, 0.55);
   z-index: 1;
   pointer-events: none;
+  /* Earth covers this title — keep for a11y, hide edge leak on mid screens */
+  opacity: 0;
 }
 
 /*
@@ -199,6 +212,24 @@
   color: #ffffff;
   text-transform: capitalize;
   z-index: 2;
+}
+
+@media (min-width: 1024px) and (max-width: 1680px) {
+  .copy {
+    /* Hold copy in the right field with the same breathing room as desktop */
+    left: max(48vw, calc(900px * var(--fit)));
+    width: min(44vw, calc(760px * var(--fit)));
+  }
+
+  .title {
+    font-size: clamp(40px, 3.8vw, 54px);
+    line-height: 1.2;
+  }
+
+  .lead {
+    font-size: clamp(17px, 1.45vw, 22px);
+    line-height: 1.35;
+  }
 }
 
 .slide {

@@ -29,15 +29,11 @@ const PHASE_CLOUDS = { start: 0, end: 0.68 };
 const PHASE_IMAGES = { start: 0, end: 0.84 };
 const PHASE_CONTENT = { start: 0, end: 1 };
 
-/** Soft scrub lag — layers ease toward scroll instead of snapping. */
-const STORY_SCRUB = 0.85;
-
-/** Extra coast after scroll stops (~10% of that layer’s applied travel). */
-const COAST_EXTRA = 0.1;
-const COAST_DURATION = 2.4;
-const COAST_IDLE_MS = 140;
-/** Stagger when settling after scroll stop — bg first, content last. */
-const COAST_STAGGER = 0.28;
+/**
+ * Soft scrub lag — when the wheel stops, layers keep easing toward the
+ * scroll position and settle slowly (no second “kick” after a hard stop).
+ */
+const STORY_SCRUB = 1.15;
 
 /* First slide uses one dedicated cloud only — no soft sky patches */
 const SKY_CLOUDS = [] as const;
@@ -164,12 +160,12 @@ export function StoryScroll() {
         const cloudNodes = Array.from(
           section.querySelectorAll<HTMLElement>(".sx-sky-cloud"),
         );
-        /* First + second: +10% with pan, hold on stop */
+        /* First + second: slight extra drift with pan */
         const slideClouds = [
           section.querySelector<HTMLElement>(".sx-bottom-cloud"),
           section.querySelector<HTMLElement>(".sx-boardrooms-cloud"),
         ].filter(Boolean) as HTMLElement[];
-        /* Third: +10% with pan, then another +10% coast after scroll stops */
+        /* Third: slight extra drift with pan */
         const thirdCloud = section.querySelector<HTMLElement>(
           ".sx-conversation-cloud",
         );
@@ -204,97 +200,12 @@ export function StoryScroll() {
         gsap.set(slideClouds, { x: 0, y: 0, force3D: true });
         if (thirdCloud) gsap.set(thirdCloud, { x: 0, y: 0, force3D: true });
 
-        /** Last scrubbed x per layer — used for +10% coast after scroll stops. */
         const layerBaseX = {
           bg: 0,
           clouds: 0,
           images: 0,
           slideClouds: 0,
           content: 0,
-        };
-        let scrollDir: 1 | -1 = 1;
-        let lastProgress = 0;
-        let idleTimer = 0;
-        const coastTweens: gsap.core.Tween[] = [];
-
-        const killCoast = () => {
-          if (idleTimer) {
-            window.clearTimeout(idleTimer);
-            idleTimer = 0;
-          }
-          while (coastTweens.length) coastTweens.pop()?.kill();
-        };
-
-        const coastAfterStop = () => {
-          killCoast();
-          const dir = scrollDir;
-          // Settle one-after-one: bg → clouds → images → content
-          const entries: { el: HTMLElement; base: number; order: number }[] = [
-            { el: layerBg, base: layerBaseX.bg, order: 0 },
-            { el: layerClouds, base: layerBaseX.clouds, order: 1 },
-            { el: layerSlideClouds, base: layerBaseX.slideClouds, order: 1 },
-            { el: layerImages, base: layerBaseX.images, order: 2 },
-            { el: layerContent, base: layerBaseX.content, order: 3 },
-          ];
-          entries.forEach(({ el, base, order }) => {
-            if (Math.abs(base) < 1) return;
-            const coastX =
-              dir > 0
-                ? base - Math.abs(base) * COAST_EXTRA
-                : base + Math.abs(base) * COAST_EXTRA;
-            coastTweens.push(
-              gsap.to(el, {
-                x: coastX,
-                duration: COAST_DURATION,
-                delay: order * COAST_STAGGER,
-                ease: "power3.out",
-                force3D: true,
-                overwrite: "auto",
-              }),
-            );
-          });
-          slideClouds.forEach((el) => {
-            const cur = Number(gsap.getProperty(el, "x")) || 0;
-            if (Math.abs(cur) < 1) return;
-            const coastX =
-              dir > 0
-                ? cur - Math.abs(cur) * COAST_EXTRA
-                : cur + Math.abs(cur) * COAST_EXTRA;
-            coastTweens.push(
-              gsap.to(el, {
-                x: coastX,
-                duration: COAST_DURATION,
-                delay: 1 * COAST_STAGGER,
-                ease: "power3.out",
-                force3D: true,
-                overwrite: "auto",
-              }),
-            );
-          });
-          if (thirdCloud) {
-            const cur = Number(gsap.getProperty(thirdCloud, "x")) || 0;
-            if (Math.abs(cur) >= 1) {
-              const coastX =
-                dir > 0
-                  ? cur - Math.abs(cur) * COAST_EXTRA
-                  : cur + Math.abs(cur) * COAST_EXTRA;
-              coastTweens.push(
-                gsap.to(thirdCloud, {
-                  x: coastX,
-                  duration: COAST_DURATION,
-                  delay: 1 * COAST_STAGGER,
-                  ease: "power3.out",
-                  force3D: true,
-                  overwrite: "auto",
-                }),
-              );
-            }
-          }
-        };
-
-        const scheduleCoast = () => {
-          if (idleTimer) window.clearTimeout(idleTimer);
-          idleTimer = window.setTimeout(coastAfterStop, COAST_IDLE_MS);
         };
 
         if (bird) {
@@ -321,11 +232,6 @@ export function StoryScroll() {
           const total = Math.max(1, revealPx + travelPx);
           const revealEnd = revealPx / total;
           const p = Math.min(1, Math.max(0, progress));
-
-          if (p > lastProgress + 0.0001) scrollDir = 1;
-          else if (p < lastProgress - 0.0001) scrollDir = -1;
-          lastProgress = p;
-
           const t = p <= revealEnd ? p / revealEnd : 1;
 
           if (bird) {
@@ -383,11 +289,11 @@ export function StoryScroll() {
           }
         };
 
-        // Longer runway so each sequential phase has room to breathe
+        // Longer runway = slower section scroll (more wheel distance per pan).
         const getStoryRun = () => {
           const travel = getTravel();
-          // ~1.35× travel so bg/clouds/images/content phases don't feel rushed
-          return Math.max(1, Math.round(getRevealRun() + travel * 1.35));
+          // ~20% slower than 1.35× — bg/clouds/images/content stay readable
+          return Math.max(1, Math.round(getRevealRun() + travel * 1.62));
         };
 
         const storyTrigger = ScrollTrigger.create({
@@ -402,28 +308,21 @@ export function StoryScroll() {
           invalidateOnRefresh: true,
           fastScrollEnd: false,
           onUpdate: (self) => {
-            killCoast();
             applyProgress(self.progress);
-            scheduleCoast();
           },
           onRefresh: (self) => {
-            killCoast();
             applyProgress(self.progress);
           },
           onEnter: (self) => {
-            killCoast();
             applyProgress(self.progress);
           },
           onLeave: () => {
-            killCoast();
             applyProgress(1);
           },
           onLeaveBack: () => {
-            killCoast();
             applyProgress(0);
           },
           onEnterBack: (self) => {
-            killCoast();
             applyProgress(self.progress);
           },
         });
@@ -445,7 +344,6 @@ export function StoryScroll() {
         ro.observe(panel);
 
         return () => {
-          killCoast();
           ro.disconnect();
           window.removeEventListener("load", refresh);
           storyTrigger.kill();
