@@ -1218,6 +1218,11 @@ body {
 /* ---------- Story sequence (Figma 507:354, replaces previous track) ---------- */
 .sx-scroll {
   position: relative;
+  /* Match sky plate so no 1px body-black seam under Gallery */
+  background: #dfe8ec;
+  /* Pull up 2px to close subpixel gaps between sections */
+  margin-top: -2px;
+  padding-top: 2px;
 }
 
 .sx-viewport {
@@ -1225,6 +1230,7 @@ body {
   height: 100vh;
   height: 100svh;
   overflow: hidden;
+  background: #dfe8ec;
 }
 
 .sx-track {
@@ -1375,8 +1381,8 @@ body {
 }
 
 /*
-  Bird reveal stage — left third of panel 1 only so Learn/Lead/Explore
-  stay clear. Layered clouds + veil recreate a NatGeo-style mist reveal.
+  Bird stage — left third only so Learn/Lead/Explore stay clear.
+  Soft right fade starts past the bird body so it never reads as a white wash.
 */
 .sx-darter-stage {
   left: 0;
@@ -1385,19 +1391,18 @@ body {
   height: 100%;
   z-index: 2;
   overflow: visible;
-  /* Soft right edge so cloud layers dissolve into the sky/text area. */
   -webkit-mask-image: linear-gradient(
     90deg,
     #000 0%,
-    #000 58%,
-    rgba(0, 0, 0, 0.55) 78%,
+    #000 72%,
+    rgba(0, 0, 0, 0.7) 88%,
     transparent 100%
   );
   mask-image: linear-gradient(
     90deg,
     #000 0%,
-    #000 58%,
-    rgba(0, 0, 0, 0.55) 78%,
+    #000 72%,
+    rgba(0, 0, 0, 0.7) 88%,
     transparent 100%
   );
 }
@@ -1408,7 +1413,8 @@ body {
   width: 36.72vw;
   height: 71.3vh;
   z-index: 3;
-  will-change: transform, opacity, filter;
+  opacity: 1;
+  will-change: transform;
 }
 
 .sx-darter img {
@@ -1509,23 +1515,8 @@ body {
 }
 
 .sx-bird-veil {
-  position: absolute;
-  inset: 0;
-  z-index: 6;
-  pointer-events: none;
-  background:
-    radial-gradient(
-      ellipse 70% 58% at 28% 60%,
-      rgba(250, 246, 238, 0.42) 0%,
-      rgba(210, 222, 232, 0.2) 44%,
-      transparent 76%
-    ),
-    linear-gradient(
-      108deg,
-      rgba(205, 218, 228, 0.28) 0%,
-      transparent 46%
-    );
-  will-change: opacity;
+  /* Disabled — white mist wash over the darter while it entered */
+  display: none;
 }
 
 .sx-camp {
@@ -2245,15 +2236,24 @@ body {
   /* Fallback under sky image — same plate as reveal soft fill */
   background: var(--gallery-surface);
   box-sizing: border-box;
+  border: 0;
+  outline: none;
+  box-shadow: none;
+  /* Bleed into neighbours so body #000 / Experiences shell never peeks as a hairline */
+  margin-top: -2px;
+  margin-bottom: -2px;
+  padding-top: calc(var(--gallery-edge) + 2px);
+  padding-bottom: calc(var(--gallery-edge) + 2px);
 }
 
 .gallery-bg {
   position: absolute;
-  inset: 0;
+  /* Overscan 2px so cover never leaves a dark edge at the join */
+  inset: -2px 0;
   z-index: 0;
   display: block;
   width: 100%;
-  height: 100%;
+  height: calc(100% + 4px);
   object-fit: cover;
   object-position: center;
   pointer-events: none;
@@ -2589,19 +2589,18 @@ body {
     );
 }
 
-/* Figma 548:507 — centered video CTA over cinematic footage */
+/* Centered video CTA — stays above the rising glass so the title remains readable */
 .footer-reveal-cta {
   position: absolute;
   left: 0;
   right: 0;
-  /* Figma 548:501 — title at y=100 in 808 frame (~12.4vh) */
-  top: clamp(64px, 12.4vh, 100px);
-  z-index: 3;
+  /* Sit in the sky band above the glass stop line (~32vh from top) */
+  top: clamp(48px, 8vh, 84px);
+  z-index: 5;
   display: flex;
   flex-direction: column;
   align-items: center;
-  /* Figma: title → button ≈ 68px */
-  gap: clamp(32px, 6vh, 68px);
+  gap: clamp(28px, 4.5vh, 56px);
   width: min(920px, calc(100% - 48px));
   margin: 0 auto;
   pointer-events: none;
@@ -2624,6 +2623,9 @@ body {
   text-transform: none;
   text-shadow: 0 2px 28px rgba(0, 0, 0, 0.35);
   will-change: transform, opacity;
+  /* Always paint above the glass panel */
+  position: relative;
+  z-index: 6;
 }
 
 /* Figma 548:501 — white pill 210×56 + amber mark 82×56 */
@@ -2729,8 +2731,8 @@ body {
 }
 
 /*
-  Figma 548:501 — first sharp-cornered glass panel.
-  Full-bleed ~70vh coverage; rises via scrubbed yPercent.
+  Sharp-cornered glass — rises to the mark under the title (~68vh),
+  while the headline stays layered above (z-index) so it never hides.
 */
 .footer-reveal-glass {
   position: absolute;
@@ -2739,9 +2741,9 @@ body {
   bottom: 0;
   z-index: 4;
   width: 100%;
-  height: 70vh;
+  height: 68vh;
   min-height: 420px;
-  max-height: 760px;
+  max-height: 720px;
   margin: 0;
   will-change: transform;
 }
@@ -2749,9 +2751,11 @@ body {
 .footer-glass-inner {
   position: relative;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
   width: 100%;
   height: 100%;
-  padding: clamp(28px, 3.2vw, 48px) clamp(32px, 4vw, 72px) clamp(18px, 2vh, 28px);
+  padding: clamp(22px, 2.6vw, 40px) clamp(28px, 4vw, 72px) clamp(14px, 1.6vh, 22px);
   border-radius: 0;
   border: 1px solid rgba(255, 255, 255, 0.22);
   border-bottom: none;
@@ -2769,14 +2773,15 @@ body {
 }
 
 .footer-grid {
+  flex: 1 1 auto;
   display: grid;
   grid-template-columns: minmax(220px, 1.15fr) repeat(3, minmax(140px, 1fr));
-  gap: clamp(28px, 3vw, 56px);
+  gap: clamp(18px, 2.2vw, 40px);
   align-items: start;
 }
 
 .footer-col-title {
-  margin: 0 0 18px;
+  margin: 0 0 12px;
   font-family: var(--font-body);
   font-size: 15px;
   font-weight: 600;
@@ -2791,7 +2796,7 @@ body {
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
 .footer-list a,
@@ -2819,7 +2824,7 @@ body {
   display: inline-block;
   width: 168px;
   height: 64px;
-  margin-bottom: 18px;
+  margin-bottom: 12px;
   text-decoration: none;
 }
 
@@ -2855,7 +2860,7 @@ body {
 }
 
 .footer-tagline--secondary {
-  margin-bottom: 28px;
+  margin-bottom: 18px;
   color: rgba(255, 255, 255, 0.78);
 }
 
@@ -2890,12 +2895,14 @@ body {
 }
 
 .footer-divider {
-  margin: clamp(22px, 2.6vh, 34px) 0 clamp(14px, 1.8vh, 22px);
+  flex: none;
+  margin: clamp(14px, 1.8vh, 24px) 0 clamp(10px, 1.2vh, 16px);
   height: 1px;
   background: rgba(255, 255, 255, 0.28);
 }
 
 .footer-bottom {
+  flex: none;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -2967,8 +2974,9 @@ body {
   }
 
   .footer-reveal-glass {
-    height: 62vh;
-    min-height: 340px;
+    height: 64vh;
+    min-height: 360px;
+    max-height: 620px;
   }
 
   .footer-glass-inner {

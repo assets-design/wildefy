@@ -50,7 +50,7 @@ function SocialIcon({
 
 /**
  * Figma 548:507 (video CTA) + 548:501 (glass footer).
- * Scrubbed pin: reveal CTA → hold video → rise sharp-cornered glass (~70vh).
+ * Scrubbed pin: reveal CTA → hold video → rise sharp-cornered glass (~48vh).
  */
 export function FooterReveal() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -146,10 +146,21 @@ export function FooterReveal() {
         // Hold CTA composition briefly before footer begins.
         tl.to({}, { duration: 0.12 }, 0.28);
 
-        // Stage 3 — glass rises from bottom to final ~70vh coverage.
+        // Stage 3 — glass rises to the mark under the title.
+        // Title stays visible (higher z-index); button tucks away under glass.
         tl.to(glass, { yPercent: 0, duration: 0.5 }, 0.4);
+        tl.to(
+          button,
+          { opacity: 0, y: -24, duration: 0.28 },
+          0.42,
+        );
+        tl.to(
+          title,
+          { y: -8, opacity: 1, duration: 0.28 },
+          0.42,
+        );
 
-        // Settle hold so reverse scroll can park near the 70% checkpoint.
+        // Settle hold so reverse scroll can park at the final pose.
         tl.to({}, { duration: 0.14 });
 
         return () => {

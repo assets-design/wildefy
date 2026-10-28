@@ -21,12 +21,13 @@
 
 .art {
   position: absolute;
-  top: 0;
+  top: 50%;
   left: 0;
   width: 1920px;
   height: 1000px;
-  transform: scale(var(--fit));
-  transform-origin: top left;
+  /* Keep the dial + label on the viewport midline (was top-pinned → copy sat low) */
+  transform: translateY(-50%) scale(var(--fit));
+  transform-origin: left center;
 }
 
 .bg {
@@ -50,43 +51,59 @@
   display: block;
 }
 
-.wheel {
+/*
+  Full circular ring, clipped so only the right half stays on screen.
+  Center of the dial sits on the left edge of the artboard.
+*/
+.wheelClip {
   position: absolute;
-  top: 0;
-  left: 146px;
-  width: 704px;
-  height: 1000px;
+  left: 0;
+  top: -120px;
+  width: 920px;
+  height: 1240px;
   overflow: hidden;
+  pointer-events: none;
+}
+
+.ring {
+  position: absolute;
+  left: 0;
+  top: 620px;
+  width: 0;
+  height: 0;
 }
 
 .orbit {
   position: absolute;
-  inset: 0;
-  transform-origin: -146px 500px;
-  pointer-events: none;
-  will-change: transform, opacity;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  transform-origin: 0 0;
+  will-change: transform;
 }
 
-/*
- * Figma Frame 25 (631:482) — each seat keeps its exported AABB + local
- * rotation so annular wedges match the design. All images share the same
- * 374×320 content box (no per-seat shrink that skewed gutters).
- */
-.wedge {
+.card {
   position: absolute;
+  top: 0;
+  left: 0;
+  width: 236px;
+  height: 276px;
   display: flex;
   align-items: center;
   justify-content: center;
+  transform: translate(-50%, -50%) translateX(655px) rotate(90deg);
+  transform-origin: center center;
 }
 
-.wedgeInner {
+.cardInner {
   position: relative;
   flex: none;
-  width: 374px;
-  height: 320px;
+  width: 276px;
+  height: 236px;
 }
 
-.wedgeInner img {
+.cardInner img {
   position: absolute;
   inset: 0;
   display: block;
@@ -95,95 +112,55 @@
   max-width: none;
 }
 
-.wedgeA {
-  left: 384px;
-  top: 315px;
-  width: 320px;
-  height: 374px;
-}
-
-.wedgeA .wedgeInner {
-  transform: rotate(90deg);
-}
-
-.wedgeB {
-  left: 231px;
-  top: -38px;
-  width: 464.851px;
-  height: 484.289px;
-}
-
-.wedgeB .wedgeInner {
-  transform: rotate(59.75deg);
-}
-
-.wedgeC {
-  left: 0;
-  top: -252px;
-  width: 484.66px;
-  height: 465.537px;
-}
-
-.wedgeC .wedgeInner {
-  transform: rotate(30.5deg);
-}
-
-.wedgeD {
-  left: 0;
-  top: 790px;
-  width: 484.66px;
-  height: 465.537px;
-}
-
-.wedgeD .wedgeInner {
-  transform: rotate(-30.5deg) scaleY(-1);
-}
-
-.wedgeE {
-  left: 231px;
-  top: 557px;
-  width: 464.851px;
-  height: 484.289px;
-}
-
-.wedgeE .wedgeInner {
-  transform: rotate(-59.75deg) scaleY(-1);
-}
-
-.discSlot {
+/*
+  Same seat as the old white disc: full circle centered on the left edge.
+  Art clips at x=0 → only the right half shows (true half-Earth).
+  Sphere is framed to exact disc size so the right edge stays curved.
+*/
+.earthSlot {
   position: absolute;
   left: -500px;
   top: 0;
   width: 1000px;
   height: 1000px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
   z-index: 2;
+  touch-action: none;
+  pointer-events: auto;
+  background: transparent;
 }
 
-.discRot {
-  position: relative;
-  flex: none;
-  width: 1000px;
-  height: 1000px;
-  transform: rotate(90deg);
-}
-
-.discHalf {
+.earthRound {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 50%;
+  inset: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  transform: translate3d(0, 0, 0);
+  isolation: isolate;
+  /* Chrome WebGL clip hack — forces canvas into the round mask */
+  -webkit-mask-image: -webkit-radial-gradient(circle, #fff 100%, #000 100%);
+  mask-image: radial-gradient(circle, #fff 100%, #000 100%);
+  clip-path: circle(50% at 50% 50%);
+  -webkit-clip-path: circle(50% at 50% 50%);
 }
 
-.discHalf img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  max-width: none;
+.earthCanvas {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 50%;
+}
+
+.earthDrag {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: 50%;
+  cursor: grab;
+  touch-action: none;
+}
+
+.earthDrag[data-dragging="true"] {
+  cursor: grabbing;
 }
 
 .label {
@@ -193,7 +170,7 @@
   width: 394px;
   margin: 0;
   transform: translateX(-50%);
-  color: #000000;
+  color: #ffffff;
   font-family: var(--font-display);
   font-size: 72px;
   font-weight: 600;
@@ -201,15 +178,24 @@
   letter-spacing: 0;
   text-align: center;
   text-transform: capitalize;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.55);
   z-index: 3;
+  pointer-events: none;
 }
 
+/*
+  Right copy stack — same idea as Sustainability .textStack:
+  tall clip, cards centered, slide fully off instead of fading while clipped.
+  Box itself is viewport-centered so active copy sits on the vertical middle.
+*/
 .copy {
   position: absolute;
   left: calc(920px * var(--fit));
-  top: calc(425px * var(--fit));
+  top: 50%;
+  transform: translateY(-50%);
   width: calc(798px * var(--fit));
-  height: calc(340px * var(--fit));
+  height: calc(520px * var(--fit));
+  overflow: hidden;
   color: #ffffff;
   text-transform: capitalize;
   z-index: 2;
@@ -217,15 +203,23 @@
 
 .slide {
   position: absolute;
-  inset: 0;
+  left: 0;
+  top: 50%;
+  width: 100%;
+  box-sizing: border-box;
   opacity: 0;
-  transform: translate3d(0, 44px, 0);
+  transform: translate3d(0, calc(-50% + 88px), 0);
   will-change: transform, opacity;
+  pointer-events: none;
 }
 
 .slide:first-child {
   opacity: 1;
-  transform: translate3d(0, 0, 0);
+  transform: translate3d(0, calc(-50% + 0px), 0);
+}
+
+.slide[aria-hidden="false"] {
+  pointer-events: auto;
 }
 
 .title {
@@ -270,21 +264,26 @@
   }
 
   .art {
+    top: 0;
     transform: scale(calc(min(100vw, 58vh) / 1000px));
+    transform-origin: top left;
   }
 
   .copy {
     position: relative;
     left: auto;
     top: auto;
+    transform: none;
     width: auto;
     height: auto;
     flex: 1;
-    min-height: 180px;
+    min-height: 220px;
+    overflow: hidden;
   }
 
   .slide {
     padding: 18px 22px 28px;
+    top: 50%;
   }
 
   .title {

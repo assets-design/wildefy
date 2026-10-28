@@ -15,26 +15,13 @@ import {
   EXPERIENCES,
   type Experience,
 } from "@/components/experiences/experiencesData";
-import {
-  ExperiencesScrollVideo,
-  SCRUB_FRAME_COUNT,
-  frameSrc,
-} from "@/components/experiences/ExperiencesScrollVideo";
-import {
-  ExperiencesCloudReveal,
-  easeCloudReveal,
-} from "@/components/experiences/ExperiencesCloudReveal";
-import { NatGeoCloudDissolve } from "@/components/experiences/NatGeoCloudDissolve";
+import { ExperiencesScrollVideo } from "@/components/experiences/ExperiencesScrollVideo";
 import styles from "./experiences-journey.module.css";
 
 gsap.registerPlugin(ScrollTrigger);
 
 /** Near-direct scrub so bottom→top mirrors top→bottom without laggy proxies. */
 const SCRUB_LAG = 0.35;
-/** Cloud dissolve completes in the first stretch after Experiences hits the viewport. */
-const CLOUD_REVEAL_VH = 0.85;
-/** Last scrub frame — only plate under the cloud veil (no mid-swap). */
-const LAST_FRAME_SRC = frameSrc(SCRUB_FRAME_COUNT);
 const HOLD_SCALE = 1;
 /** First portion of each card’s enter window = pin only, then the card appears. */
 const PIN_LEAD = 0.34;
@@ -227,19 +214,13 @@ function mapPinStyle(
 }
 
 /**
- * Intro enters as the arrival cloud dissolves (not deep into the section),
- * then slides up out once the journey cards begin.
+ * Intro fades in at section start, then slides up once journey cards begin.
+ * (No cloud enter veil — section shows normally.)
  */
-function introStyleForProgress(
-  cloudReveal: number,
-  progress: number,
-): CSSProperties {
+function introStyleForProgress(progress: number): CSSProperties {
   const travel = 72;
-  // Enter while clouds are parting (driven by arrival trigger).
-  const enterT =
-    cloudReveal <= 0.35
-      ? 0
-      : easeInOut(Math.min(1, (cloudReveal - 0.35) / 0.55));
+  const enterEnd = 0.05;
+  const enterT = easeInOut(Math.min(1, progress / enterEnd));
 
   // Exit fully before the first pin/card (from: 0.15).
   const exitStart = 0.04;
@@ -274,12 +255,6 @@ export function Experiences() {
   const sectionRef = useRef<HTMLElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const [progress, setProgress] = useState(0);
-  const [cloudReveal, setCloudReveal] = useState(0);
-  /**
-   * Experiences → Gallery (§3) handoff (0→1 across the join):
-   * last §2 frame holds, clouds close, then dissolve to reveal Gallery.
-   */
-  const [handoffP, setHandoffP] = useState(0);
   const [reducedMotion, setReducedMotion] = useState(false);
   const [booting, setBooting] = useState(true);
   const [failed, setFailed] = useState(false);
@@ -294,10 +269,6 @@ export function Experiences() {
 
     let raf = 0;
     let pending = -1;
-    let cloudRaf = 0;
-    let cloudPending = -1;
-    let handoffRaf = 0;
-    let handoffPending = -1;
 
     const flushProgress = () => {
       raf = 0;
@@ -307,89 +278,10 @@ export function Experiences() {
       setProgress(next);
     };
 
-    const flushCloud = () => {
-      cloudRaf = 0;
-      if (cloudPending < 0) return;
-      const next = cloudPending;
-      cloudPending = -1;
-      setCloudReveal(next);
-    };
-
-    const flushHandoff = () => {
-      handoffRaf = 0;
-      if (handoffPending < 0) return;
-      const next = handoffPending;
-      handoffPending = -1;
-      setHandoffP(next);
-    };
-
-    const queueCloud = (v: number) => {
-      cloudPending = v;
-      if (!cloudRaf) cloudRaf = window.requestAnimationFrame(flushCloud);
-    };
     const queueProgress = (v: number) => {
       pending = v;
       if (!raf) raf = window.requestAnimationFrame(flushProgress);
     };
-    const queueHandoff = (v: number) => {
-      handoffPending = Math.min(1, Math.max(0, v));
-      if (!handoffRaf) handoffRaf = window.requestAnimationFrame(flushHandoff);
-    };
-
-    const applyCloudProgress = (raw: number) => {
-      // When Hero pin owns the screen, don't keep a full white §2 veil.
-      const heroPin = ScrollTrigger.getById("hero-pin");
-      if (heroPin?.isActive && heroPin.progress < 0.9) {
-        queueCloud(1);
-        return;
-      }
-      queueCloud(easeCloudReveal(raw));
-    };
-
-    const cloudTrigger = ScrollTrigger.create({
-      id: "experiences-cloud",
-      trigger: wrap,
-      start: "top top",
-      end: () => `+=${Math.round(window.innerHeight * CLOUD_REVEAL_VH)}`,
-      scrub: SCRUB_LAG,
-      invalidateOnRefresh: true,
-      onUpdate: (self) => applyCloudProgress(self.progress),
-      onRefresh: (self) => applyCloudProgress(self.progress),
-      onEnterBack: (self) => applyCloudProgress(self.progress),
-      onLeaveBack: () => {
-        const heroPin = ScrollTrigger.getById("hero-pin");
-        queueCloud(heroPin?.isActive ? 1 : 0);
-      },
-    });
-
-    /*
-      §2 → §3 (Gallery) cloud close — ONLY after the 4th card is fully held.
-      Start is locked to wrap progress past card hold (+ short beat), so the
-      closing veil never begins while Corporate Learning is still entering.
-    */
-    const fourthCard = EXPERIENCES[EXPERIENCES.length - 1];
-    const handoffStartProgress = () => {
-      const travel = Math.max(1, wrap.offsetHeight - window.innerHeight);
-      // Fully held, then a short readable beat before clouds start closing.
-      const startP = Math.min(0.992, fourthCard.window.hold + 0.035);
-      return Math.round(travel * startP);
-    };
-
-    const handoffTrigger = ScrollTrigger.create({
-      id: "experiences-gallery-handoff",
-      trigger: wrap,
-      start: () => `top+=${handoffStartProgress()} top`,
-      endTrigger: "#gallery",
-      // Hold until Gallery has fully claimed the viewport (no green shell flash).
-      end: () => `top+=${Math.round(window.innerHeight * 0.08)} top`,
-      scrub: SCRUB_LAG,
-      invalidateOnRefresh: true,
-      onUpdate: (self) => queueHandoff(self.progress),
-      onRefresh: (self) => queueHandoff(self.progress),
-      onEnterBack: (self) => queueHandoff(self.progress),
-      onLeaveBack: () => queueHandoff(0),
-      onLeave: () => queueHandoff(1),
-    });
 
     const progressTrigger = ScrollTrigger.create({
       id: "experiences-progress",
@@ -404,16 +296,10 @@ export function Experiences() {
       onLeaveBack: () => queueProgress(0),
     });
 
-    applyCloudProgress(cloudTrigger.progress);
-    queueHandoff(handoffTrigger.progress);
     queueProgress(progressTrigger.progress);
 
     return () => {
       if (raf) window.cancelAnimationFrame(raf);
-      if (cloudRaf) window.cancelAnimationFrame(cloudRaf);
-      if (handoffRaf) window.cancelAnimationFrame(handoffRaf);
-      cloudTrigger.kill();
-      handoffTrigger.kill();
       progressTrigger.kill();
     };
   }, [reducedMotion]);
@@ -430,41 +316,6 @@ export function Experiences() {
 
   const snowActive = progress >= EXPERIENCES[EXPERIENCES.length - 1].window.from;
   const mapPin = mapPinForProgress(progress);
-
-  /**
-   * Close: last §2 frame + clouds over Experiences.
-   * Open: fade that plate into Gallery soft colour; keep Gallery ABOVE the veil
-   * so bottom strips stay full-colour (not washed out by the fixed overlay).
-   */
-  const handoffClose = 0.4;
-  const handoffEase = (t: number) => easeCloudReveal(Math.min(1, Math.max(0, t)));
-  let lastFrameOpacity = 0;
-  let cloudDissolve = 1;
-  let veilOpacity = 0;
-  /** 80 while covering §2; drop under Gallery (z-index 4) once opening. */
-  let handoffZ = 80;
-  if (handoffP > 0.01 && handoffP < 0.999) {
-    if (handoffP <= handoffClose) {
-      const t = handoffEase(handoffP / handoffClose);
-      lastFrameOpacity = t;
-      cloudDissolve = 1 - t;
-      veilOpacity = 1;
-      handoffZ = 80;
-    } else {
-      const t = handoffEase((handoffP - handoffClose) / (1 - handoffClose));
-      // Open onto Gallery colour — drop snow plate quickly, keep soft fill.
-      lastFrameOpacity = Math.max(0, 1 - t / 0.4);
-      cloudDissolve = Math.min(1, t / 0.55);
-      veilOpacity = t < 0.6 ? 1 : 1 - handoffEase((t - 0.6) / 0.4);
-      handoffZ = 3; // below .gallery-section (z-index: 4)
-    }
-  } else if (handoffP >= 0.999) {
-    lastFrameOpacity = 0;
-    cloudDissolve = 1;
-    veilOpacity = 0;
-    handoffZ = 3;
-  }
-  const hideExperiencesScene = handoffP > 0.12;
 
   if (reducedMotion || failed) {
     return (
@@ -503,39 +354,9 @@ export function Experiences() {
       id="experiences"
       aria-label="Four ways to experience the wild"
       ref={sectionRef}
-      style={
-        hideExperiencesScene
-          ? {
-              backgroundColor: "var(--gallery-surface, #eef3f4)",
-              backgroundImage: 'url("/images/story/bg-3.png")',
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-            }
-          : undefined
-      }
     >
-      <div
-        className={styles.wrap}
-        ref={wrapRef}
-        style={
-          hideExperiencesScene
-            ? {
-                backgroundColor: "var(--gallery-surface, #eef3f4)",
-                backgroundImage: 'url("/images/story/bg-3.png")',
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-              }
-            : undefined
-        }
-      >
-        <div
-          className={styles.sticky}
-          style={{
-            opacity: hideExperiencesScene ? 0 : 1,
-            visibility: hideExperiencesScene ? "hidden" : "visible",
-            pointerEvents: hideExperiencesScene ? "none" : undefined,
-          }}
-        >
+      <div className={styles.wrap} ref={wrapRef}>
+        <div className={styles.sticky}>
           <div className={styles.scene}>
             <ExperiencesScrollVideo
               progress={progress}
@@ -543,9 +364,6 @@ export function Experiences() {
               onError={onError}
             />
           </div>
-
-          {/* Enter: clouds dissolve to reveal Experiences */}
-          <ExperiencesCloudReveal progress={cloudReveal} mode="enter" />
 
           <div
             className={styles.mistVeil}
@@ -562,15 +380,10 @@ export function Experiences() {
             aria-hidden="true"
           />
 
-          <div
-            className={styles.overlay}
-            style={{
-              opacity: Math.max(0, 1 - lastFrameOpacity * 1.05),
-            }}
-          >
+          <div className={styles.overlay}>
             <header
               className={styles.intro}
-              style={introStyleForProgress(cloudReveal, progress)}
+              style={introStyleForProgress(progress)}
             >
               <p className={styles.introEyebrow}>Experiences</p>
               <h2 className={styles.introTitle}>Four Ways to Experience the Wild</h2>
@@ -635,35 +448,6 @@ export function Experiences() {
             <p className={styles.loadingCopy}>Entering the wild</p>
           </div>
         </div>
-      </div>
-
-      {/*
-        Single-plate veil: last Experiences frame + clouds over Gallery sky.
-        Soft fill is the same bg-3 image as .gallery-bg so dissolve lands on it.
-      */}
-      <div
-        className={styles.cloudHandoffFixed}
-        aria-hidden="true"
-        style={{
-          opacity: veilOpacity > 0.02 ? veilOpacity : 0,
-          visibility: veilOpacity > 0.02 ? "visible" : "hidden",
-          pointerEvents: "none",
-          zIndex: handoffZ,
-        }}
-      >
-        {/* Same sky image as Gallery — cloud holes never flash §2 */}
-        <div className={styles.handoffSoftFill} />
-        <img
-          className={styles.handoffLastFrame}
-          src={LAST_FRAME_SRC}
-          alt=""
-          width={1920}
-          height={1080}
-          draggable={false}
-          decoding="async"
-          style={{ opacity: lastFrameOpacity }}
-        />
-        <NatGeoCloudDissolve progress={cloudDissolve} />
       </div>
     </section>
   );

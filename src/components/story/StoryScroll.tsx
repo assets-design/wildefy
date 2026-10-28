@@ -10,24 +10,48 @@ gsap.registerPlugin(ScrollTrigger);
 const CLOUD_REVEAL_VH = 0.85;
 
 /**
- * Parallax travel factors.
- * Content = 100%. Clouds crawl vs content so slide motion is obvious.
+ * Full horizontal travel scale per layer (relative to panel − viewport).
+ * Layers start in sequence; each still uses its own distance.
  */
-const LAYER_BG = 0.76;
-const LAYER_CLOUDS = 0.32;
-const LAYER_IMAGES = 0.82;
+const LAYER_BG = 0.92;
+const LAYER_CLOUDS = 0.55;
 const LAYER_SLIDE_CLOUDS = 1;
+const LAYER_IMAGES = 0.88;
 const LAYER_CONTENT = 1;
 
-/** Light scrub — keep reverse (bottom→top) as tight as forward. */
-const STORY_SCRUB = 0.3;
-
 /**
- * Soft-cloud patches. Compact sizes avoid hard rectangular cuts.
- * `depth` adds extra local drift while the slide pans.
+ * All layers start together (start: 0). They finish / hold one after another:
+ * background stops first → clouds → images → content last.
  */
+const PHASE_BG = { start: 0, end: 0.42 };
+const PHASE_CLOUDS = { start: 0, end: 0.68 };
+const PHASE_IMAGES = { start: 0, end: 0.84 };
+const PHASE_CONTENT = { start: 0, end: 1 };
+
+/** Soft scrub lag — layers ease toward scroll instead of snapping. */
+const STORY_SCRUB = 0.85;
+
+/** Extra coast after scroll stops (~10% of that layer’s applied travel). */
+const COAST_EXTRA = 0.1;
+const COAST_DURATION = 2.4;
+const COAST_IDLE_MS = 140;
+/** Stagger when settling after scroll stop — bg first, content last. */
+const COAST_STAGGER = 0.28;
+
 /* First slide uses one dedicated cloud only — no soft sky patches */
 const SKY_CLOUDS = [] as const;
+
+/** 0 before phase, 1 after phase, eased inside. */
+function phaseProgress(
+  panT: number,
+  phase: { start: number; end: number },
+) {
+  if (panT <= phase.start) return 0;
+  if (panT >= phase.end) return 1;
+  const u = (panT - phase.start) / Math.max(0.0001, phase.end - phase.start);
+  // Smoothstep — no hard start/stop at phase edges
+  return u * u * (3 - 2 * u);
+}
 
 function prefersReducedMotion() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -167,54 +191,129 @@ export function StoryScroll() {
         const getRevealRun = () =>
           Math.max(420, Math.round(window.innerHeight * CLOUD_REVEAL_VH));
 
-        gsap.set(
-          [layerBg, layerClouds, layerImages, layerSlideClouds, layerContent],
-          {
-            x: 0,
-            force3D: true,
-          },
-        );
+        const layerTargets = [
+          layerBg,
+          layerClouds,
+          layerImages,
+          layerSlideClouds,
+          layerContent,
+        ];
+        gsap.set(layerTargets, { x: 0, force3D: true });
         gsap.set(cloudNodes, { x: 0, y: 0, force3D: true });
         gsap.set(slideClouds, { x: 0, y: 0, force3D: true });
         if (thirdCloud) gsap.set(thirdCloud, { x: 0, y: 0, force3D: true });
 
-        let thirdBaseX = 0;
-        let thirdIdleTimer = 0;
-        let thirdCoast: gsap.core.Tween | null = null;
+        /** Last scrubbed x per layer — used for +10% coast after scroll stops. */
+        const layerBaseX = {
+          bg: 0,
+          clouds: 0,
+          images: 0,
+          slideClouds: 0,
+          content: 0,
+        };
+        let scrollDir: 1 | -1 = 1;
+        let lastProgress = 0;
+        let idleTimer = 0;
+        const coastTweens: gsap.core.Tween[] = [];
 
-        const killThirdCoast = () => {
-          if (thirdIdleTimer) {
-            window.clearTimeout(thirdIdleTimer);
-            thirdIdleTimer = 0;
+        const killCoast = () => {
+          if (idleTimer) {
+            window.clearTimeout(idleTimer);
+            idleTimer = 0;
           }
-          thirdCoast?.kill();
-          thirdCoast = null;
+          while (coastTweens.length) coastTweens.pop()?.kill();
         };
 
-        const coastThirdAfterStop = () => {
-          if (!thirdCloud) return;
-          thirdCoast?.kill();
-          const extra = Math.round(thirdCloud.offsetWidth * 0.1);
-          thirdCoast = gsap.to(thirdCloud, {
-            x: thirdBaseX - extra,
-            duration: 2.4,
-            ease: "power2.out",
-            force3D: true,
+        const coastAfterStop = () => {
+          killCoast();
+          const dir = scrollDir;
+          // Settle one-after-one: bg → clouds → images → content
+          const entries: { el: HTMLElement; base: number; order: number }[] = [
+            { el: layerBg, base: layerBaseX.bg, order: 0 },
+            { el: layerClouds, base: layerBaseX.clouds, order: 1 },
+            { el: layerSlideClouds, base: layerBaseX.slideClouds, order: 1 },
+            { el: layerImages, base: layerBaseX.images, order: 2 },
+            { el: layerContent, base: layerBaseX.content, order: 3 },
+          ];
+          entries.forEach(({ el, base, order }) => {
+            if (Math.abs(base) < 1) return;
+            const coastX =
+              dir > 0
+                ? base - Math.abs(base) * COAST_EXTRA
+                : base + Math.abs(base) * COAST_EXTRA;
+            coastTweens.push(
+              gsap.to(el, {
+                x: coastX,
+                duration: COAST_DURATION,
+                delay: order * COAST_STAGGER,
+                ease: "power3.out",
+                force3D: true,
+                overwrite: "auto",
+              }),
+            );
           });
+          slideClouds.forEach((el) => {
+            const cur = Number(gsap.getProperty(el, "x")) || 0;
+            if (Math.abs(cur) < 1) return;
+            const coastX =
+              dir > 0
+                ? cur - Math.abs(cur) * COAST_EXTRA
+                : cur + Math.abs(cur) * COAST_EXTRA;
+            coastTweens.push(
+              gsap.to(el, {
+                x: coastX,
+                duration: COAST_DURATION,
+                delay: 1 * COAST_STAGGER,
+                ease: "power3.out",
+                force3D: true,
+                overwrite: "auto",
+              }),
+            );
+          });
+          if (thirdCloud) {
+            const cur = Number(gsap.getProperty(thirdCloud, "x")) || 0;
+            if (Math.abs(cur) >= 1) {
+              const coastX =
+                dir > 0
+                  ? cur - Math.abs(cur) * COAST_EXTRA
+                  : cur + Math.abs(cur) * COAST_EXTRA;
+              coastTweens.push(
+                gsap.to(thirdCloud, {
+                  x: coastX,
+                  duration: COAST_DURATION,
+                  delay: 1 * COAST_STAGGER,
+                  ease: "power3.out",
+                  force3D: true,
+                  overwrite: "auto",
+                }),
+              );
+            }
+          }
+        };
+
+        const scheduleCoast = () => {
+          if (idleTimer) window.clearTimeout(idleTimer);
+          idleTimer = window.setTimeout(coastAfterStop, COAST_IDLE_MS);
         };
 
         if (bird) {
+          // Keep full opacity while entering — low alpha washed the bird white
           gsap.set(bird, {
             transformOrigin: "32% 72%",
-            autoAlpha: 0.2,
-            scale: 0.8,
-            yPercent: 18,
-            xPercent: -9,
+            autoAlpha: 1,
+            opacity: 1,
+            scale: 0.86,
+            yPercent: 12,
+            xPercent: -6,
             force3D: true,
           });
         }
 
-        /** Immediate set — mirrors scroll progress both directions (no quickTo lag). */
+        /**
+         * After bird reveal: every layer starts sliding together.
+         * Each finishes / holds at a different panT so they stop one-by-one
+         * (bg first → clouds → images → content last).
+         */
         const applyProgress = (progress: number) => {
           const revealPx = getRevealRun();
           const travelPx = getTravel();
@@ -222,14 +321,19 @@ export function StoryScroll() {
           const revealEnd = revealPx / total;
           const p = Math.min(1, Math.max(0, progress));
 
+          if (p > lastProgress + 0.0001) scrollDir = 1;
+          else if (p < lastProgress - 0.0001) scrollDir = -1;
+          lastProgress = p;
+
           const t = p <= revealEnd ? p / revealEnd : 1;
 
           if (bird) {
             gsap.set(bird, {
-              autoAlpha: 0.2 + 0.8 * t,
-              scale: 0.8 + 0.2 * t,
-              yPercent: 18 * (1 - t),
-              xPercent: -9 * (1 - t),
+              autoAlpha: 1,
+              opacity: 1,
+              scale: 0.86 + 0.14 * t,
+              yPercent: 12 * (1 - t),
+              xPercent: -6 * (1 - t),
             });
           }
 
@@ -238,90 +342,92 @@ export function StoryScroll() {
               ? 0
               : (p - revealEnd) / Math.max(0.0001, 1 - revealEnd);
 
-          gsap.set(layerBg, { x: -travelPx * LAYER_BG * panT, force3D: true });
-          gsap.set(layerClouds, {
-            x: -travelPx * LAYER_CLOUDS * panT,
-            force3D: true,
-          });
-          gsap.set(layerImages, {
-            x: -travelPx * LAYER_IMAGES * panT,
-            force3D: true,
-          });
+          const bgT = phaseProgress(panT, PHASE_BG);
+          const cloudsT = phaseProgress(panT, PHASE_CLOUDS);
+          const imagesT = phaseProgress(panT, PHASE_IMAGES);
+          const contentT = phaseProgress(panT, PHASE_CONTENT);
+
+          layerBaseX.bg = -travelPx * LAYER_BG * bgT;
+          layerBaseX.clouds = -travelPx * LAYER_CLOUDS * cloudsT;
+          layerBaseX.images = -travelPx * LAYER_IMAGES * imagesT;
+          layerBaseX.slideClouds = -travelPx * LAYER_SLIDE_CLOUDS * cloudsT;
+          layerBaseX.content = -travelPx * LAYER_CONTENT * contentT;
+
+          gsap.set(layerBg, { x: layerBaseX.bg, force3D: true });
+          gsap.set(layerClouds, { x: layerBaseX.clouds, force3D: true });
+          gsap.set(layerImages, { x: layerBaseX.images, force3D: true });
           gsap.set(layerSlideClouds, {
-            x: -travelPx * LAYER_SLIDE_CLOUDS * panT,
+            x: layerBaseX.slideClouds,
             force3D: true,
           });
-          gsap.set(layerContent, {
-            x: -travelPx * LAYER_CONTENT * panT,
-            force3D: true,
-          });
+          gsap.set(layerContent, { x: layerBaseX.content, force3D: true });
 
           cloudNodes.forEach((node, i) => {
             const depth = SKY_CLOUDS[i]?.depth ?? 0.9;
             gsap.set(node, {
-              x: -(travelPx * 0.2 * depth * panT),
-              y: Math.sin(panT * Math.PI * 1.2 + i * 0.9) * 12 * depth,
+              x: -(travelPx * 0.2 * depth * cloudsT),
+              y: Math.sin(cloudsT * Math.PI * 1.2 + i * 0.9) * 12 * depth,
               force3D: true,
             });
           });
 
           slideClouds.forEach((el) => {
-            const extra = Math.round(el.offsetWidth * 0.1) * panT;
+            const extra = Math.round(el.offsetWidth * 0.1) * cloudsT;
             gsap.set(el, { x: -extra, force3D: true });
           });
 
           if (thirdCloud) {
-            thirdBaseX = -Math.round(thirdCloud.offsetWidth * 0.1) * panT;
-            gsap.set(thirdCloud, { x: thirdBaseX, force3D: true });
+            const thirdX = -Math.round(thirdCloud.offsetWidth * 0.1) * cloudsT;
+            gsap.set(thirdCloud, { x: thirdX, force3D: true });
           }
+        };
+
+        // Longer runway so each sequential phase has room to breathe
+        const getStoryRun = () => {
+          const travel = getTravel();
+          // ~1.35× travel so bg/clouds/images/content phases don't feel rushed
+          return Math.max(1, Math.round(getRevealRun() + travel * 1.35));
         };
 
         const storyTrigger = ScrollTrigger.create({
           id: "story-pin",
           trigger: section,
           start: "top top",
-          end: () =>
-            `+=${Math.max(1, Math.round(getRevealRun() + getTravel()))}`,
+          end: () => `+=${getStoryRun()}`,
           pin: true,
           pinSpacing: true,
           scrub: STORY_SCRUB,
           anticipatePin: 1,
           invalidateOnRefresh: true,
-          fastScrollEnd: true,
+          fastScrollEnd: false,
           onUpdate: (self) => {
-            killThirdCoast();
+            killCoast();
             applyProgress(self.progress);
-            if (thirdCloud) {
-              thirdIdleTimer = window.setTimeout(coastThirdAfterStop, 160);
-            }
+            scheduleCoast();
           },
           onRefresh: (self) => {
-            killThirdCoast();
+            killCoast();
             applyProgress(self.progress);
           },
-          // Bidirectional snaps — reverse re-entry must rebuild bird reveal + pan.
           onEnter: (self) => {
-            killThirdCoast();
+            killCoast();
             applyProgress(self.progress);
           },
           onLeave: () => {
-            killThirdCoast();
+            killCoast();
             applyProgress(1);
           },
           onLeaveBack: () => {
-            killThirdCoast();
+            killCoast();
             applyProgress(0);
           },
           onEnterBack: (self) => {
-            killThirdCoast();
+            killCoast();
             applyProgress(self.progress);
           },
         });
 
         applyProgress(storyTrigger.progress);
-        if (thirdCloud) {
-          thirdIdleTimer = window.setTimeout(coastThirdAfterStop, 400);
-        }
 
         let refreshQueued = false;
         const refresh = () => {
@@ -338,7 +444,7 @@ export function StoryScroll() {
         ro.observe(panel);
 
         return () => {
-          killThirdCoast();
+          killCoast();
           ro.disconnect();
           window.removeEventListener("load", refresh);
           storyTrigger.kill();

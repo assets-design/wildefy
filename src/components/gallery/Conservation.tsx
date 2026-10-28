@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useLayoutEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -7,58 +8,45 @@ import styles from "./conservation.module.css";
 
 gsap.registerPlugin(ScrollTrigger);
 
-/**
- * Figma Frame 25 seats (node 631:482). CSS places each card at its designed
- * seat; orbit rotation is only the delta from that home angle so rest pose
- * matches the file and scroll still scrubs along the arc.
- *
- * Seat angles are the polar centers of those AABBs. Steps are equalized to
- * 26.65° (span of the Figma arc) so green separators stay even while moving.
- */
-const FIGMA_ARC_TOP = 53.21;
-const FIGMA_ARC_BOTTOM = -53.39;
-const SLOT_COUNT = 5;
-const ANGLE_STEP = (FIGMA_ARC_TOP - FIGMA_ARC_BOTTOM) / (SLOT_COUNT - 1);
-const SLOT_ANGLES = Array.from(
-  { length: SLOT_COUNT },
-  (_, i) => FIGMA_ARC_TOP - i * ANGLE_STEP,
-);
-/** Polar angle of each CSS home (must match .wedgeA–E placement). */
-const HOME_POLAR = [53.21, 25.9, -0.17, -26.14, -53.39] as const;
-const STEPS = SLOT_COUNT;
+const ConservationEarth = dynamic(() => import("./ConservationEarth"), {
+  ssr: false,
+});
 
-const WEDGES = [
-  {
-    src: "/images/conservation/wedge-3.png",
-    alt: "Hands pressing soil around young plants",
-    className: styles.wedgeC,
-    homeSlot: 0,
-  },
-  {
-    src: "/images/conservation/wedge-2.png",
-    alt: "Hands holding a globe of wildlife and forests",
-    className: styles.wedgeB,
-    homeSlot: 1,
-  },
+const UNIQUE = 5;
+/** Full ring with each photo thrice — smaller cards, tighter spacing. */
+const SEATS = UNIQUE * 3;
+const ANGLE_STEP = 360 / SEATS;
+const TURN_PER_SLIDE = 360 / UNIQUE;
+const STEPS = UNIQUE;
+
+const PHOTOS = [
   {
     src: "/images/conservation/wedge-1.png",
     alt: "A hand holding a bag of green seedlings",
-    className: styles.wedgeA,
-    homeSlot: 2,
   },
   {
     src: "/images/conservation/wedge-5.png",
     alt: "A seedling growing in dark soil",
-    className: styles.wedgeE,
-    homeSlot: 3,
   },
   {
     src: "/images/conservation/wedge-4.png",
     alt: "Sunlit tree canopy",
-    className: styles.wedgeD,
-    homeSlot: 4,
+  },
+  {
+    src: "/images/conservation/wedge-3.png",
+    alt: "Hands pressing soil around young plants",
+  },
+  {
+    src: "/images/conservation/wedge-2.png",
+    alt: "Hands holding a globe of wildlife and forests",
   },
 ] as const;
+
+const WEDGES = Array.from({ length: SEATS }, (_, i) => ({
+  ...PHOTOS[i % UNIQUE],
+  homeAngle: i * ANGLE_STEP,
+  key: `${PHOTOS[i % UNIQUE].src}-${i}`,
+}));
 
 const SLIDES = [
   {
@@ -84,53 +72,39 @@ const SLIDES = [
 ] as const;
 
 /**
- * Fractional seat → angle on the disc arc.
- * Crossing the last↔first seat fades out/in so cards never travel behind the disc.
+ * Match the left photo ring (scroll down: next card rises from bottom,
+ * current exits to top). Copy uses the same vertical direction.
+ * delta = t - index: <0 upcoming (below), >0 leaving (above).
  */
-function poseAtSeat(seatFloat: number) {
-  const n = SLOT_COUNT;
-  const s = ((seatFloat % n) + n) % n;
-  const i0 = Math.floor(s);
-  const f = s - i0;
-  const i1 = (i0 + 1) % n;
-
-  if (i0 === n - 1 && i1 === 0) {
-    if (f < 0.5) {
-      return { angle: SLOT_ANGLES[i0], opacity: Math.max(0, 1 - f * 2) };
-    }
-    return { angle: SLOT_ANGLES[i1], opacity: Math.max(0, (f - 0.5) * 2) };
-  }
-
-  const a0 = SLOT_ANGLES[i0];
-  const a1 = SLOT_ANGLES[i1];
-  return { angle: a0 + (a1 - a0) * f, opacity: 1 };
-}
-
-function slideOpacity(t: number, index: number) {
-  const n = SLOT_COUNT;
-  let distance = Math.abs(t - index);
-  distance = Math.min(
-    distance,
-    Math.abs(t - index - n),
-    Math.abs(t - index + n),
-  );
-  if (distance <= 0.28) return 1;
-  if (distance >= 0.72) return 0;
-  return 1 - (distance - 0.28) / 0.44;
-}
-
 function slideMotion(t: number, index: number) {
-  const opacity = slideOpacity(t, index);
-  const n = SLOT_COUNT;
+  const n = UNIQUE;
   let delta = t - index;
   if (delta > n / 2) delta -= n;
   if (delta < -n / 2) delta += n;
+  const ad = Math.abs(delta);
+
   let y = 0;
-  if (delta < -0.02) {
-    y = 44 * Math.min(1, -delta / 0.72);
-  } else if (delta > 0.02) {
-    y = -36 * Math.min(1, delta / 0.72);
+  let opacity = 0;
+
+  if (ad <= 0.02) {
+    y = 0;
+    opacity = 1;
+  } else if (delta < 0 && delta > -1) {
+    // Upcoming — enter from bottom (same as image)
+    y = 88 * -delta;
+    opacity = Math.min(1, Math.max(0, 1 + delta * 1.45));
+  } else if (delta > 0 && delta < 1) {
+    // Leaving — exit upward (same as image)
+    y = -72 * delta;
+    opacity = Math.min(1, Math.max(0, 1 - delta * 1.45));
+  } else if (delta <= -1) {
+    y = 110;
+    opacity = 0;
+  } else {
+    y = -96;
+    opacity = 0;
   }
+
   return { opacity, y };
 }
 
@@ -140,6 +114,7 @@ function prefersReducedMotion() {
 
 export function Conservation() {
   const sectionRef = useRef<HTMLElement>(null);
+  const earthProgress = useRef(0);
 
   useLayoutEffect(() => {
     const section = sectionRef.current;
@@ -153,23 +128,19 @@ export function Conservation() {
     );
 
     const apply = (progress: number) => {
+      earthProgress.current = progress;
       const t = progress * STEPS;
-      // Opposite arc travel vs previous (scroll down moved cards "right").
-      const seatT = -t;
-      const slideT = ((-t % STEPS) + STEPS) % STEPS;
+      const slideT = ((t % STEPS) + STEPS) % STEPS;
+      const turn = -t * TURN_PER_SLIDE;
       orbits.forEach((orbit, index) => {
-        const home = WEDGES[index].homeSlot;
-        const homePolar = HOME_POLAR[home];
-        // CSS already seats the card at homePolar; only rotate the delta.
-        const { angle, opacity } = poseAtSeat(home + seatT);
-        orbit.style.transform = `rotate(${-(angle - homePolar)}deg)`;
-        orbit.style.opacity = String(opacity);
+        orbit.style.transform = `rotate(${WEDGES[index].homeAngle + turn}deg)`;
       });
       slides.forEach((slide, index) => {
         const { opacity, y } = slideMotion(slideT, index);
         slide.style.opacity = String(opacity);
-        slide.style.transform = `translate3d(0, ${y}px, 0)`;
-        slide.setAttribute("aria-hidden", opacity < 0.45 ? "true" : "false");
+        // Centered stack like Sustainability — y is offset from vertical middle
+        slide.style.transform = `translate3d(0, calc(-50% + ${y}px), 0)`;
+        slide.setAttribute("aria-hidden", opacity < 0.4 ? "true" : "false");
       });
     };
 
@@ -188,8 +159,6 @@ export function Conservation() {
           duration: { min: 0.2, max: 0.55 },
           delay: 0.06,
           ease: "power2.inOut",
-          // Snap with scroll direction so reverse (bottom → top) does not
-          // fight Lenis and yank back to the next-down wedge.
           directional: true,
         },
         onUpdate: (self) => apply(self.progress),
@@ -229,34 +198,30 @@ export function Conservation() {
               />
             </div>
 
-            <div className={styles.wheel}>
-              {WEDGES.map((wedge) => (
-                <div
-                  key={wedge.src}
-                  className={styles.orbit}
-                  data-orbit=""
-                  style={{ transform: "rotate(0deg)" }}
-                >
-                  <div className={`${styles.wedge} ${wedge.className}`}>
-                    <div className={styles.wedgeInner}>
-                      <img src={wedge.src} alt={wedge.alt} draggable={false} />
+            <div className={styles.wheelClip}>
+              <div className={styles.ring}>
+                {WEDGES.map((wedge) => (
+                  <div
+                    key={wedge.key}
+                    className={styles.orbit}
+                    data-orbit=""
+                    style={{ transform: `rotate(${wedge.homeAngle}deg)` }}
+                  >
+                    <div className={styles.card}>
+                      <div className={styles.cardInner}>
+                        <img
+                          src={wedge.src}
+                          alt={wedge.alt}
+                          draggable={false}
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-
-            <div className={styles.discSlot} aria-hidden="true">
-              <div className={styles.discRot}>
-                <div className={styles.discHalf}>
-                  <img
-                    src="/images/conservation/disc.svg"
-                    alt=""
-                    draggable={false}
-                  />
-                </div>
+                ))}
               </div>
             </div>
+
+            <ConservationEarth progress={earthProgress} />
 
             <h2 className={styles.label}>Conservation</h2>
           </div>

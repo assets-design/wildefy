@@ -15,6 +15,23 @@ const VERTICAL_VH_PER_STEP = 0.95;
 /** Slide seats only — after slide 06 settles, horizontal resumes (no extra vertical beat). */
 const VERTICAL_STEPS = SUSTAIN_SLIDE_COUNT - 1;
 
+/**
+ * Horizontal layer parallax (same grammar as Story):
+ * all layers start together; finish / hold one-after-one.
+ * Vertical sustainability scroll stays 1:1 (layers frozen).
+ */
+const H_PHASE_BG = { start: 0, end: 0.42 };
+const H_PHASE_IMAGES = { start: 0, end: 0.68 };
+const H_PHASE_CONTENT = { start: 0, end: 1 };
+/** Extra relative travel vs the track (track still owns layout / hold). */
+const H_BG_EXTRA = 0.14;
+const H_IMAGES_EXTRA = 0.08;
+const H_CONTENT_EXTRA = 0.035;
+const H_COAST_EXTRA = 0.1;
+const H_COAST_DURATION = 2.4;
+const H_COAST_STAGGER = 0.28;
+const H_COAST_IDLE_MS = 140;
+
 function prefersReducedMotion() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
@@ -23,13 +40,23 @@ function clamp(n: number, min: number, max: number) {
   return Math.min(max, Math.max(min, n));
 }
 
+function phaseProgress(
+  panT: number,
+  phase: { start: number; end: number },
+) {
+  if (panT <= phase.start) return 0;
+  if (panT >= phase.end) return 1;
+  const u = (panT - phase.start) / Math.max(0.0001, phase.end - phase.start);
+  return u * u * (3 - 2 * u);
+}
+
 /**
  * Horizontal Awards strip with a nested Sustainability vertical story.
  *
  * Scroll map (one pin):
- *   1) Horizontal 0 → sustainability hold
- *   2) Vertical slides 1 → 6 (track held)
- *   3) Horizontal hold → end (tiger / remaining strip)
+ *   1) Horizontal 0 → giraffe / sustainability hold — layered parallax
+ *   2) Vertical slides 1 → 6 (track held, layers frozen)
+ *   3) Horizontal hold → tiger — layered parallax again (bg → images → content)
  */
 export function AwardsScroll() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -70,12 +97,15 @@ export function AwardsScroll() {
         );
 
         const getViewW = () => viewport.clientWidth || window.innerWidth;
-        const getPanelW = () => {
-          const measured = Math.max(panel.scrollWidth, panel.offsetWidth);
-          const expected = getViewW() * STRIP_VIEWPORTS;
-          return Math.max(measured, expected);
-        };
-        const getTravel = () => Math.max(1, getPanelW() - getViewW());
+        /** Laid-out width only — scrollWidth inflates from overflow:visible orbit. */
+        const getPanelW = () =>
+          Math.max(panel.offsetWidth, getViewW() * STRIP_VIEWPORTS);
+        /**
+         * Max translate that keeps the panel’s right edge flush with the
+         * viewport (prevents the light journey backdrop leaking on the right).
+         */
+        const getTravel = () =>
+          Math.max(1, getPanelW() - getViewW());
         const getHoldX = () => Math.min(hold.offsetLeft, getTravel());
         const getVerticalPx = () =>
           Math.max(
@@ -84,6 +114,13 @@ export function AwardsScroll() {
               window.innerHeight * VERTICAL_VH_PER_STEP * VERTICAL_STEPS,
             ),
           );
+        const setTrackX = (x: number) => {
+          const minX = Math.min(0, getViewW() - getPanelW());
+          gsap.set(track, {
+            x: clamp(x, minX, 0),
+            force3D: true,
+          });
+        };
 
         /*
           Arc stroke tips still meet viewport top/bottom (100vh orbit).
@@ -138,6 +175,7 @@ export function AwardsScroll() {
           });
 
           texts.forEach((el, i) => {
+            // d = i - textIndex mirrors image seats: <0 above, >0 below.
             const d = i - textIndex;
             const ad = Math.abs(d);
             let y = 0;
@@ -147,9 +185,11 @@ export function AwardsScroll() {
               y = 0;
               opacity = 1;
             } else if (d < 0 && d > -1) {
-              y = -56 * -d;
+              // Past slide — sit above (image exits to top)
+              y = 56 * d;
               opacity = clamp(1 + d * 1.35, 0, 1);
             } else if (d > 0 && d < 1) {
+              // Upcoming — sit below (image enters from bottom)
               y = 72 * d;
               opacity = clamp(1 - d * 1.35, 0, 1);
             } else if (d <= -1) {
@@ -166,8 +206,213 @@ export function AwardsScroll() {
           });
         };
 
+        const bgPlate = panel.querySelector<HTMLElement>(`.${styles.bgPlate}`);
+        /** First horiz segment — never include tiger (keeps right edge flush). */
+        const earlyImageEls = [
+          panel.querySelector<HTMLElement>(`.${styles.cheetahs}`),
+          panel.querySelector<HTMLElement>(`.${styles.giraffe}`),
+        ].filter(Boolean) as HTMLElement[];
+        /**
+         * Tiger parallax moves the inner <img> only — the .tiger frame stays
+         * right:0 so no green gutter opens on the viewport edge.
+         */
+        const tigerFrame = panel.querySelector<HTMLElement>(`.${styles.tiger}`);
+        const tigerImg = tigerFrame?.querySelector<HTMLElement>("img") ?? null;
+        const earlyContentEls = [
+          ...Array.from(
+            panel.querySelectorAll<HTMLElement>(`.${styles.laurel}`),
+          ),
+          panel.querySelector<HTMLElement>(`.${styles.headingGroup}`),
+          ...Array.from(panel.querySelectorAll<HTMLElement>(`.${styles.cert}`)),
+        ].filter(Boolean) as HTMLElement[];
+        /**
+         * Late segment copy — only the right card stack parallaxes.
+         * sustainLeft stays pinned so “Sustainability…” never clips off-screen.
+         */
+        const lateContentEls = [
+          panel.querySelector<HTMLElement>(`.${styles.sustainRight}`),
+        ].filter(Boolean) as HTMLElement[];
+        const sustainLeftEl = panel.querySelector<HTMLElement>(
+          `.${styles.sustainLeft}`,
+        );
+
         gsap.set(track, { x: 0, force3D: true });
+        if (bgPlate) gsap.set(bgPlate, { x: 0, force3D: true });
+        if (tigerFrame) gsap.set(tigerFrame, { x: 0, force3D: true });
+        if (tigerImg) gsap.set(tigerImg, { x: 0, force3D: true });
+        gsap.set(earlyImageEls, { x: 0, force3D: true });
+        gsap.set(earlyContentEls, { x: 0, force3D: true });
+        gsap.set(lateContentEls, { x: 0, force3D: true });
+        if (sustainLeftEl) gsap.set(sustainLeftEl, { x: 0, force3D: true });
+        gsap.set(hold, { autoAlpha: 1 });
         applyVertical(0);
+
+        const layerBase = { bg: 0, images: 0, content: 0 };
+        let activeImageEls: HTMLElement[] = earlyImageEls;
+        let activeContentEls: HTMLElement[] = earlyContentEls;
+        let layerMode: "early" | "late" | "freeze-early" = "early";
+        let lastPanT = 0;
+        let hScrollDir: 1 | -1 = 1;
+        let lastHorizScrolled = 0;
+        let inHorizontal = true;
+        let idleTimer = 0;
+        const coastTweens: gsap.core.Tween[] = [];
+
+        const killCoast = () => {
+          if (idleTimer) {
+            window.clearTimeout(idleTimer);
+            idleTimer = 0;
+          }
+          while (coastTweens.length) coastTweens.pop()?.kill();
+        };
+
+        const setContentX = (els: HTMLElement[], x: number) => {
+          els.forEach((el) => {
+            const flip = el.classList.contains(styles.laurelRight);
+            gsap.set(el, {
+              x,
+              scaleX: flip ? -1 : 1,
+              force3D: true,
+            });
+          });
+        };
+
+        /**
+         * Segment-local panT (0→1). Start together, stop one-by-one.
+         * `late`: tiger img + sustain copy; early awards content held still.
+         */
+        const applyHorizLayers = (
+          panT: number,
+          spanPx: number,
+          mode: "early" | "late" | "freeze-early",
+        ) => {
+          const t = clamp(panT, 0, 1);
+          const span = Math.max(1, spanPx);
+          const bgT = phaseProgress(t, H_PHASE_BG);
+          const imgT = phaseProgress(t, H_PHASE_IMAGES);
+          const contentT = phaseProgress(t, H_PHASE_CONTENT);
+
+          layerBase.bg = -span * H_BG_EXTRA * bgT;
+          layerBase.images = -span * H_IMAGES_EXTRA * imgT;
+          layerBase.content = -span * H_CONTENT_EXTRA * contentT;
+
+          if (bgPlate) gsap.set(bgPlate, { x: layerBase.bg, force3D: true });
+
+          if (mode === "early" || mode === "freeze-early") {
+            layerMode = mode;
+            lastPanT = t;
+            activeImageEls = earlyImageEls;
+            activeContentEls = earlyContentEls;
+            gsap.set(earlyImageEls, { x: layerBase.images, force3D: true });
+            setContentX(earlyContentEls, layerBase.content);
+            // Keep hold copy + tiger frame/img unshifted so vertical stays clean
+            setContentX(lateContentEls, 0);
+            if (sustainLeftEl) gsap.set(sustainLeftEl, { x: 0, force3D: true });
+            if (tigerFrame) gsap.set(tigerFrame, { x: 0, force3D: true });
+            if (tigerImg) gsap.set(tigerImg, { x: 0, force3D: true });
+            return;
+          }
+
+          // late — tiger segment
+          layerMode = "late";
+          lastPanT = t;
+          activeContentEls = lateContentEls;
+          gsap.set(earlyImageEls, { x: 0, force3D: true });
+          setContentX(earlyContentEls, 0);
+          if (sustainLeftEl) gsap.set(sustainLeftEl, { x: 0, force3D: true });
+          // Frame always flush to strip/viewport right
+          if (tigerFrame) gsap.set(tigerFrame, { x: 0, force3D: true });
+          /*
+            Inner photo parallax while moving, then ease back to x:0 as the
+            segment finishes so the settled tiger sits on the right edge.
+          */
+          const settle = clamp((t - 0.72) / 0.28, 0, 1);
+          const tigerX = layerBase.images * (1 - settle);
+          layerBase.images = tigerX;
+          activeImageEls = tigerImg ? [tigerImg] : [];
+          if (tigerImg) gsap.set(tigerImg, { x: tigerX, force3D: true });
+          setContentX(lateContentEls, layerBase.content);
+        };
+
+        const resetHorizLayers = () => {
+          layerBase.bg = 0;
+          layerBase.images = 0;
+          layerBase.content = 0;
+          if (bgPlate) gsap.set(bgPlate, { x: 0, force3D: true });
+          if (tigerFrame) gsap.set(tigerFrame, { x: 0, force3D: true });
+          if (tigerImg) gsap.set(tigerImg, { x: 0, force3D: true });
+          gsap.set(earlyImageEls, { x: 0, force3D: true });
+          setContentX(earlyContentEls, 0);
+          setContentX(lateContentEls, 0);
+          if (sustainLeftEl) gsap.set(sustainLeftEl, { x: 0, force3D: true });
+        };
+
+        const coastHorizAfterStop = () => {
+          if (!inHorizontal) return;
+          killCoast();
+          // Tiger finished — snap flush to the right edge, no coast drift
+          if (layerMode === "late" && lastPanT >= 0.92) {
+            if (tigerFrame) gsap.set(tigerFrame, { x: 0, force3D: true });
+            if (tigerImg) {
+              coastTweens.push(
+                gsap.to(tigerImg, {
+                  x: 0,
+                  duration: 0.55,
+                  ease: "power2.out",
+                  force3D: true,
+                  overwrite: "auto",
+                }),
+              );
+            }
+            layerBase.images = 0;
+          }
+          const dir = hScrollDir;
+          const groups: { els: HTMLElement[]; base: number; order: number }[] =
+            [
+              {
+                els: bgPlate ? [bgPlate] : [],
+                base: layerBase.bg,
+                order: 0,
+              },
+              // Skip tiger img coast when settling flush at the end
+              {
+                els:
+                  layerMode === "late" && lastPanT >= 0.92
+                    ? []
+                    : activeImageEls,
+                base: layerBase.images,
+                order: 1,
+              },
+              { els: activeContentEls, base: layerBase.content, order: 2 },
+            ];
+          groups.forEach(({ els, base, order }) => {
+            if (Math.abs(base) < 1 || !els.length) return;
+            const coastX =
+              dir > 0
+                ? base - Math.abs(base) * H_COAST_EXTRA
+                : base + Math.abs(base) * H_COAST_EXTRA;
+            els.forEach((el) => {
+              const flip = el.classList.contains(styles.laurelRight);
+              coastTweens.push(
+                gsap.to(el, {
+                  x: coastX,
+                  scaleX: flip ? -1 : 1,
+                  duration: H_COAST_DURATION,
+                  delay: order * H_COAST_STAGGER,
+                  ease: "power3.out",
+                  force3D: true,
+                  overwrite: "auto",
+                }),
+              );
+            });
+          });
+        };
+
+        const scheduleCoast = () => {
+          if (!inHorizontal) return;
+          if (idleTimer) window.clearTimeout(idleTimer);
+          idleTimer = window.setTimeout(coastHorizAfterStop, H_COAST_IDLE_MS);
+        };
 
         const trigger = ScrollTrigger.create({
           trigger: section,
@@ -178,7 +423,7 @@ export function AwardsScroll() {
           scrub: 1.15,
           anticipatePin: 1,
           invalidateOnRefresh: true,
-          fastScrollEnd: true,
+          fastScrollEnd: false,
           onUpdate: (self) => {
             const travel = getTravel();
             const holdX = getHoldX();
@@ -187,39 +432,72 @@ export function AwardsScroll() {
             const scrolled = self.progress * total;
 
             if (scrolled <= holdX) {
-              // before → enter sustainability
-              gsap.set(track, { x: -scrolled, force3D: true });
+              // Horizontal in → giraffe (layered, segment-local 0→1)
+              inHorizontal = true;
+              const horiz = scrolled;
+              if (horiz > lastHorizScrolled + 0.5) hScrollDir = 1;
+              else if (horiz < lastHorizScrolled - 0.5) hScrollDir = -1;
+              lastHorizScrolled = horiz;
+
+              killCoast();
+              setTrackX(-scrolled);
+              applyHorizLayers(
+                holdX > 0 ? horiz / holdX : 1,
+                holdX,
+                "early",
+              );
+              gsap.set(hold, { autoAlpha: 1 });
               applyVertical(0);
+              scheduleCoast();
               return;
             }
 
             if (scrolled <= holdX + verticalPx) {
-              // vertical-active through slides 01→06 (unique images)
-              gsap.set(track, { x: -holdX, force3D: true });
+              // Vertical — freeze early layers; sustain copy unshifted
+              inHorizontal = false;
+              killCoast();
+              setTrackX(-holdX);
+              applyHorizLayers(1, holdX, "freeze-early");
+              gsap.set(hold, { autoAlpha: 1 });
               const vt = (scrolled - holdX) / verticalPx;
               applyVertical(vt * VERTICAL_STEPS);
               return;
             }
 
-            // after slide 06 → resume horizontal (no further vertical image travel)
+            // Horizontal out → tiger (fresh layered 0→1)
+            inHorizontal = true;
             const after = scrolled - holdX - verticalPx;
-            gsap.set(track, {
-              x: -(holdX + after),
-              force3D: true,
-            });
+            const maxAfter = Math.max(0, travel - holdX);
+            const afterClamped = Math.min(after, maxAfter);
+            const horiz = holdX + afterClamped;
+            if (horiz > lastHorizScrolled + 0.5) hScrollDir = 1;
+            else if (horiz < lastHorizScrolled - 0.5) hScrollDir = -1;
+            lastHorizScrolled = horiz;
+
+            killCoast();
+            setTrackX(-(holdX + afterClamped));
+            applyHorizLayers(
+              maxAfter > 0 ? afterClamped / maxAfter : 1,
+              maxAfter,
+              "late",
+            );
+            gsap.set(hold, { autoAlpha: 1 });
             applyVertical(VERTICAL_STEPS);
+            scheduleCoast();
           },
           onRefresh: (self) => {
-            // Re-run mapping after layout changes
+            killCoast();
             self.update();
           },
-          // Re-apply mapping when re-entering from below so reverse scroll
-          // does not leave slides/track stuck at the end pose.
           onEnterBack: (self) => {
+            killCoast();
             self.update();
           },
           onLeaveBack: () => {
-            gsap.set(track, { x: 0, force3D: true });
+            killCoast();
+            setTrackX(0);
+            resetHorizLayers();
+            gsap.set(hold, { autoAlpha: 1 });
             applyVertical(0);
           },
         });
@@ -243,6 +521,7 @@ export function AwardsScroll() {
         ro.observe(hold);
 
         return () => {
+          killCoast();
           window.clearTimeout(refreshSoon);
           window.clearTimeout(refreshLater);
           window.removeEventListener("load", refresh);
@@ -269,6 +548,8 @@ export function AwardsScroll() {
       <div className={styles.viewport} ref={viewportRef}>
         <div className={styles.track} ref={trackRef}>
           <article className={styles.panel} ref={panelRef}>
+            <div className={styles.bgPlate} aria-hidden="true" />
+
             <div className={styles.cheetahs}>
               <img
                 src="/images/awards-figma/cheetahs-photo.png"

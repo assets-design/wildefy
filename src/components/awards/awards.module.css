@@ -14,27 +14,47 @@
   height: 100vh;
   height: 100svh;
   overflow: hidden;
+  /* Match panel so overscroll never flashes the light journey backdrop */
+  background: #24483a;
 }
 
 .track {
   display: flex;
   flex-wrap: nowrap;
   height: 100%;
-  width: max-content;
+  /* % of .viewport — stays in sync with clientWidth (avoids 100vw/scrollbar gap) */
+  width: 316.72%;
   will-change: transform;
   transform: translate3d(0, 0, 0);
+  background: #24483a;
 }
 
 .panel {
   position: relative;
-  flex: 0 0 auto;
-  /* 6081 / 1920 — must stay wider than the viewport for horizontal travel */
-  width: 316.72vw;
-  min-width: 316.72vw;
+  flex: 0 0 100%;
+  width: 100%;
+  min-width: 100%;
   height: 100%;
   overflow: hidden;
   color: #ffffff;
-  background: #24483a url("/images/awards-figma/bg.png") repeat-x left top / 141vw 100%;
+  /* Solid fill — painted sky lives on .bgPlate so it can parallax */
+  background: #24483a;
+}
+
+/*
+  Background layer — wider than the panel so staggered travel never
+  flashes the light journey backdrop at the strip edges.
+*/
+.bgPlate {
+  position: absolute;
+  left: -8%;
+  top: 0;
+  width: 116%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+  background: #24483a url("/images/awards-figma/bg.png") repeat-x left top / 38.4% 100%;
+  will-change: transform;
 }
 
 /* —— Photo cutouts —— */
@@ -42,9 +62,11 @@
 .giraffe,
 .tiger {
   position: absolute;
+  z-index: 1;
   overflow: hidden;
   pointer-events: none;
   user-select: none;
+  will-change: transform;
 }
 
 .cheetahs img,
@@ -84,27 +106,33 @@
 }
 
 .tiger {
-  left: 276.51vw;
-  top: 35.6vh;
-  width: 40.21vw;
-  height: 64.7vh;
+  /* Flush to the strip’s right edge → flush to the viewport when settled */
+  left: auto;
+  right: 0;
+  top: 32vh;
+  width: min(46vw, 880px);
+  height: 68vh;
 }
 
 .tiger img {
-  left: -32.76%;
-  top: -5.46%;
-  width: 132.76%;
-  height: 105.48%;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: right center;
 }
 
 /* —— Awards heading —— */
 .laurel {
   position: absolute;
+  z-index: 2;
   top: 6.8vh;
   width: 5.94vw;
   height: 23vh;
   overflow: hidden;
   pointer-events: none;
+  will-change: transform;
 }
 
 .laurel img {
@@ -128,10 +156,12 @@
 
 .headingGroup {
   position: absolute;
+  z-index: 2;
   left: 62.45vw;
   top: 11.2vh;
   width: 56.35vw;
   text-align: center;
+  will-change: transform;
 }
 
 .heading {
@@ -158,18 +188,20 @@
 }
 
 /*
-  Certificates — centered between the laurels / heading band.
-  Band ≈ 62.45vw → 124.74vw (center 93.6vw). Equal widths + equal gaps
-  so the trio sits in the middle (was shifted left under the heading).
+  Certificates — one shared frame so all three read the same size.
+  Band ≈ 62.45vw → 124.74vw (center 93.6vw). Equal widths + equal gaps.
 */
 .cert {
   position: absolute;
+  z-index: 2;
   top: 32.8vh;
-  height: 53.76vh;
   width: 18.67vw;
-  object-fit: contain;
-  object-position: center;
+  height: 53.76vh;
+  object-fit: cover;
+  object-position: center top;
   display: block;
+  box-sizing: border-box;
+  will-change: transform;
 }
 
 .certA {
@@ -467,6 +499,10 @@
     background-size: cover;
   }
 
+  .bgPlate {
+    display: none;
+  }
+
   .cheetahs,
   .giraffe,
   .tiger,
@@ -475,9 +511,15 @@
   .sustainHold {
     position: relative;
     left: auto;
+    right: auto;
     top: auto;
     width: 100%;
     height: auto;
+    will-change: auto;
+  }
+
+  .panel {
+    background: #24483a url("/images/awards-figma/bg.png") repeat-x left top / cover;
   }
 
   .cheetahs img,
