@@ -101,6 +101,22 @@
   pointer-events: none;
 }
 
+/* ── Blur / reveal overlay ──────────────────────────────────────────────── */
+/* Sits above the 3D world, behind the viewer and nav.
+   Initial values (full blur + dark veil) are set here;
+   the paint loop overrides them each frame as depth grows. */
+.blurOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  /* start fully blurred */
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  background: rgba(0, 0, 0, 0.72);
+  /* no transition — JS lerps it smoothly each frame */
+  pointer-events: auto;
+}
+
 .nav :global(.site-header),
 .nav :global(.nav-links a),
 .nav :global(.logo),

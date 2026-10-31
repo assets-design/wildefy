@@ -35,7 +35,8 @@
   --color-bg: #000000;
   --color-focus: #f9a01f;
   /* Shared surface for Gallery + §2→§3 reveal fill (must match to blend) */
-  --gallery-surface: #eef3f4;
+  /* Shared §3/§4 sky plate (Figma 729:24) */
+  --gallery-surface: #d4e4ec;
 }
 
 html {
@@ -125,8 +126,13 @@ body {
   background: transparent;
   /* Parked below the fold at load; GSAP rises it on scroll. */
   transform: translate3d(-50%, 100%, 0);
-  /* Cleaner white cloud body — more volume, no muddy green/teal cast. */
-  filter: brightness(1.16) contrast(1.12) saturate(0.4);
+  /* Match ExperiencesCloudHandoff soft stack */
+  filter: brightness(1.04) contrast(1.05) saturate(0.55);
+}
+
+.journey-cloud--alt {
+  z-index: 2;
+  filter: brightness(1.06) contrast(1.04) saturate(0.5);
 }
 
 .journey-backdrop .journey-particles {
@@ -197,6 +203,13 @@ body {
   will-change: transform;
 }
 
+/* Pre-hide lander hero text until GSAP fade-up starts (avoids FOUC). */
+.hero[data-entrance="fade-up"] .hero-title,
+.hero[data-entrance="fade-up"] .hero-copy,
+.hero[data-entrance="fade-up"] .cta {
+  opacity: 0;
+}
+
 /* Never shorter than the 1000px design crop: short windows lose the bottom, tall ones get cover. */
 .hero-media {
   position: absolute;
@@ -220,7 +233,7 @@ body {
   will-change: transform;
 }
 
-/* Transparent bird — base holds body+shoulders; outer wing tips sweep. */
+/* Transparent bird — layered wing sweep (default) or WebM video. */
 .hero-bird {
   position: absolute;
   inset: 0;
@@ -230,6 +243,7 @@ body {
   pointer-events: none;
 }
 
+.hero-bird-video,
 .hero-bird-layer {
   display: block;
   position: absolute;
@@ -241,6 +255,15 @@ body {
   object-position: 50% 52%;
   pointer-events: none;
   user-select: none;
+  background: transparent;
+}
+
+/*
+  bird_02.mov is keyed on black — screen drops pure black so the bird
+  composites onto the hero plate instead of showing a black rectangle.
+*/
+.hero-bird-video {
+  mix-blend-mode: screen;
 }
 
 .hero-bird-base {
@@ -260,14 +283,14 @@ body {
 */
 .hero-bird-wing--left {
   transform-origin: 35% 65.72%;
-  animation: hero-wing-sweep-left 2.2s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
-  will-change: transform;
+  animation: hero-wing-sweep-left 2.2s cubic-bezier(0.45, 0.05, 0.55, 0.95)
+    infinite;
 }
 
 .hero-bird-wing--right {
   transform-origin: 64.8% 65.72%;
-  animation: hero-wing-sweep-right 2.2s cubic-bezier(0.45, 0.05, 0.55, 0.95) 0.05s infinite;
-  will-change: transform;
+  animation: hero-wing-sweep-right 2.2s cubic-bezier(0.45, 0.05, 0.55, 0.95)
+    0.05s infinite;
 }
 
 @keyframes hero-wing-sweep-left {
@@ -276,14 +299,12 @@ body {
     transform: rotateZ(0deg);
   }
   25% {
-    /* Forward — outer tip toward beak (in-plane; base covers underlap) */
     transform: rotateZ(-2deg);
   }
   50% {
     transform: rotateZ(0deg);
   }
   75% {
-    /* Backward — outer tip toward tail */
     transform: rotateZ(1.5deg);
   }
 }
@@ -456,78 +477,49 @@ body {
   text-transform: capitalize;
 }
 
+/*
+  Site-wide CTA — white pill + label, orange mark overlapping the right edge,
+  bird centered inside the mark (never free-floating over the text).
+*/
 .cta {
+  --cta-h: 56px;
+  --cta-mark-w: 71.75px;
+  --cta-mark-h: 49px;
+  --cta-bird: 36.75px;
+  --cta-overlap: 28px;
+  --cta-icon-inset: 5px;
   position: relative;
-  width: 319px;
-  height: 56px;
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  width: max-content;
+  max-width: 100%;
+  height: var(--cta-h);
+  padding-right: var(--cta-icon-inset);
   text-decoration: none;
   flex: none;
-}
-
-.cta {
-  --cta-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --cta-speed: 0.4s;
-}
-
-.cta-pill,
-.cta-mark,
-.cta-bird,
-.cta-label {
-  position: absolute;
-  display: block;
   box-sizing: border-box;
+  cursor: pointer;
 }
 
 .cta-pill {
-  left: 0;
-  top: 0;
-  width: 237px;
-  height: 56px;
+  position: absolute;
+  inset: 0;
   border-radius: 50px;
   background: var(--color-white);
-  transition: width var(--cta-speed) var(--cta-ease);
-}
-
-.cta-mark {
-  left: 237px;
-  top: 0;
-  width: 82px;
-  height: 56px;
-  border-radius: 50px;
-  background: var(--color-accent);
-  transition:
-    left var(--cta-speed) var(--cta-ease),
-    top var(--cta-speed) var(--cta-ease),
-    width var(--cta-speed) var(--cta-ease),
-    height var(--cta-speed) var(--cta-ease);
-}
-
-.cta-bird {
-  /* Vertically centered in the 56px mark (42px icon → top 7) */
-  left: 257px;
-  top: 7px;
-  width: 42px;
-  height: 42px;
-  max-width: none;
-  object-fit: contain;
-  transform: scaleX(-1);
-  transition:
-    left var(--cta-speed) var(--cta-ease),
-    top var(--cta-speed) var(--cta-ease),
-    width var(--cta-speed) var(--cta-ease),
-    height var(--cta-speed) var(--cta-ease);
+  pointer-events: none;
+  z-index: 0;
 }
 
 .cta-label {
-  /* Same vertical center as the bird: mid of 56px row */
-  left: 0;
-  top: 0;
-  width: 237px;
-  height: 56px;
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  padding: 0 24px 0 29px;
+  min-height: var(--cta-h);
+  /* Right padding clears the mark’s negative-margin overlap so text isn’t covered */
+  padding: 0 calc(var(--cta-overlap) + 14px) 0 29px;
   margin: 0;
   color: var(--color-black);
   font-family: var(--font-body);
@@ -540,54 +532,43 @@ body {
   pointer-events: none;
 }
 
-/* Figma "Frame 4 / Variant2": the white pill swallows the orange mark. */
-@media (hover: hover) {
-  .cta:hover .cta-pill {
-    width: 292px;
-  }
-
-  .cta:hover .cta-mark {
-    left: 215.12px;
-    top: 3px;
-    width: 71.75px;
-    height: 49px;
-  }
-
-  .cta:hover .cta-bird {
-    left: 232.6px;
-    top: 9.13px;
-    width: 36.75px;
-    height: 36.75px;
-  }
+.cta-mark {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 var(--cta-mark-w);
+  width: var(--cta-mark-w);
+  height: var(--cta-mark-h);
+  margin-left: calc(var(--cta-overlap) * -1);
+  border-radius: 50px;
+  background: var(--color-accent);
+  pointer-events: none;
+  box-sizing: border-box;
 }
 
-.cta:focus-visible .cta-pill {
-  width: 292px;
-}
-
-.cta:focus-visible .cta-mark {
-  left: 215.12px;
-  top: 3px;
-  width: 71.75px;
-  height: 49px;
-}
-
-.cta:focus-visible .cta-bird {
-  left: 232.6px;
-  top: 9.13px;
-  width: 36.75px;
-  height: 36.75px;
+.cta-bird {
+  display: block;
+  width: var(--cta-bird);
+  height: var(--cta-bird);
+  max-width: none;
+  object-fit: contain;
+  transform: scaleX(-1);
+  pointer-events: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
 
-  .cta {
-    --cta-speed: 0s;
-  }
-
   .hero-experience {
     height: 100vh;
     height: 100dvh;
+  }
+
+  .hero[data-entrance="fade-up"] .hero-title,
+  .hero[data-entrance="fade-up"] .hero-copy,
+  .hero[data-entrance="fade-up"] .cta {
+    opacity: 1;
   }
 
   .hero-bird,
@@ -602,7 +583,6 @@ body {
   .hero-bird-wing--left,
   .hero-bird-wing--right {
     animation: none !important;
-    transform: none !important;
   }
 
   .journey-cloud {
@@ -654,6 +634,7 @@ body {
     height: 100%;
   }
 
+  .hero-bird-video,
   .hero-bird-layer {
     object-fit: contain;
     object-position: 50% 55%;
@@ -1218,11 +1199,13 @@ body {
 /* ---------- Story sequence (Figma 507:354, replaces previous track) ---------- */
 .sx-scroll {
   position: relative;
-  /* Match sky plate so no 1px body-black seam under Gallery */
-  background: #dfe8ec;
-  /* Pull up 2px to close subpixel gaps between sections */
-  margin-top: -2px;
-  padding-top: 2px;
+  z-index: 1;
+  isolation: isolate;
+  background: transparent;
+  margin-top: 0;
+  padding-top: 0;
+  /* Clip parallax leftovers when the pin releases into Conservation */
+  overflow: hidden;
 }
 
 .sx-viewport {
@@ -1230,28 +1213,35 @@ body {
   height: 100vh;
   height: 100svh;
   overflow: hidden;
-  background: #dfe8ec;
+  background: transparent;
 }
 
 .sx-track {
   display: flex;
+  flex-wrap: nowrap;
   height: 100%;
   width: max-content;
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+  background: transparent;
 }
 
 .sx-panel {
   position: relative;
   flex: none;
-  /* Trimmed to last content (cockatoo) — no empty sky at scroll end */
-  width: 388vw;
-  min-width: 388vw;
+  /*
+    Compact runway — one beat clears before the next enters.
+    Eagle+copy share a frame; cockatoo waits until values fully exit.
+  */
+  width: 365vw;
+  min-width: 365vw;
   height: 100%;
   overflow: hidden;
   color: #0c0d0c;
-  background: #dfe8ec;
+  background: transparent;
 }
 
-/* Three parallax layers — bg / imagery / content pan separately */
+/* Stacked parallax layers — each gets its own scrubbed x */
 .sx-layer {
   position: absolute;
   left: 0;
@@ -1259,22 +1249,26 @@ body {
   width: 100%;
   height: 100%;
   will-change: transform;
+  transform: translate3d(0, 0, 0);
 }
 
 .sx-layer--bg {
   z-index: 0;
-  /* Wider than the panel so slower parallax never shows empty edges */
-  width: 125%;
+  /* Wider than the panel so slower bg parallax never flashes empty edges */
+  width: 130%;
   left: 0;
-  /* Figma 609:770 — base sky only; soft clouds live in .sx-layer--clouds */
-  background: url("/images/story-figma/sky-base.png") left top / 100% 100% no-repeat;
+  /*
+    Sky plate lives on GalleryAwardsBand (Gallery → Awards).
+    Keep this layer for parallax timing only — no second sky crop.
+  */
+  background: transparent;
   pointer-events: none;
 }
 
 /* Soft fluffy clouds sit above the sky, below story imagery */
 .sx-layer--clouds {
   z-index: 1;
-  width: 135%;
+  width: 120%;
   left: -2%;
   pointer-events: none;
   overflow: visible;
@@ -1343,20 +1337,25 @@ body {
   filter: brightness(1.55) contrast(1.12) saturate(0) opacity(0.95);
 }
 
-.sx-layer--images {
-  z-index: 2;
-  pointer-events: none;
-}
-
-/* White slide clouds — pan ahead of editorial content */
+/* White slide clouds — behind front fauna, same rate as soft clouds (12) */
 .sx-layer--slide-clouds {
-  z-index: 3;
+  z-index: 2;
+  width: 115%;
+  left: -2%;
   pointer-events: none;
   overflow: visible;
 }
 
+/* Front images (darter / camp / eagle / cockatoo) — under copy */
+.sx-layer--images {
+  z-index: 3;
+  pointer-events: none;
+  width: 110%;
+}
+
 .sx-layer--content {
-  z-index: 4;
+  z-index: 6;
+  isolation: isolate;
 }
 
 /* Framed image crops replicate the Figma fills. */
@@ -1371,6 +1370,12 @@ body {
   user-select: none;
 }
 
+/* Eagle + final birds need the full cutout — do not crop to a box */
+.sx-hummingbird,
+.sx-cockatoo {
+  overflow: visible;
+}
+
 .sx-darter img,
 .sx-camp img,
 .sx-hummingbird img,
@@ -1381,8 +1386,7 @@ body {
 }
 
 /*
-  Bird stage — left third only so Learn/Lead/Explore stay clear.
-  Soft right fade starts past the bird body so it never reads as a white wash.
+  First bird (darter) — left third; soft right fade past the body.
 */
 .sx-darter-stage {
   left: 0;
@@ -1551,32 +1555,42 @@ body {
 }
 
 .sx-hummingbird {
-  /* Clears ~301vw; conversation copy starts just after */
-  left: 249.22vw;
-  top: 0;
-  width: 44.48vw;
-  height: 74.9vh;
-  z-index: 2;
+  /*
+    Slot between The Bridge (~204–224vw) and conversation (~270vw).
+    Must not cover milestones or copy.
+  */
+  left: 232vw;
+  top: 4vh;
+  width: min(20vw, 320px);
+  height: 74vh;
+  z-index: 1;
   pointer-events: none;
+  overflow: hidden;
+  background: transparent;
 }
 
 .sx-hummingbird img {
-  left: -17.8%;
+  left: 0;
   top: 0;
-  width: 135.54%;
-  height: 103.06%;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center bottom;
+  /* eagle-1.png ships on black — screen blend drops the plate on the sky */
+  mix-blend-mode: screen;
 }
 
 /*
   Third slide — white cloud behind hummingbird → Perspective.
-  Kept further right so it stays clear of the boardrooms (2nd) cloud.
+  Kept clear of the boardrooms (2nd) cloud, tight to the eagle.
 */
 .sx-conversation-cloud {
   position: absolute;
-  left: 278vw;
-  top: 22vh;
+  /* Tracks conversation copy — behind text, clear of the eagle */
+  left: 274vw;
+  top: 18vh;
   z-index: 1;
-  width: min(62.4vw, 992px);
+  width: min(52vw, 860px);
   height: auto;
   pointer-events: none;
   opacity: 1;
@@ -1594,19 +1608,23 @@ body {
 }
 
 .sx-cockatoo {
-  left: 364vw;
-  top: 19vh;
-  width: 21.88vw;
-  height: 81vh;
-  z-index: 1;
+  /* Starts only after wider conversation (~248–304) fully exits */
+  left: 330vw;
+  top: 12vh;
+  width: min(30vw, 480px);
+  height: 76vh;
+  z-index: 2;
   pointer-events: none;
+  overflow: visible;
 }
 
 .sx-cockatoo img {
-  left: -46.25%;
-  top: -1.67%;
-  width: 156.84%;
-  height: 101.67%;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center bottom;
 }
 
 /*
@@ -1615,13 +1633,14 @@ body {
 */
 .sx-bottom-cloud {
   position: absolute;
-  left: 68vw;
-  top: 18vh;
+  /* Figma 718:33 — first fluffy bank on the opening slide */
+  left: 48vw;
+  top: 22vh;
   z-index: 1;
-  width: min(62.4vw, 992px);
+  width: min(42vw, 720px);
   height: auto;
   pointer-events: none;
-  opacity: 1;
+  opacity: 0.92;
   overflow: visible;
 }
 
@@ -1633,6 +1652,37 @@ body {
   object-fit: contain;
   object-position: center center;
   opacity: 1;
+}
+
+/*
+  First-slide title + lead + pillars — stacked in the clear sky
+  to the right of the darter (bird img extends ~44vw).
+*/
+.sx-intro {
+  position: absolute;
+  left: 42vw;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(14px, 2vh, 24px);
+  width: min(52vw, 780px);
+  max-width: none;
+  height: 100%;
+  padding-left: clamp(8px, 1.2vw, 24px);
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.sx-intro .sx-heading,
+.sx-intro .sx-lead,
+.sx-intro .sx-pillars {
+  position: relative;
+  left: auto;
+  top: auto;
+  pointer-events: auto;
 }
 
 .sx-heading {
@@ -1649,29 +1699,62 @@ body {
 }
 
 .sx-heading--ordinary {
-  left: 40vw;
-  top: 8vh;
-  width: 52vw;
+  width: 100%;
   align-items: center;
   text-align: center;
 }
 
 .sx-heading--boardrooms {
-  left: 100.42vw;
-  top: 8vh;
-  width: 56vw;
+  width: max-content;
+  max-width: 100%;
   align-items: flex-start;
   text-align: left;
   z-index: 2;
+  white-space: nowrap;
+  font-size: clamp(32px, 3.2vw, 64px);
+}
+
+/*
+  Conversation beat — right of eagle in one frame; fully off before cockatoo.
+  Wide enough for title on one line + lead on two.
+*/
+.sx-conversation {
+  position: absolute;
+  /* Starts after eagle (~232–252vw) clears */
+  left: 272vw;
+  top: 0;
+  z-index: 8;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(18px, 2.6vh, 32px);
+  width: min(56vw, 920px);
+  height: 100%;
+  padding: 4vh 1.5vw;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.sx-conversation .sx-heading,
+.sx-conversation .sx-lead,
+.sx-conversation .sx-values {
+  position: relative !important;
+  left: auto !important;
+  top: auto !important;
+  flex-shrink: 0;
+  pointer-events: auto;
 }
 
 .sx-heading--conversation {
-  left: 306vw;
-  top: 6vh;
-  width: 64vw;
+  width: max-content;
+  max-width: 100%;
   align-items: center;
   text-align: center;
   z-index: 2;
+  font-size: clamp(28px, 2.85vw, 52px);
+  line-height: 1.15;
+  white-space: nowrap;
 }
 
 .sx-lead {
@@ -1681,62 +1764,85 @@ body {
   font-family: var(--font-body);
   font-weight: 400;
   letter-spacing: 0;
-  text-transform: capitalize;
+  /* Keep source sentence case — capitalize was Title-Casing every word */
+  text-transform: none;
   color: #000000;
 }
 
 .sx-lead--ordinary {
-  left: 41.82vw;
-  /* Even vertical rhythm: title → lead ≈ lead → pillars (44.6vh) */
-  top: 30vh;
-  width: 46.61vw;
+  width: 92%;
   text-align: center;
-  font-size: 1.2vw;
+  font-size: clamp(14px, 1.15vw, 20px);
   line-height: 1.5;
-  max-width: none;
+  max-width: 36em;
 }
 
 .sx-lead--conversation {
-  left: 316vw;
-  top: 20vh;
-  width: 44vw;
+  width: 100%;
   z-index: 2;
   text-align: center;
-  font-size: 1.05vw;
-  line-height: 1.4;
-  max-width: none;
+  font-size: clamp(14px, 1.05vw, 18px);
+  line-height: 1.45;
+  /* ~two lines: first sentence, then wilderness beat */
+  max-width: 42em;
+  margin-top: 0;
 }
 
 .sx-icon {
-  width: 5.57vw;
-  height: 5.57vw;
+  width: clamp(48px, 4.8vw, 84px);
+  height: clamp(48px, 4.8vw, 84px);
   object-fit: contain;
   display: block;
 }
 
-.sx-pillar,
-.sx-value {
-  position: absolute;
+/* First-slide Learn / Lead / Explore — in-flow under the lead copy */
+.sx-pillars {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(12px, 1.8vw, 32px);
+  width: 100%;
+  margin-top: clamp(4px, 1vh, 12px);
   z-index: 2;
-  top: 44.6vh;
-  width: 14.17vw;
+}
+
+.sx-pillar {
+  position: relative;
+  z-index: 2;
+  top: auto;
+  left: auto;
+  width: auto;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
 }
 
-.sx-value {
-  top: 30vh;
-  width: 8.5vw;
+.sx-values {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(12px, 1.8vw, 28px);
+  width: 100%;
+  margin-top: clamp(8px, 1.4vh, 18px);
   z-index: 2;
+}
+
+.sx-value {
+  position: relative;
+  z-index: 2;
+  top: auto;
+  left: auto;
+  width: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
 }
 
 .sx-pillar-title,
 .sx-value-title {
-  margin: 6vh 0 0;
+  margin: clamp(10px, 1.4vh, 18px) 0 0;
   font-family: var(--font-display);
-  font-size: 1.85vw;
+  font-size: clamp(22px, 1.7vw, 34px);
   font-weight: 400;
   line-height: 1.15;
   letter-spacing: 0;
@@ -1750,24 +1856,51 @@ body {
 }
 
 .sx-pillar-copy {
-  margin: 1.5vh 0 0;
+  margin: clamp(6px, 0.9vh, 12px) 0 0;
   font-family: var(--font-body);
-  font-size: 1.04vw;
+  font-size: clamp(13px, 0.95vw, 17px);
   font-weight: 400;
   line-height: 1.35;
   text-transform: none;
-  white-space: nowrap;
   color: #000000;
 }
 
-.sx-boardrooms-copy {
+/*
+  Boardrooms CTA column — clears Decades (~158vw).
+  Wide copy so title stays one line and each paragraph wraps to ~two.
+*/
+.sx-boardrooms {
   position: absolute;
+  left: calc(100.42vw - 30px);
+  top: 15.6vh;
   z-index: 2;
-  left: 100.42vw;
-  top: 28vh;
-  width: 53.02vw;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: clamp(18px, 3.2vh, 36px);
+  width: min(50vw, 920px);
+  max-width: none;
+  height: auto;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.sx-boardrooms .sx-heading,
+.sx-boardrooms .sx-boardrooms-copy,
+.sx-boardrooms .sx-cta {
+  position: relative;
+  left: auto;
+  top: auto;
+  pointer-events: auto;
+}
+
+.sx-boardrooms-copy {
+  z-index: 2;
+  width: 100%;
+  max-width: 46em;
   font-family: var(--font-body);
-  font-size: 1.04vw;
+  font-size: clamp(14px, 1.05vw, 18px);
   font-weight: 400;
   line-height: 1.45;
   letter-spacing: 0;
@@ -1779,56 +1912,13 @@ body {
   margin: 0 0 2.6vh;
 }
 
+.sx-boardrooms-copy p:last-child {
+  margin-bottom: 0;
+}
+
+/* Story CTA — same site-wide .cta chrome */
 .sx-cta {
-  position: absolute;
   z-index: 2;
-  left: 100.42vw;
-  top: 52vh;
-  display: inline-flex;
-  align-items: center;
-  gap: 0;
-  text-decoration: none;
-}
-
-.sx-cta-body {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: 5.6vh;
-  min-height: 44px;
-  padding: 0 1.56vw;
-  border-radius: 50px;
-  background: #ffffff;
-  color: #000000;
-  font-family: var(--font-body);
-  font-size: 1.04vw;
-  font-weight: 500;
-  white-space: nowrap;
-}
-
-.sx-cta-mark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 4.27vw;
-  min-width: 64px;
-  height: 5.6vh;
-  min-height: 44px;
-  border-radius: 50px;
-  background: #f9a01f;
-}
-
-.sx-cta-mark img {
-  width: 2.19vw;
-  min-width: 32px;
-  height: auto;
-  transform: scaleX(-1);
-}
-
-.sx-cta:focus-visible {
-  outline: 2px solid #f9a01f;
-  outline-offset: 3px;
-  border-radius: 50px;
 }
 
 /*
@@ -1837,10 +1927,10 @@ body {
 */
 .sx-boardrooms-cloud {
   position: absolute;
-  left: 172vw;
+  left: 168vw;
   top: 6vh;
   z-index: 1;
-  width: min(57.6vw, 896px);
+  width: min(52vw, 860px);
   height: auto;
   pointer-events: none;
   opacity: 1;
@@ -1859,7 +1949,7 @@ body {
 
 .sx-milestone {
   position: absolute;
-  z-index: 2;
+  z-index: 5;
   top: 15.6vh;
   display: flex;
   flex-direction: column;
@@ -1902,25 +1992,6 @@ body {
   text-transform: none;
 }
 
-.sx-footer {
-  position: absolute;
-  left: 316vw;
-  top: 52vh;
-  width: 44vw;
-  text-align: center;
-  font-family: var(--font-body);
-  font-size: 1.04vw;
-  font-weight: 500;
-  line-height: 1.35;
-  text-transform: none;
-  color: #000000;
-  z-index: 2;
-}
-
-.sx-footer p {
-  margin: 0 0 1vh;
-}
-
 @media (max-width: 1023px) {
   .sx-viewport {
     height: auto;
@@ -1943,7 +2014,7 @@ body {
     padding: 64px 20px 72px;
     box-sizing: border-box;
     gap: 26px;
-    background: url("/images/story-figma/sky-base.png") center top / cover no-repeat;
+    background: url("/images/story-figma/seam/sky-left.png") center top / cover no-repeat;
   }
 
   /* Unwrap parallax layers so mobile order still works */
@@ -1967,6 +2038,20 @@ body {
     top: auto !important;
   }
 
+  .sx-intro {
+    width: 100% !important;
+    height: auto;
+    gap: 16px;
+    order: 1;
+  }
+
+  .sx-pillars {
+    width: 100%;
+    grid-template-columns: 1fr;
+    gap: 22px;
+    margin-top: 8px;
+  }
+
   .sx-heading {
     width: 100% !important;
     text-align: center !important;
@@ -1975,14 +2060,37 @@ body {
     order: 1;
   }
 
-  .sx-heading--boardrooms {
+  .sx-boardrooms {
+    width: 100% !important;
+    max-width: 560px;
+    height: auto;
+    gap: 18px;
+    align-items: center;
     order: 5;
+    margin-top: 36px;
+    pointer-events: auto;
+  }
+
+  .sx-heading--boardrooms {
+    text-align: center !important;
+    align-items: center !important;
+    white-space: normal !important;
+    width: 100% !important;
+  }
+
+  .sx-conversation {
+    width: 100% !important;
+    height: auto;
+    gap: 16px;
+    order: 11;
     margin-top: 36px;
   }
 
-  .sx-heading--conversation {
-    order: 11;
-    margin-top: 36px;
+  .sx-values {
+    width: 100%;
+    grid-template-columns: 1fr 1fr;
+    gap: 22px;
+    margin-top: 8px;
   }
 
   .sx-lead {
@@ -1991,10 +2099,6 @@ body {
     text-align: center !important;
     font-size: 16px;
     order: 2;
-  }
-
-  .sx-lead--conversation {
-    order: 12;
   }
 
   .sx-darter-stage {
@@ -2037,7 +2141,6 @@ body {
   .sx-value {
     width: 100%;
     max-width: 320px;
-    order: 13;
   }
 
   .sx-icon {
@@ -2057,21 +2160,15 @@ body {
 
   .sx-boardrooms-copy {
     width: 100% !important;
-    max-width: 560px;
     font-size: 16px;
     text-align: center;
-    order: 6;
   }
 
   .sx-cta {
-    order: 7;
-    margin-top: 28px;
-  }
-
-  .sx-cta-body,
-  .sx-cta-mark {
-    height: 50px;
-    font-size: 16px;
+    margin-top: 10px;
+    position: relative;
+    left: auto;
+    top: auto;
   }
 
   .sx-milestone {
@@ -2113,15 +2210,8 @@ body {
     aspect-ratio: 1.5;
   }
 
-  .sx-footer {
-    width: 100% !important;
-    max-width: 520px;
-    font-size: 16px;
-    order: 14;
-  }
-
   .sx-cockatoo {
-    order: 15;
+    order: 14;
     width: min(56vw, 280px);
     height: auto;
     aspect-ratio: 0.62;
@@ -2217,47 +2307,35 @@ body {
   them via GSAP timeScale.
 */
 .gallery-section {
-  /* Equal top/bottom band so both marquee rows sit fully inside the loop */
-  --gallery-edge: clamp(72px, 11vh, 128px);
-  --gallery-gap: clamp(32px, 5vh, 56px);
+  /* Top/bottom padding keeps marquee rows inside the visible area */
+  --gallery-edge: clamp(48px, 7vh, 92px);
+  --gallery-gap: clamp(20px, 3vh, 40px);
   position: relative;
-  /* Above Experiences so after the cloud reveal, Gallery content rides on this sky */
+  /* Above Experiences; sky comes from GalleryAwardsBand */
   z-index: 4;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   align-items: stretch;
   gap: var(--gallery-gap);
-  /* Taller than one viewport so extra edge padding never clips the strips */
-  min-height: 118vh;
-  min-height: 118svh;
+  /*
+   * Locked one-viewport frame: both strips + copy + CTA stay composed.
+   */
+  height: 100vh;
+  height: 100dvh;
+  min-height: 540px;
+  max-height: 100vh;
+  max-height: 100dvh;
   padding: var(--gallery-edge) 0;
   overflow: hidden;
-  /* Fallback under sky image — same plate as reveal soft fill */
-  background: var(--gallery-surface);
+  /* Shared sky plate is on GalleryAwardsBand — no local crop / seam */
+  background: transparent;
   box-sizing: border-box;
   border: 0;
   outline: none;
   box-shadow: none;
-  /* Bleed into neighbours so body #000 / Experiences shell never peeks as a hairline */
-  margin-top: -2px;
-  margin-bottom: -2px;
-  padding-top: calc(var(--gallery-edge) + 2px);
-  padding-bottom: calc(var(--gallery-edge) + 2px);
-}
-
-.gallery-bg {
-  position: absolute;
-  /* Overscan 2px so cover never leaves a dark edge at the join */
-  inset: -2px 0;
-  z-index: 0;
-  display: block;
-  width: 100%;
-  height: calc(100% + 4px);
-  object-fit: cover;
-  object-position: center;
-  pointer-events: none;
-  user-select: none;
+  margin-top: 0;
+  margin-bottom: 0;
 }
 
 .gallery-strip {
@@ -2289,8 +2367,8 @@ body {
 
 .gallery-tile {
   flex: none;
-  /* Smaller cards — full height visible inside the padded loop */
-  width: clamp(148px, 13.2vw, 240px);
+  /* Cards sized to fit both strips + copy inside exactly 100vh */
+  width: clamp(140px, 12.5vw, 220px);
   aspect-ratio: 5 / 4;
   height: auto;
   border-radius: 10px;
@@ -2336,20 +2414,39 @@ body {
   text-transform: capitalize;
 }
 
+.gallery-copy .cta {
+  margin-top: 44px;
+}
+
+/*
+  Gallery CTA — same swallow hover as hero .cta:
+  label pill expands under the orange mark; mark shrinks and stays on top.
+*/
 .gallery-cta {
+  --cta-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --cta-speed: 0.4s;
+  --cta-pad: 30px;
+  --cta-mark-w: 82px;
+  --cta-mark-h: 56px;
+  --cta-gap: 10px;
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--cta-gap);
   margin-top: 30px;
+  height: 56px;
   text-decoration: none;
+  flex: none;
 }
 
 .gallery-cta-body {
+  position: relative;
+  z-index: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 54px;
-  padding: 0 30px;
+  height: 56px;
+  padding: 0 var(--cta-pad);
   border-radius: 50px;
   background: #0a0a0a;
   color: #ffffff;
@@ -2357,43 +2454,89 @@ body {
   font-size: 17px;
   font-weight: 500;
   line-height: 1;
+  box-sizing: border-box;
+  transition: padding-right var(--cta-speed) var(--cta-ease);
 }
 
 .gallery-cta-mark {
+  position: relative;
+  z-index: 2;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 82px;
-  height: 54px;
+  width: var(--cta-mark-w);
+  height: var(--cta-mark-h);
   border-radius: 50px;
   background: var(--color-accent, #f5a623);
   flex: none;
+  transition:
+    width var(--cta-speed) var(--cta-ease),
+    height var(--cta-speed) var(--cta-ease),
+    margin-left var(--cta-speed) var(--cta-ease);
 }
 
 .gallery-cta-bird {
-  width: 40px;
-  height: 40px;
+  width: 42px;
+  height: 42px;
   max-width: none;
   filter: brightness(0) invert(1);
   transform: scaleX(-1);
   pointer-events: none;
+  transition:
+    width var(--cta-speed) var(--cta-ease),
+    height var(--cta-speed) var(--cta-ease);
 }
 
-.gallery-cta:hover .gallery-cta-body {
-  transform: translateY(-1px);
+@media (hover: hover) {
+  .gallery-cta:hover {
+    gap: 0;
+  }
+
+  .gallery-cta:hover .gallery-cta-body {
+    padding-right: calc(var(--cta-pad) + 55px + var(--cta-gap));
+  }
+
+  .gallery-cta:hover .gallery-cta-mark {
+    width: 71.75px;
+    height: 49px;
+    margin-left: calc(-1 * (55px + var(--cta-gap)));
+  }
+
+  .gallery-cta:hover .gallery-cta-bird {
+    width: 36.75px;
+    height: 36.75px;
+  }
 }
 
 .gallery-cta:focus-visible {
   outline: 2px solid var(--color-focus, #f5a623);
   outline-offset: 3px;
   border-radius: 50px;
+  gap: 0;
+}
+
+.gallery-cta:focus-visible .gallery-cta-body {
+  padding-right: calc(var(--cta-pad) + 55px + var(--cta-gap));
+}
+
+.gallery-cta:focus-visible .gallery-cta-mark {
+  width: 71.75px;
+  height: 49px;
+  margin-left: calc(-1 * (55px + var(--cta-gap)));
+}
+
+.gallery-cta:focus-visible .gallery-cta-bird {
+  width: 36.75px;
+  height: 36.75px;
 }
 
 @media (max-width: 1023px) {
   .gallery-section {
-    --gallery-edge: 52px;
-    --gallery-gap: 32px;
-    min-height: 0;
+    --gallery-edge: 44px;
+    --gallery-gap: 20px;
+    height: 100vh;
+    height: 100dvh;
+    min-height: 480px;
     padding: var(--gallery-edge) 0;
     gap: var(--gallery-gap);
   }
@@ -2411,19 +2554,35 @@ body {
     max-width: 420px;
   }
 
+  .gallery-cta {
+    --cta-pad: 24px;
+    --cta-mark-w: 68px;
+    --cta-mark-h: 48px;
+    height: 48px;
+  }
+
   .gallery-cta-body {
     height: 48px;
-    padding: 0 24px;
+    padding: 0 var(--cta-pad);
     font-size: 16px;
   }
 
   .gallery-cta-mark {
-    width: 68px;
-    height: 48px;
+    width: var(--cta-mark-w);
+    height: var(--cta-mark-h);
+  }
+
+  .gallery-cta-bird {
+    width: 34px;
+    height: 34px;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .gallery-cta {
+    --cta-speed: 0s;
+  }
+
   .gallery-strip-track,
   .gallery-copy {
     transform: none !important;
@@ -2628,13 +2787,17 @@ body {
   z-index: 6;
 }
 
-/* Figma 548:501 — white pill 210×56 + amber mark 82×56 */
+/*
+  Footer CTA — same geometry / swallow hover as hero .cta
+  (white pill expands under orange mark; mark shrinks on top).
+  Rest: pill 210×56 + mark 82×56 flush.
+*/
 .footer-cta {
   --footer-cta-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --footer-cta-speed: 0.35s;
+  --footer-cta-speed: 0.4s;
   position: relative;
   display: block;
-  width: 300px;
+  width: 292px;
   height: 56px;
   text-decoration: none;
   flex: none;
@@ -2646,6 +2809,7 @@ body {
 .footer-cta-label {
   position: absolute;
   display: block;
+  box-sizing: border-box;
 }
 
 .footer-cta-pill {
@@ -2659,7 +2823,7 @@ body {
 }
 
 .footer-cta-mark {
-  left: 218px;
+  left: 210px;
   top: 0;
   width: 82px;
   height: 56px;
@@ -2673,8 +2837,8 @@ body {
 }
 
 .footer-cta-bird {
-  left: 236px;
-  top: 8px;
+  left: 230px;
+  top: 7px;
   width: 42px;
   height: 42px;
   max-width: none;
@@ -2703,26 +2867,45 @@ body {
   text-transform: capitalize;
   white-space: nowrap;
   z-index: 1;
+  pointer-events: none;
 }
 
 @media (hover: hover) {
   .footer-cta:hover .footer-cta-pill {
-    width: 250px;
+    width: 265px;
   }
 
   .footer-cta:hover .footer-cta-mark {
-    left: 204px;
-    top: 2px;
-    width: 76px;
-    height: 52px;
+    left: 188.12px;
+    top: 3px;
+    width: 71.75px;
+    height: 49px;
   }
 
   .footer-cta:hover .footer-cta-bird {
-    left: 220px;
-    top: 8px;
-    width: 40px;
-    height: 40px;
+    left: 205.6px;
+    top: 9.13px;
+    width: 36.75px;
+    height: 36.75px;
   }
+}
+
+.footer-cta:focus-visible .footer-cta-pill {
+  width: 265px;
+}
+
+.footer-cta:focus-visible .footer-cta-mark {
+  left: 188.12px;
+  top: 3px;
+  width: 71.75px;
+  height: 49px;
+}
+
+.footer-cta:focus-visible .footer-cta-bird {
+  left: 205.6px;
+  top: 9.13px;
+  width: 36.75px;
+  height: 36.75px;
 }
 
 .footer-cta:focus-visible {

@@ -119,6 +119,9 @@ function setupInfiniteStrip(
   return { tween, refresh };
 }
 
+/**
+ * Stories Beyond The Frame — natural page-flow gallery.
+ */
 export function StoriesGallery() {
   const sectionRef = useRef<HTMLElement>(null);
 
@@ -132,12 +135,9 @@ export function StoriesGallery() {
     const bottomTrack = section.querySelector<HTMLElement>(
       ".gallery-strip--bottom .gallery-strip-track",
     );
-    const copy = section.querySelector(".gallery-copy");
     if (!topTrack || !bottomTrack) return;
 
     const ctx = gsap.context(() => {
-      // Top ← left, bottom → right — always opposite.
-      // Lower duration = faster idle loop; scroll boosts timeScale further.
       const top = setupInfiniteStrip(topTrack, {
         direction: -1,
         duration: 18,
@@ -150,7 +150,6 @@ export function StoriesGallery() {
       const velProxy = { v: 0 };
       const syncSpeed = () => {
         const boost = gsap.utils.clamp(-5, 5, velProxy.v / 420);
-        // Speed only — never flip strip direction on reverse scroll.
         const speed = gsap.utils.clamp(0.7, 5.5, 1 + Math.abs(boost));
         top.tween.timeScale(speed);
         bottom.tween.timeScale(speed);
@@ -176,23 +175,7 @@ export function StoriesGallery() {
       };
       gsap.ticker.add(tick);
 
-      if (copy) {
-        gsap.fromTo(
-          copy,
-          { y: 28 },
-          {
-            y: -12,
-            ease: "none",
-            scrollTrigger: {
-              trigger: section,
-              start: "top bottom",
-              end: "bottom top",
-              scrub: 0.6,
-              invalidateOnRefresh: true,
-            },
-          },
-        );
-      }
+      /* No copy slide-in — HomeSeam mist reveals the whole section as one unit */
 
       const onResize = () => {
         top.refresh();
@@ -230,16 +213,6 @@ export function StoriesGallery() {
       aria-label="Stories beyond the frame"
       ref={sectionRef}
     >
-      <img
-        className="gallery-bg"
-        src="/images/story/bg-3.png"
-        alt=""
-        width={3286}
-        height={925}
-        draggable={false}
-        decoding="async"
-      />
-
       <div className="gallery-strip gallery-strip--top">
         <div className="gallery-strip-track">
           <StripSet images={TOP_IMAGES} />
@@ -253,15 +226,17 @@ export function StoriesGallery() {
           From quiet encounters to extraordinary moments, explore the wild
           through Hymakar&rsquo;s lens.
         </p>
-        <a className="gallery-cta" href="/gallery">
-          <span className="gallery-cta-body">Explore Gallery</span>
-          <span className="gallery-cta-mark" aria-hidden="true">
+        <a className="cta" href="/gallery">
+          <span className="cta-pill" aria-hidden="true" />
+          <span className="cta-label">Explore Gallery</span>
+          <span className="cta-mark" aria-hidden="true">
             <img
-              className="gallery-cta-bird"
+              className="cta-bird"
               src="/images/hero/hummingbird.png"
               alt=""
-              width={42}
-              height={42}
+              width={37}
+              height={37}
+              draggable={false}
             />
           </span>
         </a>

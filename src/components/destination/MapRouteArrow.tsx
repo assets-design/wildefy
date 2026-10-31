@@ -64,6 +64,20 @@ const DAY_PINS = DAY_POINT_INDEX.map((idx) => ROUTE_POINTS[idx]);
 
 const BLINK_DOT_SRC = "/images/destination/red-blinking-dot.gif";
 
+type PathPoint = { x: number; y: number; angle: number };
+
+/** includeAngle=true → GSAP returns { x, y, angle }; typings omit `angle`. */
+function positionOnPath(
+  rawPath: ReturnType<typeof MotionPathPlugin.arrayToRawPath>,
+  progress: number,
+): PathPoint {
+  return MotionPathPlugin.getPositionOnPath(
+    rawPath,
+    progress,
+    true,
+  ) as PathPoint;
+}
+
 /** nav-arrow-map.png points up; GSAP path angle is along +X. */
 const ARROW_ANGLE_OFFSET = 90;
 
@@ -257,7 +271,7 @@ export function MapRouteArrow({
     const place = (p: number) => {
       const rawPath = rawPathRef.current;
       if (!rawPath) return;
-      const point = MotionPathPlugin.getPositionOnPath(rawPath, p, true);
+      const point = positionOnPath(rawPath, p);
       const viewH = viewport.clientHeight;
       const stageH = stage.offsetHeight;
       const pan = panOffset(point.y, stageH, viewH, p);
@@ -308,7 +322,7 @@ export function MapRouteArrow({
     const rawPath = rawPathRef.current;
     if (!arrow || !stage || !viewport || !rawPath) return;
 
-    const point = MotionPathPlugin.getPositionOnPath(rawPath, clamped, true);
+    const point = positionOnPath(rawPath, clamped);
     const pan = panOffset(
       point.y,
       stage.offsetHeight,

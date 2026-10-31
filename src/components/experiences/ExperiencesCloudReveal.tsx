@@ -3,14 +3,13 @@
 import styles from "./experiences-journey.module.css";
 
 /**
- * Enter reveal for Experiences — full white cloud field covers the section,
- * then clears on scroll so the Experiences image shows through.
+ * Layered cloud mist using site assets (clouds-mist + clouds-section).
  *
- * Uses the site cloud assets (mist landscape + fluffy section banks), not a
- * flat white plate.
+ * progress 0 = full cover
+ * progress 1 = cleared
  *
- * progress 0 = solid white clouds covering
- * progress 1 = clouds gone
+ * variant "handoff": §2→§3 seam — lateral/diagonal drift, depth layers,
+ * soft cyan→sky tint. Not a flat white rectangle.
  */
 const MIST_SRC = "/images/clouds-mist.png";
 const BANK_SRC = "/images/clouds-section.png";
@@ -18,23 +17,37 @@ const BANK_SRC = "/images/clouds-section.png";
 type Props = {
   /** 0–1 dissolve amount (already eased by parent). */
   progress: number;
-  /** enter: cover→clear. exit: clear→cover (into the next section). */
+  /** enter: cover→clear. exit: clear→cover. */
   mode?: "enter" | "exit";
+  /** Default enter veil vs cinematic Experiences→Gallery handoff. */
+  variant?: "default" | "handoff";
 };
 
-export function ExperiencesCloudReveal({ progress, mode = "enter" }: Props) {
+export function ExperiencesCloudReveal({
+  progress,
+  mode = "enter",
+  variant = "default",
+}: Props) {
   const t = Math.min(1, Math.max(0, progress));
   const hidden = t >= 0.995;
-  // Hold full cover briefly, then clear — keeps clouds readable mid-reveal
   const cover = Math.min(1, Math.max(0, 1 - t));
-  const opacity = cover * cover; // ease out so clouds linger a bit
+  const opacity = cover * cover;
   const isExit = mode === "exit";
-  const scale = isExit ? 1.14 - t * 0.14 : 1 + t * 0.14;
-  const lift = isExit ? (1 - t) * 6 : t * -6;
+  const isHandoff = variant === "handoff";
+
+  const scale = isExit ? 1.14 - t * 0.14 : 1 + t * (isHandoff ? 0.1 : 0.14);
+  const lift = isExit ? (1 - t) * 6 : t * (isHandoff ? -4 : -6);
+
+  /* Depth drift — opposite lateral motion on mist layers */
+  const mistX = isHandoff ? (isExit ? (1 - t) * 4 : t * -5) : 0;
+  const mistAltX = isHandoff ? (isExit ? (1 - t) * -5 : t * 6) : 0;
+  const mistY = isHandoff ? t * -3 : 0;
+  const mistAltY = isHandoff ? t * 2.5 : 0;
+  const bankLift = isHandoff ? t * 18 : 0;
 
   return (
     <div
-      className={`${styles.cloudReveal} ${isExit ? styles.cloudRevealExit : ""}`}
+      className={`${styles.cloudReveal} ${isExit ? styles.cloudRevealExit : ""} ${isHandoff ? styles.cloudRevealHandoffVariant : ""}`}
       aria-hidden="true"
       style={{
         visibility: hidden ? "hidden" : "visible",
@@ -43,10 +56,8 @@ export function ExperiencesCloudReveal({ progress, mode = "enter" }: Props) {
         pointerEvents: "none",
       }}
     >
-      {/* Bright white underlay so no scene peeks through early */}
       <div className={styles.cloudRevealFill} />
 
-      {/* Full-frame white cloudscape */}
       <img
         className={styles.cloudRevealMist}
         src={MIST_SRC}
@@ -54,6 +65,13 @@ export function ExperiencesCloudReveal({ progress, mode = "enter" }: Props) {
         width={1920}
         height={1080}
         draggable={false}
+        style={
+          isHandoff
+            ? {
+                transform: `translate3d(${mistX}%, ${mistY}%, 0)`,
+              }
+            : undefined
+        }
       />
       <img
         className={styles.cloudRevealMistAlt}
@@ -62,9 +80,15 @@ export function ExperiencesCloudReveal({ progress, mode = "enter" }: Props) {
         width={1920}
         height={1080}
         draggable={false}
+        style={
+          isHandoff
+            ? {
+                transform: `scaleX(-1) translate3d(${mistAltX}%, ${mistAltY}%, 0)`,
+              }
+            : undefined
+        }
       />
 
-      {/* Fluffy top / bottom banks from journey cloud */}
       <img
         className={styles.cloudRevealBankTop}
         src={BANK_SRC}
@@ -72,6 +96,14 @@ export function ExperiencesCloudReveal({ progress, mode = "enter" }: Props) {
         width={1600}
         height={2600}
         draggable={false}
+        style={
+          isHandoff
+            ? {
+                transform: `translateX(-50%) scaleY(-1) translate3d(${t * -2}%, ${-bankLift}%, 0)`,
+                opacity: 0.92 * (0.35 + cover * 0.65),
+              }
+            : undefined
+        }
       />
       <img
         className={styles.cloudRevealBankBottom}
@@ -80,6 +112,14 @@ export function ExperiencesCloudReveal({ progress, mode = "enter" }: Props) {
         width={1600}
         height={2600}
         draggable={false}
+        style={
+          isHandoff
+            ? {
+                transform: `translateX(-50%) translate3d(${t * 3}%, ${bankLift}%, 0)`,
+                opacity: 0.98 * (0.35 + cover * 0.65),
+              }
+            : undefined
+        }
       />
     </div>
   );

@@ -2,3 +2,29 @@ node_modules
 .next
 out
 *.tsbuildinfo
+.cursor/
+tmp/
+wildefy-hostinger-hpanel/
+wildefy-hostinger-hpanel.zip
+wildfy/
+_dest_rec/
+_home_frames/
+_rec_frames*/
+_revel_frames/
+_v2_ref_frames/
+# Scratch / reference captures (not runtime assets)
+*.webm
+Screen Recording*.mp4
+Animating_hummingbird_reference*.mp4
+Website_01.mp4
+gallery.mp4
+home.mp4
+revel.mp4
+v2_awv-*.mp4
+# Oversized source plate (runtime uses public/images/gallery-awards/shared-plate.png)
+public/images/plate.png
+public/images/Sunlit Rolling Meadow Panorama*.png
+public/assets/video/_*/
+public/assets/video/video_002_frames/
+# Over GitHub 100MB limit
+public/videos/bird_02.mov

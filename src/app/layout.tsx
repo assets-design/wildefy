@@ -5,7 +5,10 @@ import { SmoothScroll } from "@/components/SmoothScroll";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Home — Wildefy",
+  title: {
+    default: "Home — Wildefy",
+    template: "%s — Wildefy",
+  },
   description:
     "Wildlife journeys, wilderness offsites and learning experiences shaped by the field.",
 };

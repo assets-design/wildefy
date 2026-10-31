@@ -6,6 +6,10 @@ import { StageFrame } from "@/components/layout/StageFrame";
 import { HYMAKAR_PHOTOS } from "@/components/gallery/hymakarPhotos";
 import styles from "./photo-cloud.module.css";
 
+/** Max blur in pixels at depth=0, clears to 0 at depth=BLUR_CLEAR_AT */
+const BLUR_MAX = 22;
+const BLUR_CLEAR_AT = 0.72; /* depth fraction at which blur is fully gone */
+
 const WORLD_W = 5200;
 const WORLD_H = 3400;
 const COLS = 22;
@@ -79,6 +83,7 @@ function depthToZ(depth: number) {
 export function PhotoCloud() {
   const stageRef = useRef<HTMLDivElement>(null);
   const worldRef = useRef<HTMLDivElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
   const pan = useRef({ x: 0, y: 0 });
   const depth = useRef(START_DEPTH);
   const shownDepth = useRef(START_DEPTH);
@@ -112,6 +117,20 @@ export function PhotoCloud() {
       shownDepth.current += (depth.current - shownDepth.current) * follow;
       const z = depthToZ(shownDepth.current);
       world.style.transform = `translate3d(${pan.current.x}px, ${pan.current.y}px, ${z}px)`;
+
+      /* ── blur / reveal overlay ─────────────────────────────── */
+      if (overlayRef.current) {
+        // progress 0→1 over the first BLUR_CLEAR_AT of depth travel
+        const t = Math.min(1, shownDepth.current / BLUR_CLEAR_AT);
+        const blur = BLUR_MAX * (1 - t);
+        const alpha = 0.72 * (1 - t);
+        const blurValue = `blur(${blur.toFixed(2)}px)`;
+        overlayRef.current.style.backdropFilter = blurValue;
+        overlayRef.current.style.setProperty("-webkit-backdrop-filter", blurValue);
+        overlayRef.current.style.background = `rgba(0,0,0,${alpha.toFixed(3)})`;
+        overlayRef.current.style.pointerEvents = t >= 1 ? "none" : "auto";
+      }
+
       raf = requestAnimationFrame(paint);
     };
 
@@ -247,6 +266,9 @@ export function PhotoCloud() {
           ))}
         </div>
       </div>
+
+      {/* ── blur / reveal overlay — clears as user scrolls in ── */}
+      <div ref={overlayRef} className={styles.blurOverlay} aria-hidden="true" />
 
       {selected ? (
         <button

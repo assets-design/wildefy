@@ -1,0 +1,53 @@
+/*
+  Shared sky behind Gallery + Our Story.
+  Sticky plate is one viewport tall so it releases with §4 — it must not
+  keep painting over Conservation after the story pin ends.
+*/
+.band {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  background: #d4e4ec;
+  /* Allow ConsAwardsBand meadow feather to blend over the last story strip */
+  overflow: visible;
+}
+
+.bg {
+  position: sticky;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100vh;
+  height: 100svh;
+  margin-bottom: -100vh;
+  margin-bottom: -100svh;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.bgImg {
+  position: absolute;
+  /*
+    Wide strip so Story can pan sky with the assets (−travel)
+    without empty edges at the end of the runway.
+  */
+  left: 0;
+  top: -8%;
+  width: 420%;
+  height: 116%;
+  max-width: none;
+  display: block;
+  object-fit: cover;
+  object-position: left top;
+  user-select: none;
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+}
+
+.content {
+  position: relative;
+  z-index: 1;
+  overflow: visible;
+  isolation: isolate;
+}

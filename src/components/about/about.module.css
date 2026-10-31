@@ -23,6 +23,62 @@
   outline-offset: 3px;
 }
 
+/* —— Hero → Every Dot seam —— */
+.seam {
+  position: relative;
+  z-index: 2;
+  /* Match everyDot white so rest/unpin never flash cream under the hero */
+  background: #ffffff;
+}
+
+.seamCanvas {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* Color-only reveal — everyDot has no section background image */
+.paperVeil {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-color: #ffffff;
+  background-image: none;
+  opacity: 0;
+  will-change: opacity;
+}
+
+.seamIntro {
+  position: relative;
+  z-index: 8;
+  /* Pull intro into the hero viewport so the pin handoff is on-screen */
+  margin-top: -34vh;
+  padding-top: 34vh;
+  background: transparent;
+  min-height: 0;
+  pointer-events: none;
+}
+
+.seamIntro .sectionTitle,
+.seamIntro .everyDotCopy,
+.seamIntro .portraitWrap {
+  opacity: 0;
+}
+
+.seamComplete .seamIntro,
+.seamComplete .everyDot.seamIntro {
+  background: #ffffff;
+  pointer-events: auto;
+}
+
+.seamComplete .seamIntro .sectionTitle,
+.seamComplete .seamIntro .everyDotCopy,
+.seamComplete .seamIntro .portraitWrap {
+  opacity: 1;
+}
+
 /* —— Hero —— */
 .hero {
   position: relative;
@@ -32,6 +88,7 @@
   overflow: hidden;
   background: #1a0a00;
   color: #ffffff;
+  will-change: opacity;
 }
 
 .heroPhoto {
@@ -57,7 +114,7 @@
 .heroStage {
   position: absolute;
   inset: 0;
-  z-index: 2;
+  z-index: 6;
   pointer-events: none;
 }
 
@@ -84,7 +141,7 @@
   position: absolute;
   left: 120px;
   top: 715px;
-  z-index: 3;
+  z-index: 6;
   margin: 0;
   width: 895px;
   color: #ffffff;
@@ -123,6 +180,14 @@
   position: relative;
   background: #ffffff;
   padding: clamp(4rem, 8.3vw, 10rem) var(--about-pad) clamp(3rem, 6vw, 5rem);
+}
+
+/* Seam-owned intro: padding-top driven by timeline; keep side/bottom pad */
+.everyDot.seamIntro {
+  background: transparent;
+  padding-bottom: clamp(3rem, 6vw, 5rem);
+  padding-left: var(--about-pad);
+  padding-right: var(--about-pad);
 }
 
 .everyDotInner {
@@ -175,51 +240,9 @@
   margin-top: 1.35rem;
 }
 
+/* Spacing only — visual chrome comes from global hero .cta */
 .ctaGroup {
-  display: inline-flex;
-  align-items: stretch;
-  gap: 0;
   margin-top: 3.75rem;
-  text-decoration: none;
-  color: #ffffff;
-}
-
-.ctaLabel {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 196px;
-  height: 56px;
-  padding: 0 1.75rem;
-  border-radius: 50px;
-  background: #000000;
-  font-family: var(--font-body);
-  font-size: 1.125rem;
-  font-weight: 500;
-  text-transform: capitalize;
-  transition: background 0.2s ease;
-}
-
-.ctaBird {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 82px;
-  height: 56px;
-  margin-left: 0;
-  border-radius: 50px;
-  background: var(--about-accent);
-}
-
-.ctaBird img {
-  width: 42px;
-  height: 42px;
-  object-fit: contain;
-  transform: scaleX(-1);
-}
-
-.ctaGroup:hover .ctaLabel {
-  background: #1a1a1a;
 }
 
 .portraitWrap {
@@ -468,6 +491,7 @@
   line-height: 1.05;
   color: var(--about-accent);
   text-transform: capitalize;
+  font-variant-numeric: tabular-nums;
 }
 
 .metricLabel {
@@ -498,6 +522,10 @@
     bottom: 2rem;
     width: auto;
     font-size: clamp(2rem, 8vw, 2.75rem);
+  }
+
+  .seamIntro {
+    min-height: 0;
   }
 
   .everyDotGrid,
@@ -541,22 +569,11 @@
 }
 
 @media (max-width: 640px) {
-  .ctaLabel {
-    min-width: 0;
-    padding: 0 1.25rem;
-    font-size: 17px;
-  }
-
-  .ctaBird {
-    width: 64px;
-  }
-
   .bodyBlock,
   .bodyText,
   .lead,
   .planetBody,
-  .metricLabel,
-  .ctaLabel {
+  .metricLabel {
     font-size: 1rem;
   }
 

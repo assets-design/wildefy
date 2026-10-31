@@ -2,21 +2,49 @@
 
 import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
 import {
+  Component,
   Suspense,
   useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
+  useState,
   type MutableRefObject,
   type PointerEvent as ReactPointerEvent,
+  type ReactNode,
 } from "react";
 import * as THREE from "three";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import styles from "./conservation.module.css";
+
+/** Swallow WebGL init failures so the page keeps running. */
+class EarthCanvasBoundary extends Component<
+  { children: ReactNode; onError: () => void },
+  { failed: boolean }
+> {
+  state = { failed: false };
+
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+
+  componentDidCatch() {
+    this.props.onError();
+  }
+
+  render() {
+    if (this.state.failed) return null;
+    return this.props.children;
+  }
+}
 
 const MAX_TILT = Math.PI / 2 - 0.12;
 /** One full turn across the pinned Conservation runway. */
 const SCROLL_TURNS = Math.PI * 2;
-/** Face Africa / Europe on the visible half-disc (texture seam sits at the back). */
+/**
+ * NASA Earth_1_12756.glb faces lon 0 toward −Z; offset so Africa/Europe
+ * sit on the visible half-disc (texture seam stays toward the back).
+ */
 const SPIN_OFFSET = -Math.PI / 2;
 const EARTH_FOV = 42;
 /**
@@ -26,6 +54,12 @@ const EARTH_FOV = 42;
  */
 const EARTH_CAM_Z = 1 / Math.sin(THREE.MathUtils.degToRad(EARTH_FOV / 2));
 const EARTH_MESH_SCALE = 1;
+/**
+ * Sketchfab Earth (Akshat) — converted from KHR specular-glossiness
+ * to metallic-roughness so Three r186+ can bind the diffuse map.
+ * https://sketchfab.com/3d-models/earth-41fc80d85dfd480281f21b74b2de2faa
+ */
+const NASA_EARTH_URL = "/models/nasa-earth1.glb?v=mr1";
 
 type Orientation = {
   spin: number;
@@ -33,24 +67,6 @@ type Orientation = {
   manual: boolean;
   revision: number;
 };
-
-function Atmosphere() {
-  const mat = useRef(
-    new THREE.ShaderMaterial({
-      transparent: true,
-      side: THREE.BackSide,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-      vertexShader: `varying vec3 vN; void main(){ vN = normalize(normalMatrix*normal); gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
-      fragmentShader: `varying vec3 vN; void main(){ float i = pow(0.55 - dot(vN, vec3(0.0,0.0,1.0)), 4.5); gl_FragColor = vec4(0.4,0.75,1.0,1.0)*i*0.35; }`,
-    }),
-  );
-  return (
-    <mesh scale={1.01} material={mat.current}>
-      <sphereGeometry args={[1, 64, 64]} />
-    </mesh>
-  );
-}
 
 /** Lock perspective so the unit-sphere silhouette matches the circular disc. */
 function FitDiscCamera() {
@@ -76,7 +92,6 @@ function FitDiscCamera() {
     const persp = cam as THREE.PerspectiveCamera;
     if (!persp.isPerspectiveCamera) return;
     const aspect = s.width / Math.max(s.height, 1);
-    // Always re-assert — R3F can nudge aspect on resize mid-frame.
     if (
       Math.abs(persp.fov - EARTH_FOV) > 0.01 ||
       Math.abs(persp.aspect - aspect) > 0.0005 ||
@@ -100,41 +115,62 @@ function EarthMesh({
   dragging: MutableRefObject<boolean>;
   revision: MutableRefObject<number>;
 }) {
-  const [map, spec] = useLoader(THREE.TextureLoader, [
-    "/textures/earth_atmos_2048.jpg",
-    "/textures/earth_specular_2048.jpg",
-  ]) as [THREE.Texture, THREE.Texture];
-  map.colorSpace = THREE.SRGBColorSpace;
-  map.anisotropy = 8;
-  spec.anisotropy = 8;
-
+  const gltf = useLoader(GLTFLoader, NASA_EARTH_URL);
   const tiltRef = useRef<THREE.Group>(null);
   const spinRef = useRef<THREE.Group>(null);
-  const cloudsRef = useRef<THREE.Mesh>(null);
 
-  const cloudMap = useMemo(() => {
-    const c = document.createElement("canvas");
-    c.width = 1024;
-    c.height = 512;
-    const g = c.getContext("2d");
-    if (g) {
-      for (let i = 0; i < 180; i++) {
-        const x = Math.random() * 1024;
-        const y = 50 + Math.random() * 412;
-        const r = 6 + Math.random() * 36;
-        const grd = g.createRadialGradient(x, y, 0, x, y, r);
-        grd.addColorStop(0, "rgba(255,255,255,0.4)");
-        grd.addColorStop(1, "rgba(255,255,255,0)");
-        g.fillStyle = grd;
-        g.beginPath();
-        g.ellipse(x, y, r * 2.1, r * 0.55, 0, 0, Math.PI * 2);
-        g.fill();
-      }
-    }
-    const t = new THREE.CanvasTexture(c);
-    t.colorSpace = THREE.SRGBColorSpace;
-    return t;
-  }, []);
+  const earth = useMemo(() => {
+    const root = gltf.scene.clone(true);
+    root.updateMatrixWorld(true);
+    const box = new THREE.Box3().setFromObject(root);
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z) || 1;
+    // Fit longest axis to unit-sphere diameter so the limb matches the disc mask.
+    const scale = 2 / maxDim;
+    root.position.set(-center.x * scale, -center.y * scale, -center.z * scale);
+    root.scale.setScalar(scale);
+    root.traverse((obj) => {
+      const mesh = obj as THREE.Mesh;
+      if (!mesh.isMesh) return;
+      mesh.frustumCulled = false;
+      const mats = Array.isArray(mesh.material)
+        ? mesh.material
+        : [mesh.material];
+      const next = mats.map((m) => {
+        const src = m as THREE.MeshStandardMaterial & {
+          map?: THREE.Texture | null;
+          color?: THREE.Color;
+        };
+        const map =
+          src.map ||
+          (src as unknown as { map?: THREE.Texture | null }).map ||
+          null;
+        /*
+          Sketchfab exports often land as Basic/raw materials when the old
+          specular-glossiness extension is stripped — rebuild a lit PBR mat
+          so the Earth texture always shows.
+        */
+        const mat = new THREE.MeshStandardMaterial({
+          map: map ?? undefined,
+          color: map ? 0xffffff : (src.color?.getHex() ?? 0xffffff),
+          metalness: 0.05,
+          roughness: 0.55,
+          side: THREE.DoubleSide,
+        });
+        if (mat.map) {
+          mat.map.colorSpace = THREE.SRGBColorSpace;
+          mat.map.anisotropy = 8;
+          mat.map.needsUpdate = true;
+        }
+        mat.needsUpdate = true;
+        if (m && "dispose" in m) (m as THREE.Material).dispose();
+        return mat;
+      });
+      mesh.material = next.length === 1 ? next[0] : next;
+    });
+    return root;
+  }, [gltf]);
 
   useFrame((_, raw) => {
     const dt = Math.min(raw, 0.05);
@@ -160,36 +196,16 @@ function EarthMesh({
 
     if (spinRef.current) spinRef.current.rotation.y = state.spin;
     if (tiltRef.current) tiltRef.current.rotation.x = state.tilt;
-    if (cloudsRef.current) {
-      cloudsRef.current.rotation.y = state.spin * 1.08 + dt * 0.02;
-    }
   });
 
   return (
     <group scale={EARTH_MESH_SCALE}>
       <group ref={tiltRef}>
         <group ref={spinRef}>
-          <mesh>
-            <sphereGeometry args={[1, 96, 96]} />
-            <meshPhongMaterial
-              map={map}
-              specularMap={spec}
-              specular={new THREE.Color("#3a5a4a")}
-              shininess={18}
-            />
-          </mesh>
-          <mesh ref={cloudsRef} scale={1.012}>
-            <sphereGeometry args={[1, 64, 64]} />
-            <meshPhongMaterial
-              map={cloudMap}
-              transparent
-              opacity={0.2}
-              depthWrite={false}
-            />
-          </mesh>
+          {/* Bare NASA surface — no cloud / atmosphere colour veil */}
+          <primitive object={earth} />
         </group>
       </group>
-      <Atmosphere />
     </group>
   );
 }
@@ -209,6 +225,48 @@ export default function ConservationEarth({
   const revision = useRef(0);
   const pointer = useRef<{ id: number; x: number; y: number } | null>(null);
   const surface = useRef<HTMLDivElement>(null);
+  const slotRef = useRef<HTMLDivElement>(null);
+  /*
+   * Once the Conservation section is near the viewport, keep the Earth canvas
+   * mounted. Toggling off the half-offscreen disc (left:-500) made the globe
+   * intermittently disappear / fall back to a dark plate.
+   */
+  const [shouldRender, setShouldRender] = useState(false);
+  const [webglFailed, setWebglFailed] = useState(false);
+  const [canvasKey, setCanvasKey] = useState(0);
+  const retryRef = useRef(0);
+
+  useEffect(() => {
+    const section =
+      document.querySelector<HTMLElement>("[aria-label='Conservation']") ||
+      slotRef.current;
+    if (!section || typeof IntersectionObserver === "undefined") {
+      setShouldRender(true);
+      return;
+    }
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setShouldRender(true);
+          /* Stay mounted — do not flip back to false */
+          io.disconnect();
+        }
+      },
+      { root: null, rootMargin: "60% 0px", threshold: 0 },
+    );
+    io.observe(section);
+    return () => io.disconnect();
+  }, []);
+
+  const handleWebglFail = () => {
+    if (retryRef.current < 2) {
+      retryRef.current += 1;
+      setWebglFailed(false);
+      window.setTimeout(() => setCanvasKey((k) => k + 1), 350);
+      return;
+    }
+    setWebglFailed(true);
+  };
 
   useEffect(() => {
     let last = progress.current;
@@ -269,37 +327,66 @@ export default function ConservationEarth({
   };
 
   return (
-    <div className={styles.earthSlot}>
+    <div className={styles.earthSlot} ref={slotRef}>
       <div className={styles.earthRound}>
-        <Canvas
-          className={styles.earthCanvas}
-          dpr={[1, 1.75]}
-          camera={{ position: [0, 0, EARTH_CAM_Z], fov: EARTH_FOV, near: 0.1, far: 40 }}
-          gl={{
-            antialias: true,
-            alpha: true,
-            premultipliedAlpha: false,
-            preserveDrawingBuffer: true,
-          }}
-          onCreated={({ gl }) => {
-            gl.setClearColor(0x000000, 0);
-            gl.setClearAlpha(0);
-          }}
-        >
-          <FitDiscCamera />
-          <ambientLight intensity={0.75} />
-          <directionalLight position={[4, 2, 3]} intensity={2.8} />
-          <directionalLight position={[2, 1, 4]} intensity={1.2} />
-          <directionalLight position={[-2, 0.5, 1]} intensity={0.5} color="#7aaa8a" />
-          <Suspense fallback={null}>
-            <EarthMesh
-              progress={progress}
-              orientation={orientation}
-              dragging={dragging}
-              revision={revision}
-            />
-          </Suspense>
-        </Canvas>
+        {shouldRender && !webglFailed ? (
+          <EarthCanvasBoundary key={canvasKey} onError={handleWebglFail}>
+            <Canvas
+              className={styles.earthCanvas}
+              dpr={[1, 1.5]}
+              camera={{
+                position: [0, 0, EARTH_CAM_Z],
+                fov: EARTH_FOV,
+                near: 0.1,
+                far: 40,
+              }}
+              gl={{
+                antialias: true,
+                alpha: true,
+                premultipliedAlpha: false,
+                preserveDrawingBuffer: false,
+                powerPreference: "default",
+                failIfMajorPerformanceCaveat: false,
+              }}
+              onCreated={({ gl }) => {
+                const canvas = gl.domElement;
+                const onLost = (ev: Event) => {
+                  ev.preventDefault();
+                  handleWebglFail();
+                };
+                canvas.addEventListener("webglcontextlost", onLost, false);
+                gl.setClearColor(0x000000, 0);
+                gl.setClearAlpha(0);
+                gl.toneMapping = THREE.ACESFilmicToneMapping;
+                gl.toneMappingExposure = 1.15;
+              }}
+            >
+              <FitDiscCamera />
+              <ambientLight intensity={0.45} color="#ffffff" />
+              <directionalLight
+                position={[5.5, 2.2, 3.5]}
+                intensity={2.4}
+                color="#ffffff"
+              />
+              <directionalLight
+                position={[-3.5, -0.4, 2]}
+                intensity={0.35}
+                color="#d8e4f0"
+              />
+              <hemisphereLight args={["#e8eef5", "#2a3038", 0.28]} />
+              <Suspense fallback={null}>
+                <EarthMesh
+                  progress={progress}
+                  orientation={orientation}
+                  dragging={dragging}
+                  revision={revision}
+                />
+              </Suspense>
+            </Canvas>
+          </EarthCanvasBoundary>
+        ) : webglFailed ? (
+          <div className={styles.earthFallback} aria-hidden="true" />
+        ) : null}
       </div>
       <div
         ref={surface}

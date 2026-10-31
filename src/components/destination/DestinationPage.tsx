@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import gsap from "gsap";
 import { FooterReveal } from "@/components/footer/FooterReveal";
 import { StageFrame } from "@/components/layout/StageFrame";
 import { SiteHeader } from "@/components/layout/SiteHeader";

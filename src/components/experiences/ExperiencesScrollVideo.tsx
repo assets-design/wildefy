@@ -1,125 +1,122 @@
 "use client";
 
+/**
+ * ExperiencesScrollVideo
+ *
+ * Reliable scroll-scrubbed background using pre-extracted JPEG frames.
+ * Progress 0→1 maps to frames 1→264, covering the full video.
+ *
+ * Uses canvas for hitch-free, cover-fitted rendering.
+ * Falls back to a plain <video> element if frames fail to load.
+ */
+
 import { useEffect, useRef } from "react";
 import styles from "./experiences-journey.module.css";
 
-/** 12fps JPEG sequence from video_001.mp4 (22s @ 24fps → 264 frames). */
 export const SCRUB_FRAME_COUNT = 264;
-export const VIDEO_SRC = "/assets/video/video_001.mp4";
-export const POSTER_SRC = "/assets/video/video_001_poster.jpg";
+export const VIDEO_SRC         = "/assets/video/video_002.mp4";
+export const POSTER_SRC        = "/assets/video/video_002_poster.jpg";
 
-const FRAME_DIR = "/assets/video/video_001_frames";
+const FRAME_DIR      = "/assets/video/video_002_frames";
 const PRELOAD_RADIUS = 8;
-const SEEK_EPSILON = 1 / 48;
+const SEEK_EPSILON   = 1 / 50;
 
-export function frameSrc(index1Based: number) {
-  const n = Math.min(SCRUB_FRAME_COUNT, Math.max(1, Math.round(index1Based)));
-  return `${FRAME_DIR}/frame_${String(n).padStart(4, "0")}.jpg`;
+export function frameSrc(n: number) {
+  const i = Math.min(SCRUB_FRAME_COUNT, Math.max(1, Math.round(n)));
+  return `${FRAME_DIR}/frame_${String(i).padStart(4, "0")}.jpg`;
 }
 
-/**
- * Map section scroll 0→1 across the full frame loop once.
- * Progress is section-local (pinned wrap), so the background stays in-loop here.
- */
 export function frameIndexFromProgress(progress: number) {
   const p = Math.min(1, Math.max(0, progress));
   return 1 + Math.round(p * (SCRUB_FRAME_COUNT - 1));
 }
 
-type Props = {
-  progress: number;
-  onReady?: () => void;
-  onError?: () => void;
-};
+type Props = { progress: number; onReady?: () => void; onError?: () => void };
 
-/**
- * Scroll-scrubbed Experiences background.
- * Draws divided JPEG frames to a canvas (hitch-free); falls back to mp4 seeking.
- */
 export function ExperiencesScrollVideo({ progress, onReady, onError }: Props) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef   = useRef<HTMLCanvasElement>(null);
+  const videoRef    = useRef<HTMLVideoElement>(null);
   const progressRef = useRef(progress);
-  const onReadyRef = useRef(onReady);
-  const onErrorRef = useRef(onError);
+  const onReadyRef  = useRef(onReady);
+  const onErrorRef  = useRef(onError);
 
   progressRef.current = progress;
-  onReadyRef.current = onReady;
-  onErrorRef.current = onError;
+  onReadyRef.current  = onReady;
+  onErrorRef.current  = onError;
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    const video = videoRef.current;
+    const video  = videoRef.current;
     if (!canvas || !video) return;
 
-    let cancelled = false;
+    let alive    = true;
+    let ready    = false;
     let mode: "frames" | "video" = "frames";
-    let ready = false;
-    let drawn = 0;
+    let drawn    = 0;
     let duration = 0;
-    let seeking = false;
-    let seekRaf = 0;
-    let videoWired = false;
+    let seeking  = false;
+    let seekRaf  = 0;
 
-    const cache = new Map<number, HTMLImageElement>();
+    const cache   = new Map<number, HTMLImageElement>();
     const loading = new Set<number>();
 
+    /* ── helpers ──────────────────────────────────────────────────── */
     const markReady = () => {
-      if (cancelled || ready) return;
+      if (!alive || ready) return;
       ready = true;
       onReadyRef.current?.();
     };
-
     const markError = () => {
-      if (cancelled) return;
+      if (!alive) return;
       onErrorRef.current?.();
     };
 
-    const drawCover = (source: CanvasImageSource, naturalW: number, naturalH: number) => {
+    const drawCover = (src: CanvasImageSource, natW: number, natH: number) => {
+      if (natW <= 0 || natH <= 0) return;
       const ctx = canvas.getContext("2d");
-      if (!ctx || naturalW <= 0 || naturalH <= 0) return;
-
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      const cssW = canvas.clientWidth || window.innerWidth;
+      if (!ctx) return;
+      const dpr  = Math.min(window.devicePixelRatio || 1, 2);
+      const cssW = canvas.clientWidth  || window.innerWidth;
       const cssH = canvas.clientHeight || window.innerHeight;
-      const pixelW = Math.max(1, Math.round(cssW * dpr));
-      const pixelH = Math.max(1, Math.round(cssH * dpr));
-      if (canvas.width !== pixelW || canvas.height !== pixelH) {
-        canvas.width = pixelW;
-        canvas.height = pixelH;
+      const pxW  = Math.max(1, Math.round(cssW * dpr));
+      const pxH  = Math.max(1, Math.round(cssH * dpr));
+      if (canvas.width !== pxW || canvas.height !== pxH) {
+        canvas.width  = pxW;
+        canvas.height = pxH;
       }
-
-      const scale = Math.max(pixelW / naturalW, pixelH / naturalH);
-      const drawW = naturalW * scale;
-      const drawH = naturalH * scale;
-      ctx.clearRect(0, 0, pixelW, pixelH);
-      ctx.drawImage(source, (pixelW - drawW) / 2, (pixelH - drawH) / 2, drawW, drawH);
+      const s  = Math.max(pxW / natW, pxH / natH);
+      const dW = natW * s;
+      const dH = natH * s;
+      ctx.clearRect(0, 0, pxW, pxH);
+      ctx.drawImage(src, (pxW - dW) / 2, (pxH - dH) / 2, dW, dH);
     };
 
-    const ensureFrame = (index: number) => {
-      if (cache.has(index) || loading.has(index)) return;
-      loading.add(index);
+    /* ── JPEG frame path ──────────────────────────────────────────── */
+    const ensureFrame = (idx: number) => {
+      if (cache.has(idx) || loading.has(idx)) return;
+      loading.add(idx);
       const img = new Image();
       img.decoding = "async";
-      img.src = frameSrc(index);
+      img.src = frameSrc(idx);
       img.onload = () => {
-        loading.delete(index);
-        if (cancelled) return;
-        cache.set(index, img);
+        loading.delete(idx);
+        if (!alive) return;
+        cache.set(idx, img);
+        /* Evict frames far from current */
         const active = frameIndexFromProgress(progressRef.current);
-        for (const key of [...cache.keys()]) {
-          if (Math.abs(key - active) > PRELOAD_RADIUS * 3) cache.delete(key);
+        for (const k of [...cache.keys()]) {
+          if (Math.abs(k - active) > PRELOAD_RADIUS * 3) cache.delete(k);
         }
-        if (index === active) {
+        if (idx === active) {
           drawCover(img, img.naturalWidth, img.naturalHeight);
-          drawn = index;
+          drawn = idx;
           markReady();
         }
       };
       img.onerror = () => {
-        loading.delete(index);
-        if (cancelled) return;
-        if (index <= 2 && mode === "frames") {
+        loading.delete(idx);
+        /* If the very first frame fails, fall back to video */
+        if (idx <= 2 && mode === "frames") {
           mode = "video";
           canvas.style.display = "none";
           bootVideo();
@@ -127,167 +124,156 @@ export function ExperiencesScrollVideo({ progress, onReady, onError }: Props) {
       };
     };
 
-    const preloadAround = (center: number) => {
-      for (let i = center - PRELOAD_RADIUS; i <= center + PRELOAD_RADIUS; i += 1) {
-        if (i >= 1 && i <= SCRUB_FRAME_COUNT) ensureFrame(i);
-      }
-    };
-
-    const paintFrame = (index: number) => {
-      const hit = cache.get(index);
+    const paintFrame = (idx: number) => {
+      const hit = cache.get(idx);
       if (hit?.complete && hit.naturalWidth > 0) {
         drawCover(hit, hit.naturalWidth, hit.naturalHeight);
-        drawn = index;
+        drawn = idx;
         markReady();
         return;
       }
-      ensureFrame(index);
-      for (let d = 1; d <= PRELOAD_RADIUS; d += 1) {
-        const left = cache.get(index - d);
-        if (left?.complete && left.naturalWidth > 0) {
-          drawCover(left, left.naturalWidth, left.naturalHeight);
-          drawn = index - d;
-          return;
-        }
-        const right = cache.get(index + d);
-        if (right?.complete && right.naturalWidth > 0) {
-          drawCover(right, right.naturalWidth, right.naturalHeight);
-          drawn = index + d;
-          return;
-        }
+      ensureFrame(idx);
+      for (let d = 1; d <= PRELOAD_RADIUS; d++) {
+        const L = cache.get(idx - d);
+        if (L?.complete && L.naturalWidth > 0) { drawCover(L, L.naturalWidth, L.naturalHeight); drawn = idx - d; return; }
+        const R = cache.get(idx + d);
+        if (R?.complete && R.naturalWidth > 0) { drawCover(R, R.naturalWidth, R.naturalHeight); drawn = idx + d; return; }
       }
     };
 
+    /* ── video fallback path ──────────────────────────────────────── */
     const onVideoSeeked = () => {
       seeking = false;
       if (!Number.isFinite(duration) || duration <= 0) return;
-      const desired = progressRef.current * Math.max(duration - 0.001, 0);
+      const desired = progressRef.current * Math.max(duration - 0.04, 0);
       if (Math.abs(video.currentTime - desired) >= SEEK_EPSILON) {
         seeking = true;
-        try {
-          video.currentTime = desired;
-        } catch {
-          seeking = false;
-        }
+        try { video.currentTime = desired; } catch { seeking = false; }
       }
     };
 
     const bootVideo = () => {
-      if (videoWired) return;
-      videoWired = true;
-      video.hidden = false;
-      video.muted = true;
+      video.hidden       = false;
+      video.muted        = true;
       video.defaultMuted = true;
-      video.volume = 0;
-      video.playsInline = true;
+      video.volume       = 0;
+      video.playsInline  = true;
+      video.preload      = "auto";
+      video.autoplay     = false;
+      video.loop         = false;
       video.setAttribute("muted", "");
       video.setAttribute("playsinline", "");
-      video.preload = "auto";
+      video.removeAttribute("autoplay");
       video.pause();
+      /* Scrub-only — kill any browser free-play of the section film */
+      const blockFreePlay = () => {
+        if (!alive) return;
+        try { video.pause(); } catch { /**/ }
+      };
+      video.addEventListener("play", blockFreePlay);
       video.addEventListener("seeked", onVideoSeeked);
-      video.addEventListener("error", markError);
+      video.addEventListener("error", markError, { once: true });
 
-      const readyMeta = () => {
+      const onMeta = () => {
         duration = video.duration;
-        if (!Number.isFinite(duration) || duration <= 0) {
-          markError();
-          return;
-        }
-        try {
-          video.currentTime = progressRef.current * Math.max(duration - 0.001, 0);
-        } catch {
-          // Ignore.
-        }
+        if (!Number.isFinite(duration) || duration <= 0) { markError(); return; }
+        try { video.currentTime = progressRef.current * Math.max(duration - 0.04, 0); } catch { /**/ }
+        blockFreePlay();
         markReady();
       };
 
       if (video.readyState >= 1 && Number.isFinite(video.duration) && video.duration > 0) {
-        readyMeta();
+        onMeta();
       } else {
-        video.addEventListener("loadedmetadata", readyMeta, { once: true });
-        try {
-          video.load();
-        } catch {
-          // Already loading.
-        }
+        video.addEventListener("loadedmetadata", onMeta, { once: true });
+        try { video.load(); } catch { /**/ }
       }
+
+      /* Stash for cleanup */
+      (video as HTMLVideoElement & { __blockFreePlay?: () => void }).__blockFreePlay =
+        blockFreePlay;
     };
 
+    /* ── progress → frame/seek ────────────────────────────────────── */
     const applyProgress = () => {
-      if (cancelled) return;
+      if (!alive) return;
       const p = progressRef.current;
 
       if (mode === "frames") {
-        const index = frameIndexFromProgress(p);
-        if (index !== drawn) paintFrame(index);
-        preloadAround(index);
+        const idx = frameIndexFromProgress(p);
+        if (idx !== drawn) paintFrame(idx);
+        /* Preload window around current frame */
+        for (let i = idx - PRELOAD_RADIUS; i <= idx + PRELOAD_RADIUS; i++) {
+          if (i >= 1 && i <= SCRUB_FRAME_COUNT) ensureFrame(i);
+        }
         return;
       }
 
-      if (!Number.isFinite(duration) || duration <= 0) return;
-      if (seekRaf) return;
+      /* Video mode */
+      if (!Number.isFinite(duration) || duration <= 0 || seekRaf) return;
       seekRaf = requestAnimationFrame(() => {
         seekRaf = 0;
-        const next = Math.min(Math.max(p, 0), 1) * Math.max(duration - 0.001, 0);
-        if (Math.abs(video.currentTime - next) < SEEK_EPSILON) return;
-        if (seeking) return;
+        if (!alive) return;
+        const t = Math.min(Math.max(progressRef.current, 0), 1) * Math.max(duration - 0.04, 0);
+        if (Math.abs(video.currentTime - t) < SEEK_EPSILON || seeking) return;
         seeking = true;
-        try {
-          video.currentTime = next;
-        } catch {
-          seeking = false;
-        }
+        try { video.currentTime = t; } catch { seeking = false; }
       });
     };
 
-    const onResize = () => {
-      if (mode !== "frames") return;
-      const img = cache.get(drawn || 1);
-      if (img?.complete) drawCover(img, img.naturalWidth, img.naturalHeight);
+    /* ── rAF poll — only fires when progress actually changes ─────── */
+    let rafId   = 0;
+    let lastP   = -1;
+    const poll  = () => {
+      if (!alive) return;
+      rafId = requestAnimationFrame(poll);
+      if (progressRef.current === lastP) return;
+      lastP = progressRef.current;
+      applyProgress();
     };
 
-    window.addEventListener("resize", onResize);
-
-    // Boot frames: first still + neighbors.
+    /* ── Boot: load frame 1; on error → video ─────────────────────── */
     const first = new Image();
     first.decoding = "async";
     first.src = frameSrc(1);
     first.onload = () => {
-      if (cancelled) return;
+      if (!alive) return;
       cache.set(1, first);
       drawCover(first, first.naturalWidth, first.naturalHeight);
       drawn = 1;
       markReady();
-      preloadAround(1);
+      /* Preload neighbours */
+      for (let i = 1; i <= PRELOAD_RADIUS; i++) ensureFrame(i + 1);
       applyProgress();
+      rafId = requestAnimationFrame(poll);
     };
     first.onerror = () => {
-      if (cancelled) return;
+      if (!alive) return;
       mode = "video";
       canvas.style.display = "none";
       bootVideo();
+      rafId = requestAnimationFrame(poll);
     };
 
-    // Drive from progress updates via a cheap poll tied to rAF when parent sets progress.
-    let pollRaf = 0;
-    let lastProgress = -1;
-    const poll = () => {
-      if (cancelled) return;
-      pollRaf = requestAnimationFrame(poll);
-      if (progressRef.current === lastProgress) return;
-      lastProgress = progressRef.current;
-      applyProgress();
+    /* Resize: repaint */
+    const onResize = () => {
+      if (mode === "frames") {
+        const img = cache.get(drawn || 1);
+        if (img?.complete) drawCover(img, img.naturalWidth, img.naturalHeight);
+      }
     };
-    pollRaf = requestAnimationFrame(poll);
+    window.addEventListener("resize", onResize, { passive: true });
 
     return () => {
-      cancelled = true;
-      window.removeEventListener("resize", onResize);
-      cancelAnimationFrame(pollRaf);
+      alive = false;
+      cancelAnimationFrame(rafId);
       if (seekRaf) cancelAnimationFrame(seekRaf);
+      window.removeEventListener("resize", onResize);
       video.removeEventListener("seeked", onVideoSeeked);
-      video.removeEventListener("error", markError);
-      video.pause();
+      const block = (video as HTMLVideoElement & { __blockFreePlay?: () => void })
+        .__blockFreePlay;
+      if (block) video.removeEventListener("play", block);
+      try { video.pause(); } catch { /**/ }
       cache.clear();
       loading.clear();
     };
@@ -298,13 +284,14 @@ export function ExperiencesScrollVideo({ progress, onReady, onError }: Props) {
       <canvas ref={canvasRef} className={styles.scrollVideoCanvas} />
       <video
         ref={videoRef}
-        className={styles.scrollVideo}
         src={VIDEO_SRC}
         poster={POSTER_SRC}
         muted
         playsInline
         preload="metadata"
         controls={false}
+        autoPlay={false}
+        loop={false}
         disablePictureInPicture
         tabIndex={-1}
         hidden

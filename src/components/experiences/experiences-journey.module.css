@@ -9,8 +9,12 @@
 
 .wrap {
   position: relative;
-  /* Longer runway = slower card + background scrub through the section. */
-  height: 720vh;
+  /*
+   * Fallback when inline height is absent. Live height comes from
+   * Experiences.tsx (400 + hold 20 + rise 110 + clear 100 = 630 with seam).
+   */
+  /* CONTENT 400 + rise 50 + clear 50 = 500 (inline height from Experiences.tsx wins) */
+  height: 500vh;
 }
 
 .sticky {
@@ -44,7 +48,7 @@
   z-index: 1;
   pointer-events: none;
   background: #0a1f18
-    url("/assets/video/video_001_poster.jpg") center / cover no-repeat;
+    url("/assets/video/video_002_poster.jpg") center / cover no-repeat;
 }
 
 .scrollVideoCanvas,
@@ -64,6 +68,122 @@
   inset: 0;
 }
 
+/* ── Living atmosphere — all layers GPU-animated, zero CPU ── */
+
+.livingAtmosphere {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* Layer 1: Two large radial fog banks drift slowly across the frame */
+.fogDrift {
+  position: absolute;
+  inset: -20%;
+  width: 140%;
+  height: 140%;
+  background:
+    radial-gradient(ellipse 55% 35% at 20% 60%,
+      rgba(200, 215, 220, 0.18) 0%,
+      transparent 70%),
+    radial-gradient(ellipse 45% 28% at 78% 35%,
+      rgba(210, 225, 230, 0.14) 0%,
+      transparent 65%),
+    radial-gradient(ellipse 30% 20% at 50% 80%,
+      rgba(180, 200, 210, 0.10) 0%,
+      transparent 60%);
+  mix-blend-mode: screen;
+  animation: fogDriftAnim 22s ease-in-out infinite alternate;
+  will-change: transform, opacity;
+}
+
+@keyframes fogDriftAnim {
+  0%   { transform: translate(0px, 0px) scale(1.00); opacity: 0.65; }
+  25%  { transform: translate(18px, -8px) scale(1.03); opacity: 0.80; }
+  50%  { transform: translate(-12px, 14px) scale(1.01); opacity: 0.70; }
+  75%  { transform: translate(22px, 6px) scale(1.04); opacity: 0.85; }
+  100% { transform: translate(-8px, -16px) scale(1.02); opacity: 0.72; }
+}
+
+/* Layer 2: SVG turbulence mist veil — warped semi-transparent white */
+.mistVeilAnim {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      170deg,
+      rgba(230, 240, 245, 0.00) 0%,
+      rgba(230, 240, 245, 0.10) 30%,
+      rgba(230, 240, 245, 0.06) 60%,
+      rgba(230, 240, 245, 0.00) 100%
+    );
+  filter: url(#fog-warp);
+  mix-blend-mode: screen;
+  animation: mistBreath 16s ease-in-out infinite alternate;
+  will-change: opacity, transform;
+}
+
+@keyframes mistBreath {
+  0%   { opacity: 0.55; transform: scaleX(1.00) scaleY(1.00); }
+  33%  { opacity: 0.80; transform: scaleX(1.02) scaleY(0.99); }
+  66%  { opacity: 0.60; transform: scaleX(0.99) scaleY(1.02); }
+  100% { opacity: 0.75; transform: scaleX(1.01) scaleY(1.01); }
+}
+
+/* Layer 3: Warm rim breath — golden haze at edges, like sunlight through mist */
+.rimBreath {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 100% 50% at 50% 100%,
+      rgba(255, 210, 140, 0.12) 0%,
+      transparent 60%),
+    radial-gradient(ellipse 60% 80% at 0% 50%,
+      rgba(200, 220, 255, 0.08) 0%,
+      transparent 55%),
+    radial-gradient(ellipse 60% 80% at 100% 50%,
+      rgba(200, 220, 255, 0.08) 0%,
+      transparent 55%);
+  mix-blend-mode: screen;
+  animation: rimPulse 11s ease-in-out infinite alternate;
+  will-change: opacity;
+}
+
+@keyframes rimPulse {
+  0%   { opacity: 0.55; }
+  50%  { opacity: 0.90; }
+  100% { opacity: 0.65; }
+}
+
+/* Layer 4: Horizontal light streak — simulates sun rays through canopy/mist */
+.lightStreak {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      95deg,
+      transparent 0%,
+      rgba(255, 248, 220, 0.06) 35%,
+      rgba(255, 248, 220, 0.10) 50%,
+      rgba(255, 248, 220, 0.06) 65%,
+      transparent 100%
+    );
+  mix-blend-mode: overlay;
+  animation: streakSlide 18s linear infinite;
+  will-change: transform, opacity;
+}
+
+@keyframes streakSlide {
+  0%   { transform: translateX(-15%) skewX(-8deg); opacity: 0; }
+  15%  { opacity: 0.7; }
+  45%  { opacity: 0.4; }
+  70%  { opacity: 0.8; }
+  85%  { opacity: 0.3; }
+  100% { transform: translateX(15%) skewX(-8deg); opacity: 0; }
+}
+
 .scrollVideo[hidden] {
   display: none;
 }
@@ -74,7 +194,7 @@
   z-index: 1;
   background:
     linear-gradient(180deg, rgba(10, 31, 24, 0.35), rgba(10, 31, 24, 0.72)),
-    url("/assets/video/video_001_poster.jpg") center / cover no-repeat;
+    url("/assets/video/video_002_poster.jpg") center / cover no-repeat;
 }
 
 /* NatGeo-style fly-past reveal — bird + branches + mist over the 3D scene */
@@ -159,6 +279,96 @@
   height: 100%;
 }
 
+/* ── HomeSeam: §2 → §3 mist closes first, then short pin-reveal ── */
+.homeSeam {
+  position: relative;
+  /*
+   * Default under Experiences (.journey z:3). While the seam is active the
+   * fixed mist must paint ABOVE sticky underwater — otherwise §2 shows
+   * through as a hard fish/white split (stacking-context trap).
+   */
+  z-index: 2;
+  margin-top: -2px;
+}
+
+/* Inner pin shell — GSAP may inline transform here; outer seam stays clean */
+.homeSeamPin {
+  position: relative;
+  width: 100%;
+}
+
+.homeSeamContent {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+}
+
+/* Active mist/pin — above Experiences (3) and Gallery (4) */
+.homeSeamActive {
+  z-index: 20;
+}
+
+.homeSeamActive .homeSeamContent {
+  z-index: 2;
+}
+
+/*
+ * After reveal, drop BELOW Story (.sx-scroll). z:5 was painting Gallery
+ * over §4 while scrolling out — strip stuck on top of Story content.
+ * isolation keeps .gallery-section's z:4 inside this context.
+ * Negative margin pulls Story under the exiting bottom marquee so §4’s
+ * sky covers the tear (GSAP pin zeros margin on .sx-scroll itself).
+ */
+.homeSeamRevealed:not(.homeSeamActive) {
+  z-index: 1;
+  isolation: isolate;
+  margin-bottom: clamp(-110px, -12vh, -64px);
+}
+
+.homeSeamRevealed:not(.homeSeamActive) .homeSeamContent {
+  z-index: 1;
+}
+
+/* ── StorySeam: §4 → §5 mist closes first, then short pin-reveal ── */
+.storySeam {
+  position: relative;
+  z-index: 2;
+  margin-top: -2px;
+}
+
+.storySeamPin {
+  position: relative;
+  width: 100%;
+}
+
+.storySeamContent {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+}
+
+/* Active mist/pin — above Story (z:3) while handoff runs */
+.storySeamActive {
+  z-index: 22;
+}
+
+.storySeamActive .storySeamContent {
+  z-index: 2;
+}
+
+/*
+ * After reveal, sit under Awards (z:2) / normal flow. Isolation keeps
+ * Conservation stacking inside this context.
+ */
+.storySeamRevealed:not(.storySeamActive) {
+  z-index: 1;
+  isolation: isolate;
+}
+
+.storySeamRevealed:not(.storySeamActive) .storySeamContent {
+  z-index: 1;
+}
+
 /* Full white-cloud enter/exit veil — mist field + fluffy banks */
 .cloudReveal {
   position: absolute;
@@ -186,10 +396,14 @@
   overflow: hidden;
 }
 
-/* Temporary §2→§3 veil only — lifts with Gallery; does not continue into §4 */
+/* Temporary §2→§3 veil — portaled to body so pin transforms cannot trap fixed */
 .cloudHandoffFixed {
   position: fixed;
   inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   z-index: 80;
   width: 100%;
   height: 100%;
@@ -203,8 +417,8 @@
   position: absolute;
   inset: 0;
   z-index: 0;
-  background-color: var(--gallery-surface, #eef3f4);
-  background-image: url("/images/story/bg-3.png");
+  background-color: var(--gallery-surface, #d4e4ec);
+  background-image: url("/images/story-figma/seam/sky-left.png");
   background-size: cover;
   background-position: center;
   pointer-events: none;
@@ -240,6 +454,16 @@
   background: #f7f9fc;
 }
 
+/* Handoff: soft cyan underlay near underwater, lifts toward sky plate */
+.cloudRevealHandoffVariant .cloudRevealFill {
+  background: linear-gradient(
+    180deg,
+    #e8f2f6 0%,
+    #f4f8fa 42%,
+    #eef3f4 100%
+  );
+}
+
 .cloudRevealMist,
 .cloudRevealMistAlt {
   position: absolute;
@@ -251,6 +475,7 @@
   pointer-events: none;
   /* Bright white cloud body */
   filter: brightness(1.22) contrast(1.08) saturate(0.35);
+  will-change: transform;
 }
 
 .cloudRevealMist {
@@ -265,6 +490,15 @@
   opacity: 0.55;
   transform: scaleX(-1);
   filter: brightness(1.28) contrast(1.05) saturate(0.3) blur(1px);
+}
+
+.cloudRevealHandoffVariant .cloudRevealMist {
+  filter: brightness(1.18) contrast(1.06) saturate(0.42)
+    drop-shadow(0 0 40px rgba(180, 210, 220, 0.25));
+}
+
+.cloudRevealHandoffVariant .cloudRevealMistAlt {
+  filter: brightness(1.24) contrast(1.04) saturate(0.38) blur(1.2px);
 }
 
 .cloudRevealBankTop,
@@ -441,37 +675,35 @@
   pointer-events: none;
 }
 
-/* Shared map pin — pin left, lat/lng right; fades between starts */
+/* Multi-pin stack — all pins centered, transform comes from inline style */
 .mapPin {
-  --pin-x: 0px;
-  --pin-y: 0px;
-  --pin-scale: 1;
   position: absolute;
   top: 50%;
-  z-index: 6;
+  left: 50%;
+  /* inline style handles: translate(-50%, calc(-50% + yVh)) scale(s) */
   display: flex;
   flex-direction: row;
   align-items: center;
   justify-content: center;
   gap: 10px;
-  /* Same footprint as cards so start offset lands on the card origin */
-  width: min(420px, calc(100vw - 48px));
-  transform: translate3d(var(--pin-x), calc(-50% + var(--pin-y)), 0)
-    scale(var(--pin-scale));
+  width: min(280px, calc(100vw - 48px));
   transform-origin: 50% 50%;
   pointer-events: none;
   will-change: transform, opacity;
   filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.45));
 }
 
-.mapPin[data-side="right"] {
-  right: clamp(16px, 5vw, 72px);
-  left: auto;
+/* Tier-based shadow depth */
+.mapPin[data-tier="0"] {
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
 }
 
-.mapPin[data-side="left"] {
-  left: clamp(16px, 5vw, 72px);
-  right: auto;
+.mapPin[data-tier="1"] {
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.38));
+}
+
+.mapPin[data-tier="2"] {
+  filter: drop-shadow(0 12px 28px rgba(0, 0, 0, 0.6));
 }
 
 .mapPinMark {
@@ -537,22 +769,19 @@
 }
 
 .card {
-  --card-x: 0px;
-  --card-y: 0px;
-  --card-scale: 1;
   position: absolute;
   top: 50%;
-  width: min(420px, calc(100vw - 48px));
+  width: min(440px, calc(100vw - 48px));
   max-height: calc(100dvh - 40px);
-  transform: translate3d(var(--card-x), calc(-50% + var(--card-y)), 0)
-    scale(var(--card-scale));
+  /* transform comes entirely from inline style (vertical slide only) */
   transform-origin: 50% 50%;
   pointer-events: auto;
   will-change: transform, opacity;
-  filter: drop-shadow(0 18px 40px rgba(0, 0, 0, 0.4));
-  border-radius: 22px;
+  filter: drop-shadow(0 22px 48px rgba(0, 0, 0, 0.55));
+  border-radius: 12px;
 }
 
+/* Horizontal position: card stays anchored left or right, never moves laterally */
 .card[data-side="right"] {
   right: clamp(16px, 5vw, 72px);
   left: auto;
@@ -573,47 +802,95 @@
   max-height: none;
   margin: 0 auto 28px;
   filter: none;
-  border-radius: 22px;
+  border-radius: 12px;
 }
 
-.cardFrame {
+/*
+  Card glass — frosted glassmorphism over the journey scene:
+  heavy backdrop blur, soft color bleed, light frost tint.
+*/
+.cardGlass {
   display: flex;
   flex-direction: column;
+  width: 100%;
   max-height: calc(100dvh - 40px);
-  background: rgba(10, 28, 24, 0.78);
-  border: 1px solid rgba(245, 240, 230, 0.32);
-  border-radius: 22px;
-  overflow: hidden;
-  backdrop-filter: blur(16px) saturate(1.15);
-  -webkit-backdrop-filter: blur(16px) saturate(1.15);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  color-scheme: dark;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  isolation: isolate;
+  background: linear-gradient(
+    155deg,
+    rgba(255, 255, 255, 0.14) 0%,
+    rgba(255, 255, 255, 0.05) 42%,
+    rgba(8, 18, 16, 0.22) 100%
+  ) !important;
+  -webkit-backdrop-filter: blur(48px) saturate(1.45) brightness(1.05) !important;
+  backdrop-filter: blur(48px) saturate(1.45) brightness(1.05) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 1px 0 0 rgba(255, 255, 255, 0.08),
+    0 18px 48px rgba(0, 0, 0, 0.28) !important;
 }
 
-.cardFrameLink {
-  color: inherit;
-  text-decoration: none;
-  cursor: pointer;
+.cardGlass:global(.glass-surface--fallback),
+.cardGlass:global(.glass-surface--svg),
+.cardGlass:global(.glass-surface--webgl) {
+  background: linear-gradient(
+    155deg,
+    rgba(255, 255, 255, 0.14) 0%,
+    rgba(255, 255, 255, 0.05) 42%,
+    rgba(8, 18, 16, 0.22) 100%
+  ) !important;
+  -webkit-backdrop-filter: blur(48px) saturate(1.45) brightness(1.05) !important;
+  backdrop-filter: blur(48px) saturate(1.45) brightness(1.05) !important;
 }
 
-.cardFrameLink:focus-visible {
-  outline: 2px solid #f9a01f;
-  outline-offset: 3px;
+/* Hide React Bits decorative rim layers — frost comes from backdrop-filter */
+.cardGlass :global(.glass-surface__sheen),
+.cardGlass :global(.glass-surface__rim),
+.cardGlass :global(.glass-surface__line),
+.cardGlass :global(.glass-surface__glow),
+.cardGlass :global(.glass-surface__frame),
+.cardGlass :global(.glass-surface__canvas) {
+  display: none !important;
+  opacity: 0 !important;
 }
 
-.cardFrameLink:hover .cardCtaLabel,
-.cardFrameLink:focus-visible .cardCtaLabel {
-  background: #ffffff;
+.cardGlass :global(.glass-surface__content) {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  padding: 0;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  background: transparent;
+}
+
+.card:hover .cardMedia img {
+  transform: scale(1.04);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cardMedia img {
+    transition: none;
+  }
+
+  .card:hover .cardMedia img {
+    transform: none;
+  }
 }
 
 .cardMedia {
   position: relative;
   flex: 0 0 auto;
-  /* Taller media so the full photo reads clearly. */
-  height: clamp(200px, 32vh, 260px);
+  height: clamp(220px, 36vh, 300px);
   overflow: hidden;
-  background: #0a2a22;
-  border-bottom: 1px solid rgba(245, 240, 230, 0.12);
-  border-radius: 22px 22px 0 0;
+  background: transparent;
+  border-radius: 16px 16px 0 0;
+  /* Pull into the body so the fade sits over glass, not a hard crop edge */
+  margin-bottom: -28px;
+  z-index: 1;
 }
 
 .cardMedia img {
@@ -622,24 +899,48 @@
   height: 100%;
   object-fit: cover;
   object-position: center;
+  transform: scale(1);
+  transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+  /* Fade image into the glass — no hard line at the photo bottom */
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    #000 0%,
+    #000 48%,
+    rgba(0, 0, 0, 0.55) 72%,
+    rgba(0, 0, 0, 0.15) 88%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    #000 0%,
+    #000 48%,
+    rgba(0, 0, 0, 0.55) 72%,
+    rgba(0, 0, 0, 0.15) 88%,
+    transparent 100%
+  );
 }
 
 .cardBody {
+  position: relative;
+  z-index: 2;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 18px 18px 20px;
+  gap: 18px;
+  padding: 36px 20px 22px;
   min-height: 0;
+  background: transparent;
 }
 
 .cardTitle {
   margin: 0;
   font-family: var(--font-display);
-  font-size: clamp(24px, 2.2vw, 30px);
+  font-size: clamp(26px, 2.4vw, 34px);
   font-weight: 500;
-  line-height: 1.15;
-  color: #ffffff;
-  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
+  line-height: 1.12;
+  letter-spacing: -0.01em;
+  color: #f7f3ea;
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.4);
 }
 
 .cardCopy {
@@ -650,9 +951,9 @@
   margin: 0;
   padding: 0;
   list-style: none;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .cardTag {
@@ -660,75 +961,40 @@
   align-items: center;
   justify-content: center;
   min-height: 28px;
-  width: 100%;
-  padding: 5px 8px;
+  padding: 6px 11px;
   box-sizing: border-box;
-  border: 1px solid rgba(245, 240, 230, 0.35);
-  border-radius: 999px;
-  background: rgba(245, 240, 230, 0.06);
+  border: 1px solid rgba(245, 240, 230, 0.22);
+  border-radius: 4px;
+  background: rgba(245, 240, 230, 0.04);
   font-family: var(--font-body);
-  font-size: 10px;
-  line-height: 1.2;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  line-height: 1.25;
   text-align: center;
-  color: rgba(245, 240, 230, 0.92);
+  color: rgba(245, 240, 230, 0.88);
 }
 
+/* Hero .cta chrome — smaller scale for card footers */
 .cardCta {
+  --cta-h: 44px;
+  --cta-mark-w: 56px;
+  --cta-mark-h: 38px;
+  --cta-bird: 28px;
+  --cta-overlap: 22px;
+  --cta-icon-inset: 4px;
   position: relative;
-  z-index: 2;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  width: fit-content;
-  text-decoration: none;
-  margin-top: 2px;
-  cursor: pointer;
+  z-index: 3;
+  margin-top: 4px;
   pointer-events: auto;
+  max-width: 100%;
+  min-width: 0;
 }
 
-.cardCtaLabel {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 40px;
-  padding: 0 18px;
-  border-radius: 999px;
-  background: #f5f0e6;
-  color: #123f32;
-  font-family: var(--font-body);
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 1;
-  white-space: nowrap;
-  transition: background 0.25s ease, color 0.25s ease;
-}
-
-.cardCtaMark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: #f9a01f;
-  flex: none;
-}
-
-.cardCtaBird {
-  width: 24px;
-  height: 24px;
-  object-fit: contain;
-  filter: brightness(0) invert(1);
-}
-
-.cardCta:hover .cardCtaLabel,
-.cardCta:focus-visible .cardCtaLabel {
-  background: #ffffff;
-}
-
-.cardCta:focus-visible {
-  outline: 2px solid #f9a01f;
-  outline-offset: 3px;
+.cardCta :global(.cta-label) {
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  padding: 0 calc(var(--cta-overlap) + 10px) 0 20px;
 }
 
 .loading {
@@ -781,16 +1047,17 @@
 
 @media (max-width: 900px) {
   .wrap {
-    height: 600vh;
+    /* Same runway as desktop — sync experiencesSeamConstants */
+    /* CONTENT 400 + rise 50 + clear 50 = 500 (inline height from Experiences.tsx wins) */
+  height: 500vh;
   }
 
   .card {
-    width: min(380px, calc(100vw - 32px));
+    width: min(400px, calc(100vw - 32px));
     max-height: calc(100dvh - 32px);
     top: 50%;
-    border-radius: 20px;
-    transform: translate3d(var(--card-x), calc(-50% + var(--card-y)), 0)
-      scale(var(--card-scale));
+    border-radius: 12px;
+    /* transform from inline style — no CSS vars needed */
   }
 
   .card[data-side="right"],
@@ -798,27 +1065,24 @@
     right: 16px;
     left: 16px;
     margin: 0 auto;
-    width: min(380px, calc(100vw - 32px));
+    width: min(400px, calc(100vw - 32px));
   }
 
-  .cardFrame,
+  .cardGlass,
   .cardMedia {
-    border-radius: 20px;
+    border-radius: 12px;
   }
 
   .cardMedia {
-    border-radius: 20px 20px 0 0;
-    height: clamp(160px, 26vh, 210px);
-  }
-
-  .cardTags {
-    grid-template-columns: 1fr;
+    border-radius: 12px 12px 0 0;
+    height: clamp(180px, 30vh, 240px);
   }
 }
 
 @media (max-width: 640px) {
   .wrap {
-    height: 560vh;
+    /* CONTENT 400 + rise 50 + clear 50 = 500 (inline height from Experiences.tsx wins) */
+  height: 500vh;
   }
 
   .introTitle {
@@ -826,12 +1090,12 @@
   }
 
   .cardBody {
-    padding: 14px 14px 16px;
-    gap: 12px;
+    padding: 16px 16px 18px;
+    gap: 14px;
   }
 
   .cardTitle {
-    font-size: 22px;
+    font-size: 24px;
   }
 
   .mapPin {
@@ -848,14 +1112,14 @@
   }
 
   .card,
-  .cardFrame {
-    border-radius: 18px;
+  .cardGlass {
+    border-radius: 12px;
     max-height: calc(100dvh - 28px);
   }
 
   .cardMedia {
-    border-radius: 18px 18px 0 0;
-    height: clamp(140px, 24vh, 180px);
+    border-radius: 12px 12px 0 0;
+    height: clamp(160px, 28vh, 200px);
   }
 }
 

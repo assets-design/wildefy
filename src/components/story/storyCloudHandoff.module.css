@@ -1,0 +1,70 @@
+/*
+  Story → Conservation — hero .journey-cloud geometry + density stack.
+  PNG holes need a soft plate; Hero hides §2 under the mist instead.
+*/
+.wrap {
+  position: relative;
+  width: 100%;
+}
+
+.veil {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* Seals transparent gaps in clouds-section.png */
+.plate {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: #B9CFC8;
+  opacity: 0;
+  will-change: opacity;
+}
+
+.cloud,
+.cloudAlt {
+  position: absolute;
+  z-index: 1;
+  left: 50%;
+  top: 0;
+  width: 170vw;
+  height: 360vh;
+  max-width: none;
+  object-fit: fill;
+  object-position: center center;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  will-change: transform, opacity;
+  background: transparent;
+  transform: translate3d(-50%, 100%, 0);
+  filter: brightness(1.2) contrast(1.14) saturate(0.35);
+}
+
+.cloudAlt {
+  z-index: 2;
+  filter: brightness(1.22) contrast(1.12) saturate(0.3);
+}
+
+/*
+  §2→§3 handoff — softer so Experiences / Gallery stay readable through
+  PNG gaps (no colour plate underlay).
+*/
+.cloudSoft {
+  filter: brightness(1.04) contrast(1.05) saturate(0.55);
+}
+
+.cloudAltSoft {
+  z-index: 2;
+  filter: brightness(1.06) contrast(1.04) saturate(0.5);
+}
+
+@media (max-width: 1023px) {
+  .veil {
+    display: none;
+  }
+}

@@ -1,17 +1,33 @@
 .section {
+  /* Above Awards so the full half-globe can paint across the merged band */
+  position: relative;
+  z-index: 3;
+  width: 100%;
+  margin-top: 0;
+  /* Plate lives on GalleryAwardsBand — keep shell clear so one image shows through */
+  background: transparent;
+  overflow: visible;
+}
+
+/* Inner pin shell — GSAP pin styles stay here, section stays in normal flow */
+.pin {
   position: relative;
   width: 100%;
   height: 100vh;
-  overflow: hidden;
-  background: #315c3c;
+  height: 100svh;
+  /* Visible so the half-globe can travel into Awards below */
+  overflow: visible;
+  background: transparent;
 }
 
 .frame {
   /* Desktop reference: dial fills ~half the short axis; copy sits in the right field */
   --fit: max(100vw / 1920px, 100vh / 1000px);
   position: relative;
+  z-index: 1;
   width: 100%;
   height: 100%;
+  overflow: visible;
 }
 
 /*
@@ -27,59 +43,49 @@
 .artViewport {
   position: absolute;
   inset: 0;
-  overflow: hidden;
+  /*
+    Clip top + left (no bleed into Story).
+    Negative bottom inset lets the sphere continue into Awards — no flat cut.
+  */
+  overflow: visible;
+  clip-path: inset(0 -12vw -75vh 0);
+  -webkit-clip-path: inset(0 -12vw -75vh 0);
+  pointer-events: none;
 }
 
 .art {
   position: absolute;
-  top: 50%;
+  /* Sit lower in the frame so Earth rests at the bottom, clear of Story */
+  top: 72%;
   left: 0;
   width: 1920px;
   height: 1000px;
-  /* Keep the dial + label on the viewport midline (was top-pinned → copy sat low) */
   transform: translateY(-50%) scale(var(--fit));
   transform-origin: left center;
-}
-
-.bg {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  width: 1920px;
-  height: 1000px;
-  transform: translateX(-50%);
-  overflow: hidden;
   pointer-events: none;
 }
 
-.bg img {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 185.26%;
-  height: 100%;
-  max-width: none;
-  display: block;
-}
-
 /*
-  Full circular ring, clipped so only the right half stays on screen.
-  Center of the dial sits on the left edge of the artboard.
+  Full circular ring of equal annular sectors (reference half-circle).
+  Center of the dial sits on the left edge — same origin as the globe.
+  Box clears OUTER_R (730) so bottom/top seats keep the same arc as the mid ones.
 */
 .wheelClip {
   position: absolute;
   left: 0;
-  top: -120px;
-  width: 920px;
-  height: 1240px;
-  overflow: hidden;
+  top: -280px;
+  width: 980px;
+  height: 1560px;
+  /* artViewport already clips the left half — don’t crop outer arcs here */
+  overflow: visible;
   pointer-events: none;
+  z-index: 1;
 }
 
 .ring {
   position: absolute;
   left: 0;
-  top: 620px;
+  top: 780px;
   width: 0;
   height: 0;
 }
@@ -91,36 +97,20 @@
   width: 0;
   height: 0;
   transform-origin: 0 0;
-  will-change: transform;
+  will-change: transform, opacity;
 }
 
-.card {
+/*
+  SVG wedge rooted at the ring/globe center.
+  Path is an annular sector on +X with equal ± angle cuts and concentric arcs.
+*/
+.wedge {
   position: absolute;
-  top: 0;
   left: 0;
-  width: 236px;
-  height: 276px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transform: translate(-50%, -50%) translateX(655px) rotate(90deg);
-  transform-origin: center center;
-}
-
-.cardInner {
-  position: relative;
-  flex: none;
-  width: 276px;
-  height: 236px;
-}
-
-.cardInner img {
-  position: absolute;
-  inset: 0;
-  display: block;
-  width: 100%;
-  height: 100%;
-  max-width: none;
+  top: 0;
+  overflow: visible;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
 }
 
 /*
@@ -132,10 +122,12 @@
   position: absolute;
   left: -500px;
   top: 0;
+  margin-top: -48px;
   width: 1000px;
   height: 1000px;
   z-index: 4;
   touch-action: none;
+  /* Parent artViewport is pointer-events: none — re-enable globe drag */
   pointer-events: auto;
   background: transparent;
 }
@@ -161,6 +153,17 @@
   border-radius: 50%;
 }
 
+/* Soft stand-in when WebGL is blocked / offscreen */
+.earthFallback {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 35% 30%, #6a9cc8 0%, transparent 42%),
+    radial-gradient(circle at 60% 55%, #2f6a4a 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, #1a4a7a 0%, #0c2238 70%);
+}
+
 .earthDrag {
   position: absolute;
   inset: 0;
@@ -174,28 +177,6 @@
   cursor: grabbing;
 }
 
-.label {
-  position: absolute;
-  left: calc(50% - 727px);
-  top: 457px;
-  width: 394px;
-  margin: 0;
-  transform: translateX(-50%);
-  color: #ffffff;
-  font-family: var(--font-display);
-  font-size: 72px;
-  font-weight: 600;
-  line-height: 87px;
-  letter-spacing: 0;
-  text-align: center;
-  text-transform: capitalize;
-  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.55);
-  z-index: 1;
-  pointer-events: none;
-  /* Earth covers this title — keep for a11y, hide edge leak on mid screens */
-  opacity: 0;
-}
-
 /*
   Right copy stack — same idea as Sustainability .textStack:
   tall clip, cards centered, slide fully off instead of fading while clipped.
@@ -204,31 +185,26 @@
 .copy {
   position: absolute;
   left: calc(920px * var(--fit));
+  /* Pull copy toward the globe — less empty sky on the left */
+  margin-left: -4.5vw;
   top: 50%;
   transform: translateY(-50%);
-  width: calc(798px * var(--fit));
-  height: calc(520px * var(--fit));
+  /* 20% smaller than the previous right-rail block */
+  width: calc(798px * var(--fit) * 0.8);
+  height: calc(560px * var(--fit) * 0.8);
   overflow: hidden;
   color: #ffffff;
   text-transform: capitalize;
   z-index: 2;
+  pointer-events: auto;
 }
 
 @media (min-width: 1024px) and (max-width: 1680px) {
   .copy {
     /* Hold copy in the right field with the same breathing room as desktop */
     left: max(48vw, calc(900px * var(--fit)));
-    width: min(44vw, calc(760px * var(--fit)));
-  }
-
-  .title {
-    font-size: clamp(40px, 3.8vw, 54px);
-    line-height: 1.2;
-  }
-
-  .lead {
-    font-size: clamp(17px, 1.45vw, 22px);
-    line-height: 1.35;
+    margin-left: -3.5vw;
+    width: min(35.2vw, calc(760px * var(--fit) * 0.8));
   }
 }
 
@@ -256,27 +232,40 @@
 .title {
   margin: 0;
   width: calc(740 / 798 * 100%);
+  color: #ffffff;
   font-family: var(--font-display);
-  font-size: calc(54px * var(--fit));
-  font-weight: 500;
-  line-height: calc(65px * var(--fit));
+  /* Match Awards Sustainability .susHeading */
+  font-size: clamp(28px, 3.4vw, 64px);
+  font-weight: 600;
+  line-height: 1.15;
   letter-spacing: 0;
+  text-transform: capitalize;
 }
 
 .lead {
-  margin: calc(30px * var(--fit)) 0 0;
+  margin: 2.4vh 0 0;
   width: 100%;
+  max-width: 36em;
+  color: #ffffff;
   font-family: var(--font-body);
-  font-size: calc(22px * var(--fit));
+  /* Match Awards Sustainability .susCopy */
+  font-size: clamp(13px, 1.02vw, 20px);
   font-weight: 400;
-  line-height: calc(29px * var(--fit));
+  line-height: 1.45;
   letter-spacing: 0;
+  text-transform: capitalize;
 }
 
 @media (max-width: 1023px) {
   .section {
     display: flex;
     flex-direction: column;
+    z-index: 1;
+    overflow: hidden;
+  }
+
+  .pin {
+    overflow: hidden;
   }
 
   .frame {
@@ -285,6 +274,7 @@
     flex-direction: column;
     height: auto;
     min-height: 0;
+    overflow: hidden;
   }
 
   .artViewport {
@@ -292,6 +282,9 @@
     inset: auto;
     height: min(100vw, 58vh);
     flex: none;
+    clip-path: none;
+    -webkit-clip-path: none;
+    overflow: hidden;
   }
 
   .art {
@@ -304,6 +297,7 @@
     position: relative;
     left: auto;
     top: auto;
+    margin-left: 0;
     transform: none;
     width: auto;
     height: auto;
@@ -319,13 +313,14 @@
 
   .title {
     width: auto;
-    font-size: clamp(32px, 8vw, 48px);
+    font-size: clamp(28px, 8vw, 48px);
     line-height: 1.15;
   }
 
   .lead {
-    margin-top: 14px;
-    font-size: clamp(16px, 4.2vw, 20px);
-    line-height: 1.4;
+    margin-top: 1.6vh;
+    max-width: none;
+    font-size: clamp(13px, 3.4vw, 18px);
+    line-height: 1.45;
   }
 }

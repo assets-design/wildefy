@@ -69,7 +69,7 @@
 .heroTitle {
   position: absolute;
   left: 120px;
-  bottom: -120px;
+  bottom: 48px;
   z-index: 3;
   margin: 0;
   color: #fff;
@@ -79,6 +79,7 @@
   line-height: 1.05;
   text-transform: capitalize;
   pointer-events: none;
+  white-space: nowrap;
 }
 
 /* —— Shared section helpers —— */
@@ -108,9 +109,11 @@
 
 /* —— Itinerary —— */
 .itinerary {
-  /* 30px gap between map and Experiences */
-  padding: clamp(3.5rem, 6vw, 5.5rem) 0 30px;
+  /* Head/tabs + map; 30px gap before Experiences */
+  padding: clamp(2.5rem, 5vw, 4.5rem) 0 30px;
   background: #fff;
+  position: relative;
+  z-index: 1;
 }
 
 .itineraryHead {
@@ -698,8 +701,10 @@
 @media (max-width: 860px) {
   .heroTitle {
     left: 24px;
-    bottom: 48px;
+    right: 24px;
+    bottom: 40px;
     font-size: clamp(2.25rem, 9vw, 3rem);
+    white-space: normal;
   }
 
   .mapJourney {

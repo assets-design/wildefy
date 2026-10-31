@@ -8,8 +8,11 @@ import { SUSTAIN_SLIDES, SUSTAIN_SLIDE_COUNT } from "./sustainSlides";
 
 gsap.registerPlugin(ScrollTrigger);
 
-/** Figma strip width ÷ 1920 design width (6081 / 1920). */
-const STRIP_VIEWPORTS = 6081 / 1920;
+/**
+ * Strip ends at the tiger’s right edge (hold 166.61 + peek/standby + tiger).
+ * Shorter than Figma 6081/1920 so no empty gap flashes background.
+ */
+const STRIP_VIEWPORTS = 308.61 / 100;
 /** Vertical scroll distance per step (5 steps across 6 unique slides). */
 const VERTICAL_VH_PER_STEP = 0.95;
 /** Slide seats only — after slide 06 settles, horizontal resumes (no extra vertical beat). */
@@ -20,13 +23,23 @@ const VERTICAL_STEPS = SUSTAIN_SLIDE_COUNT - 1;
  * all layers start together; finish / hold one-after-one.
  * Vertical sustainability scroll stays 1:1 (layers frozen).
  */
-const H_PHASE_BG = { start: 0, end: 0.42 };
+const H_PHASE_BG = { start: 0, end: 1 };
+/** Story depth: clouds sit between bg (10) and images (14) → 12/16. */
+const H_PHASE_CLOUDS = { start: 0, end: 1 };
 const H_PHASE_IMAGES = { start: 0, end: 0.68 };
 const H_PHASE_CONTENT = { start: 0, end: 1 };
 /** Extra relative travel vs the track (track still owns layout / hold). */
-const H_BG_EXTRA = 0.14;
+/** Soft plate drift — large values jerked Cons→Awards left on pin engage. */
+const H_BG_EXTRA = 0.055;
+/** Must match GalleryAwardsBand MAX_PLATE_X_VW (was 0.28 → clamp snap). */
+const PLATE_MAX_X_VW = 0.32;
+/**
+ * Clouds drift ahead of the meadow plate (Story RATE_CLOUDS > RATE_BG) —
+ * stronger than images so the fluffy layer clearly tracks with the strip.
+ */
+const H_CLOUDS_EXTRA = 0.28;
 const H_IMAGES_EXTRA = 0.08;
-const H_CONTENT_EXTRA = 0.035;
+const H_CONTENT_EXTRA = 0.04;
 
 function prefersReducedMotion() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -122,11 +135,24 @@ export function AwardsScroll() {
           Arc stroke tips still meet viewport top/bottom (100vh orbit).
           Preview seats are inset (~58°) so the full disc stays on-screen
           at the start/end of the white line; further scroll slides them off.
+          Tip fade band matches #sustain-arc-fade (10% / 90%):
+          top → fade out with the line; bottom → fade in with the line.
           Each slide index owns a unique center image (01→lion … 06→07.jpg).
         */
         const ARC_PREVIEW = Math.PI * 0.32;
         const ARC_EXIT = Math.PI * 0.52;
         const ARC_RADIUS = 0.5;
+        /** Same band as the SVG stroke tip gradient. */
+        const ARC_TIP_FADE = 0.1;
+
+        /** 1 in the mid arc; 0 at top/bottom tips — mirrors the white line fade. */
+        const arcTipFade = (angle: number) => {
+          const y = 0.5 + 0.5 * Math.sin(angle);
+          if (y < ARC_TIP_FADE) return clamp(y / ARC_TIP_FADE, 0, 1);
+          if (y > 1 - ARC_TIP_FADE)
+            return clamp((1 - y) / ARC_TIP_FADE, 0, 1);
+          return 1;
+        };
 
         const applyVertical = (t: number) => {
           const max = SUSTAIN_SLIDE_COUNT - 1;
@@ -146,19 +172,22 @@ export function AwardsScroll() {
             let z = 1;
 
             if (ad <= 1.001) {
-              // On the visible arc: top ↔ center ↔ bottom — full opacity, full circle
+              // On the visible arc: top ↔ center ↔ bottom
               angle = d * ARC_PREVIEW;
               scale = 1 - 0.45 * ad;
               opacity = 1;
               z = ad < 0.35 ? 3 : 2;
             } else if (ad < 1.75) {
-              // Exit / enter off-screen along the arc (no fade)
+              // Exit top / enter bottom along the arc
               const u = clamp((ad - 1) / 0.75, 0, 1);
               angle = sign * (ARC_PREVIEW + (ARC_EXIT - ARC_PREVIEW) * u);
               scale = 0.55;
               opacity = 1;
               z = 1;
             }
+
+            // Top tip: disappear with the line; bottom tip: appear with the line
+            opacity *= arcTipFade(angle);
 
             const xPct = 50 + 100 * ARC_RADIUS * Math.cos(angle);
             const yPct = 50 + 100 * ARC_RADIUS * Math.sin(angle);
@@ -202,7 +231,16 @@ export function AwardsScroll() {
           });
         };
 
-        const bgPlate = panel.querySelector<HTMLElement>(`.${styles.bgPlate}`);
+        /**
+         * Same Group_325 plate as Conservation (ConsAwardsBand) —
+         * pan it on horizontal scrub; do not use a second background.
+         */
+        const sharedBg = document.querySelector<HTMLElement>(
+          "[data-shared-section-bg]",
+        );
+        const sharedClouds = document.querySelector<HTMLElement>(
+          "[data-shared-section-clouds]",
+        );
         /** First horiz segment — never include tiger (keeps right edge flush). */
         const earlyImageEls = [
           panel.querySelector<HTMLElement>(`.${styles.cheetahs}`),
@@ -232,17 +270,104 @@ export function AwardsScroll() {
           `.${styles.sustainLeft}`,
         );
 
-        const layerBase = { bg: 0, images: 0, content: 0 };
+        const layerBase = { bg: 0, clouds: 0, images: 0, content: 0 };
 
-        /** Parallax x only — right laurel mirror lives on the img CSS. */
+        /** Parallax x only — left/right laurels use dedicated l.png / r.png. */
         const setContentX = (els: HTMLElement[], x: number) => {
           els.forEach((el) => {
             gsap.set(el, { x, force3D: true });
           });
         };
 
+        const meadowYOf = (el: HTMLElement | null) => {
+          if (!el) return 0;
+          const live = Number(gsap.getProperty(el, "y"));
+          if (Number.isFinite(live)) return live;
+          const fromData = Number(el.dataset.meadowY);
+          return Number.isFinite(fromData) ? fromData : 0;
+        };
+
+        /** Capture plate pose at sustain — tiger segment must not rewrite it. */
+        const lockMeadowPose = () => {
+          if (!sharedBg) return;
+          const x = Number(gsap.getProperty(sharedBg, "x"));
+          const y = meadowYOf(sharedBg);
+          sharedBg.dataset.meadowXLock = String(Number.isFinite(x) ? x : 0);
+          sharedBg.dataset.meadowYLock = String(y);
+          sharedBg.dataset.parallaxXLock = sharedBg.dataset.parallaxX || "0";
+          if (sharedClouds) {
+            const cx = Number(gsap.getProperty(sharedClouds, "x"));
+            const cy = Number(gsap.getProperty(sharedClouds, "y"));
+            sharedClouds.dataset.meadowXLock = String(
+              Number.isFinite(cx) ? cx : 0,
+            );
+            sharedClouds.dataset.meadowYLock = String(
+              Number.isFinite(cy) ? cy : y,
+            );
+            sharedClouds.dataset.parallaxXLock =
+              sharedClouds.dataset.parallaxX || "0";
+          }
+        };
+
+        const applyLockedMeadowPose = () => {
+          if (!sharedBg?.dataset.meadowYLock) return false;
+          const x = Number(sharedBg.dataset.meadowXLock);
+          const y = Number(sharedBg.dataset.meadowYLock);
+          sharedBg.dataset.parallaxX =
+            sharedBg.dataset.parallaxXLock || sharedBg.dataset.parallaxX || "0";
+          gsap.set(sharedBg, {
+            x: Number.isFinite(x) ? x : 0,
+            y: Number.isFinite(y) ? y : 0,
+            force3D: true,
+          });
+          if (sharedClouds) {
+            const cx = Number(sharedClouds.dataset.meadowXLock);
+            const cy = Number(sharedClouds.dataset.meadowYLock);
+            sharedClouds.dataset.parallaxX =
+              sharedClouds.dataset.parallaxXLock ||
+              sharedClouds.dataset.parallaxX ||
+              "0";
+            gsap.set(sharedClouds, {
+              x: Number.isFinite(cx) ? cx : 0,
+              y: Number.isFinite(cy) ? cy : y,
+              force3D: true,
+            });
+          }
+          return true;
+        };
+
+        const clearMeadowPoseLock = () => {
+          if (sharedBg) {
+            delete sharedBg.dataset.meadowXLock;
+            delete sharedBg.dataset.meadowYLock;
+            delete sharedBg.dataset.parallaxXLock;
+          }
+          if (sharedClouds) {
+            delete sharedClouds.dataset.meadowXLock;
+            delete sharedClouds.dataset.meadowYLock;
+            delete sharedClouds.dataset.parallaxXLock;
+          }
+        };
+
         gsap.set(track, { x: 0, force3D: true });
-        if (bgPlate) gsap.set(bgPlate, { x: 0, force3D: true });
+        if (sharedBg) {
+          sharedBg.dataset.parallaxX = "0";
+          const bandX = Number(sharedBg.dataset.bandX || 0);
+          gsap.set(sharedBg, {
+            x: bandX,
+            y: meadowYOf(sharedBg),
+            force3D: true,
+          });
+        }
+        if (sharedClouds) {
+          sharedClouds.dataset.parallaxX = "0";
+          const bandX = Number(sharedBg?.dataset.bandX || 0);
+          gsap.set(sharedClouds, {
+            x: bandX * 1.25,
+            y: meadowYOf(sharedClouds),
+            force3D: true,
+          });
+        }
         if (tigerFrame) gsap.set(tigerFrame, { x: 0, force3D: true });
         if (tigerImg) gsap.set(tigerImg, { x: 0, force3D: true });
         gsap.set(earlyImageEls, { x: 0, force3D: true });
@@ -254,7 +379,7 @@ export function AwardsScroll() {
 
         /**
          * Segment-local panT (0→1). Start together, stop one-by-one.
-         * `late`: tiger img + sustain copy; early awards content held still.
+         * `late`: tiger + sustain copy only — shared plate pose stays frozen.
          */
         const applyHorizLayers = (
           panT: number,
@@ -264,14 +389,51 @@ export function AwardsScroll() {
           const t = clamp(panT, 0, 1);
           const span = Math.max(1, spanPx);
           const bgT = phaseProgress(t, H_PHASE_BG);
+          const cloudsT = phaseProgress(t, H_PHASE_CLOUDS);
           const imgT = phaseProgress(t, H_PHASE_IMAGES);
           const contentT = phaseProgress(t, H_PHASE_CONTENT);
 
           layerBase.bg = -span * H_BG_EXTRA * bgT;
+          layerBase.clouds = -span * H_CLOUDS_EXTRA * cloudsT;
           layerBase.images = -span * H_IMAGES_EXTRA * imgT;
           layerBase.content = -span * H_CONTENT_EXTRA * contentT;
 
-          if (bgPlate) gsap.set(bgPlate, { x: layerBase.bg, force3D: true });
+          /*
+            Late (tiger): freeze plate pose so H_BG restart can't shove meadow.
+            Freeze-early (sustain vertical): do NOT lock — GalleryAwardsBand
+            must keep pulling Y upward while slides scrub.
+          */
+          if (mode === "late") {
+            if (!sharedBg?.dataset.meadowYLock) lockMeadowPose();
+            applyLockedMeadowPose();
+          } else if (sharedBg) {
+            /*
+              Clear tiger pose lock whenever we leave late — including
+              scroll-back into sustain vertical — so the plate can scrub again.
+            */
+            clearMeadowPoseLock();
+            sharedBg.dataset.parallaxX = String(layerBase.bg);
+            const bandX = Number(sharedBg.dataset.bandX || 0);
+            const maxX = window.innerWidth * PLATE_MAX_X_VW;
+            const x = Math.max(
+              -maxX,
+              Math.min(maxX, bandX + layerBase.bg),
+            );
+            const y = meadowYOf(sharedBg);
+            gsap.set(sharedBg, { x, y, force3D: true });
+            if (sharedClouds) {
+              sharedClouds.dataset.parallaxX = String(layerBase.clouds);
+              const cx = Math.max(
+                -maxX,
+                Math.min(maxX, bandX * 1.1 + layerBase.clouds),
+              );
+              gsap.set(sharedClouds, {
+                x: cx,
+                y: meadowYOf(sharedClouds),
+                force3D: true,
+              });
+            }
+          }
 
           if (mode === "early" || mode === "freeze-early") {
             gsap.set(earlyImageEls, { x: layerBase.images, force3D: true });
@@ -284,11 +446,10 @@ export function AwardsScroll() {
             return;
           }
 
-          // late — tiger segment
+          // late — tiger + right copy only; meadow pose held above
           gsap.set(earlyImageEls, { x: 0, force3D: true });
           setContentX(earlyContentEls, 0);
           if (sustainLeftEl) gsap.set(sustainLeftEl, { x: 0, force3D: true });
-          // Frame always flush to strip/viewport right
           if (tigerFrame) gsap.set(tigerFrame, { x: 0, force3D: true });
           /*
             Inner photo parallax while moving, then ease back to x:0 as the
@@ -303,9 +464,28 @@ export function AwardsScroll() {
 
         const resetHorizLayers = () => {
           layerBase.bg = 0;
+          layerBase.clouds = 0;
           layerBase.images = 0;
           layerBase.content = 0;
-          if (bgPlate) gsap.set(bgPlate, { x: 0, force3D: true });
+          clearMeadowPoseLock();
+          if (sharedBg) {
+            sharedBg.dataset.parallaxX = "0";
+            const bandX = Number(sharedBg.dataset.bandX || 0);
+            gsap.set(sharedBg, {
+              x: bandX,
+              y: meadowYOf(sharedBg),
+              force3D: true,
+            });
+          }
+          if (sharedClouds) {
+            sharedClouds.dataset.parallaxX = "0";
+            const bandX = Number(sharedBg?.dataset.bandX || 0);
+            gsap.set(sharedClouds, {
+              x: bandX * 1.25,
+              y: meadowYOf(sharedClouds),
+              force3D: true,
+            });
+          }
           if (tigerFrame) gsap.set(tigerFrame, { x: 0, force3D: true });
           if (tigerImg) gsap.set(tigerImg, { x: 0, force3D: true });
           gsap.set(earlyImageEls, { x: 0, force3D: true });
@@ -315,14 +495,17 @@ export function AwardsScroll() {
         };
 
         const trigger = ScrollTrigger.create({
-          trigger: section,
+          id: "awards-pin",
+          /* Pin viewport shell — not the section (avoids stuck transforms over footer) */
+          trigger: viewport,
           start: "top top",
           end: () => `+=${Math.round(getTravel() + getVerticalPx())}`,
           pin: true,
           pinSpacing: true,
-          scrub: 1.25,
-          anticipatePin: 1,
+          scrub: 2,
+          anticipatePin: 0.2,
           invalidateOnRefresh: true,
+          refreshPriority: -5,
           fastScrollEnd: false,
           onUpdate: (self) => {
             const travel = getTravel();
@@ -382,10 +565,8 @@ export function AwardsScroll() {
           },
         });
 
-        const refresh = () => ScrollTrigger.refresh();
-        const refreshSoon = window.setTimeout(refresh, 80);
-        const refreshLater = window.setTimeout(refresh, 450);
-        window.addEventListener("load", refresh, { once: true });
+        /* One deferred refresh — rapid refresh() was corrupting Conservation pin */
+        const refreshLater = window.setTimeout(() => ScrollTrigger.refresh(), 320);
 
         let refreshQueued = false;
         const ro = new ResizeObserver(() => {
@@ -393,7 +574,7 @@ export function AwardsScroll() {
           refreshQueued = true;
           requestAnimationFrame(() => {
             refreshQueued = false;
-            refresh();
+            trigger.refresh();
           });
         });
         ro.observe(viewport);
@@ -401,9 +582,7 @@ export function AwardsScroll() {
         ro.observe(hold);
 
         return () => {
-          window.clearTimeout(refreshSoon);
           window.clearTimeout(refreshLater);
-          window.removeEventListener("load", refresh);
           ro.disconnect();
           trigger.kill();
         };
@@ -424,11 +603,9 @@ export function AwardsScroll() {
       aria-label="Recognising the eye behind the lens"
       ref={sectionRef}
     >
-      <div className={styles.viewport} ref={viewportRef}>
+      <div className={styles.viewport} ref={viewportRef} data-awards-viewport="">
         <div className={styles.track} ref={trackRef}>
           <article className={styles.panel} ref={panelRef}>
-            <div className={styles.bgPlate} aria-hidden="true" />
-
             <div className={styles.cheetahs}>
               <img
                 src="/images/awards-figma/cheetahs-photo.png"
@@ -443,15 +620,13 @@ export function AwardsScroll() {
               className={`${styles.laurel} ${styles.laurelLeft}`}
               aria-hidden="true"
             >
-              <div className={styles.laurelMirror}>
-                <img
-                  src="/images/awards-figma/laurel.png"
-                  alt=""
-                  width={2000}
-                  height={1333}
-                  draggable={false}
-                />
-              </div>
+              <img
+                src="/images/awards-figma/l.png"
+                alt=""
+                width={456}
+                height={920}
+                draggable={false}
+              />
             </div>
             <div className={styles.headingGroup}>
               <h2 className={styles.heading}>
@@ -466,15 +641,13 @@ export function AwardsScroll() {
               className={`${styles.laurel} ${styles.laurelRight}`}
               aria-hidden="true"
             >
-              <div className={styles.laurelMirror}>
-                <img
-                  src="/images/awards-figma/laurel.png"
-                  alt=""
-                  width={2000}
-                  height={1333}
-                  draggable={false}
-                />
-              </div>
+              <img
+                src="/images/awards-figma/r.png"
+                alt=""
+                width={456}
+                height={920}
+                draggable={false}
+              />
             </div>
 
             <img
@@ -555,7 +728,30 @@ export function AwardsScroll() {
                     preserveAspectRatio="xMidYMid meet"
                     aria-hidden="true"
                   >
-                    <path d="M 507 0 A 507 507 0 0 1 507 1014" />
+                    <defs>
+                      {/* Soft tip fade — thin into nothing at top & bottom */}
+                      <linearGradient
+                        id="sustain-arc-fade"
+                        gradientUnits="userSpaceOnUse"
+                        x1="507"
+                        y1="0"
+                        x2="507"
+                        y2="1014"
+                      >
+                        <stop offset="0%" stopColor="#ffffff" stopOpacity="0" />
+                        <stop offset="10%" stopColor="#ffffff" stopOpacity="1" />
+                        <stop offset="90%" stopColor="#ffffff" stopOpacity="1" />
+                        <stop
+                          offset="100%"
+                          stopColor="#ffffff"
+                          stopOpacity="0"
+                        />
+                      </linearGradient>
+                    </defs>
+                    <path
+                      d="M 507 0 A 507 507 0 0 1 507 1014"
+                      stroke="url(#sustain-arc-fade)"
+                    />
                   </svg>
 
                   <div className={styles.imageStack}>

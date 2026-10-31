@@ -300,6 +300,12 @@ export function NatGeoCloudDissolve({ progress, className }: Props) {
       if (program) gl.deleteProgram(program);
       if (buffer) gl.deleteBuffer(buffer);
       if (texture) gl.deleteTexture(texture);
+      /* Free the GPU context slot so later canvases (Earth) can create */
+      try {
+        gl.getExtension("WEBGL_lose_context")?.loseContext();
+      } catch {
+        /* ignore */
+      }
     };
   }, []);
 

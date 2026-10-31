@@ -50,7 +50,7 @@ function SocialIcon({
 
 /**
  * Figma 548:507 (video CTA) + 548:501 (glass footer).
- * Scrubbed pin: reveal CTA → hold video → rise sharp-cornered glass (~48vh).
+ * After Awards: video at top already shows full text + CTA; next swipe → glass footer.
  */
 export function FooterReveal() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -72,17 +72,33 @@ export function FooterReveal() {
     const markVideoReady = () => {
       video?.classList.add("is-ready");
     };
+    const tryPlay = () => {
+      if (!video) return;
+      video.muted = true;
+      void video.play().then(markVideoReady).catch(() => {});
+    };
+    let io: IntersectionObserver | null = null;
     if (video) {
       if (video.readyState >= 2) markVideoReady();
       video.addEventListener("loadeddata", markVideoReady);
       video.addEventListener("playing", markVideoReady);
-      video.play().catch(() => {});
+      video.addEventListener("canplay", tryPlay);
+      tryPlay();
+      io = new IntersectionObserver(
+        (entries) => {
+          if (entries.some((e) => e.isIntersecting)) tryPlay();
+        },
+        { threshold: 0.15 },
+      );
+      io.observe(media);
     }
 
     const clearVideoListeners = () => {
+      io?.disconnect();
       if (!video) return;
       video.removeEventListener("loadeddata", markVideoReady);
       video.removeEventListener("playing", markVideoReady);
+      video.removeEventListener("canplay", tryPlay);
     };
 
     if (prefersReducedMotion()) {
@@ -94,17 +110,22 @@ export function FooterReveal() {
     const ctx = gsap.context(() => {
       const mm = gsap.matchMedia();
 
-      const buildTimeline = (opts: {
-        endVh: number;
-        scrub: number;
-        titleY: number;
-      }) => {
+      /**
+       * Two snap beats after Awards:
+       *   progress 0 — video parked + full text/CTA already visible
+       *   progress 1 — glass footer
+       * One intentional scroll from the CTA stage lands on the footer.
+       */
+      const buildTimeline = (opts: { endVh: number; scrub: number }) => {
         const title = cta.querySelector(".footer-reveal-title");
-        const button = cta.querySelector(".footer-cta");
+        const button = cta.querySelector(".cta");
+        const SNAP_POINTS: number[] = [0, 1];
 
+        /* Video-at-top stage: complete copy + CTA, footer still below */
         gsap.set(cta, { opacity: 1 });
-        gsap.set(title, { y: opts.titleY, opacity: 0 });
-        gsap.set(button, { y: 20, opacity: 0 });
+        gsap.set(title, { y: 0, opacity: 1 });
+        gsap.set(button, { y: 0, opacity: 1 });
+        gsap.set(media, { scale: 1 });
         gsap.set(glass, { yPercent: 105 });
 
         const tl = gsap.timeline({
@@ -118,50 +139,46 @@ export function FooterReveal() {
             scrub: opts.scrub,
             anticipatePin: 0.5,
             invalidateOnRefresh: true,
-            // Below map pin so destination map refresh wins layout order
-            refreshPriority: -1,
-            // Scrub already reverses; snap edge states when leaving upward
-            // so CTA/glass are not stuck mid-pose above the footer.
+            /*
+              Must refresh AFTER Conservation (-4) and Awards (-5) so their
+              pin-spacers are in the flow before this trigger measures start/end.
+              Too-high priority left a black void of empty spacer at the visual
+              footer (scrub already complete, pin parked at spacer bottom).
+              Still below destination map (1) / about (0).
+            */
+            refreshPriority: -6,
+            snap: {
+              snapTo: (value) => {
+                let best = SNAP_POINTS[0];
+                let bestDist = Math.abs(value - best);
+                for (const f of SNAP_POINTS) {
+                  const dist = Math.abs(value - f);
+                  if (dist < bestDist) {
+                    best = f;
+                    bestDist = dist;
+                  }
+                }
+                return best;
+              },
+              duration: { min: 0.1, max: 0.28 },
+              delay: 0,
+              ease: "power2.out",
+            },
             onLeaveBack: () => {
-              gsap.set(title, { y: opts.titleY, opacity: 0 });
-              gsap.set(button, { y: 20, opacity: 0 });
+              gsap.set(title, { y: 0, opacity: 1 });
+              gsap.set(button, { y: 0, opacity: 1 });
               gsap.set(glass, { yPercent: 105 });
-              gsap.set(media, { scale: 1.03 });
+              gsap.set(media, { scale: 1 });
             },
           },
         });
 
-        // Stage 1 — heading, then CTA button.
-        tl.to(title, { y: 0, opacity: 1, duration: 0.22 }, 0);
-        tl.to(button, { y: 0, opacity: 1, duration: 0.18 }, 0.12);
-
-        // Soft media settle while CTA holds.
-        tl.fromTo(
-          media,
-          { scale: 1.03 },
-          { scale: 1, duration: 0.3 },
-          0,
-        );
-
-        // Hold CTA composition briefly before footer begins.
-        tl.to({}, { duration: 0.12 }, 0.28);
-
-        // Stage 3 — glass rises to the mark under the title.
-        // Title stays visible (higher z-index); button tucks away under glass.
-        tl.to(glass, { yPercent: 0, duration: 0.5 }, 0.4);
-        tl.to(
-          button,
-          { opacity: 0, y: -24, duration: 0.28 },
-          0.42,
-        );
-        tl.to(
-          title,
-          { y: -8, opacity: 1, duration: 0.28 },
-          0.42,
-        );
-
-        // Settle hold so reverse scroll can park at the final pose.
-        tl.to({}, { duration: 0.14 });
+        /* Hold CTA stage, then one scroll beat for the glass footer */
+        tl.to({}, { duration: 0.35 }, 0);
+        tl.to(glass, { yPercent: 0, duration: 0.55 }, 0.35);
+        tl.to(button, { opacity: 0, y: -24, duration: 0.28 }, 0.38);
+        tl.to(title, { y: -8, opacity: 1, duration: 0.28 }, 0.38);
+        tl.to({}, { duration: 0.12 }, 0.9);
 
         return () => {
           tl.scrollTrigger?.kill();
@@ -170,11 +187,11 @@ export function FooterReveal() {
       };
 
       mm.add("(min-width: 768px)", () =>
-        buildTimeline({ endVh: 1.85, scrub: 0.45, titleY: 40 }),
+        buildTimeline({ endVh: 1.2, scrub: 0.2 }),
       );
 
       mm.add("(max-width: 767px)", () =>
-        buildTimeline({ endVh: 1.45, scrub: 0.4, titleY: 28 }),
+        buildTimeline({ endVh: 1.15, scrub: 0.18 }),
       );
     }, section);
 
@@ -200,11 +217,10 @@ export function FooterReveal() {
             muted
             loop
             playsInline
-            preload="metadata"
+            preload="auto"
             poster="/images/footer/landscape-poster.png"
           >
-            <source src="/videos/footer-cinematic.mov" type="video/mp4" />
-            <source src="/videos/footer-cinematic.mov" type="video/quicktime" />
+            <source src="/videos/footer-cinematic.mp4" type="video/mp4" />
           </video>
           <img
             className="footer-reveal-poster"
@@ -224,17 +240,19 @@ export function FooterReveal() {
             Where Will It Take You?
           </h2>
 
-          <a className="footer-cta" href="#contact-panel">
-            <span className="footer-cta-pill" aria-hidden="true" />
-            <span className="footer-cta-mark" aria-hidden="true" />
-            <img
-              className="footer-cta-bird"
-              src="/images/hero/hummingbird.png"
-              alt=""
-              width={36}
-              height={36}
-            />
-            <span className="footer-cta-label">Let&rsquo;s Talk</span>
+          <a className="cta" href="#contact-panel">
+            <span className="cta-pill" aria-hidden="true" />
+            <span className="cta-label">Let&rsquo;s Talk</span>
+            <span className="cta-mark" aria-hidden="true">
+              <img
+                className="cta-bird"
+                src="/images/hero/hummingbird.png"
+                alt=""
+                width={37}
+                height={37}
+                draggable={false}
+              />
+            </span>
           </a>
         </div>
 

@@ -1,0 +1,152 @@
+/*
+  One shared plate behind Conservation + Awards.
+  Stacks ABOVE GalleryStoryBand so §5 rises cleanly over leftover sky.
+  Figma 772:64 — meadow sky + separate fluffy cloud layer.
+*/
+.band {
+  position: relative;
+  z-index: 5;
+  width: 100%;
+  /*
+    Underlap into Story so meadow is already covering the join while
+    Conservation rises — no mid-viewport knife edge on scroll.
+  */
+  margin-top: -22vh;
+  margin-top: -22svh;
+  padding-top: 22vh;
+  padding-top: 22svh;
+  background: transparent;
+  /*
+    Clip sticky meadow/clouds at the band’s bottom so the plate ends
+    with the tiger — no sky continuing into Footer.
+  */
+  overflow: clip;
+  box-shadow: none;
+  box-sizing: border-box;
+}
+
+/*
+  Document-flow feather only (NOT sticky). Softens the geometric join
+  during enter/exit, then scrolls away — sticky plate stays fully opaque
+  so pinned Conservation never shows a permanent top fade line.
+*/
+.join {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 28vh;
+  height: 28svh;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(0, 0, 0, 0.45) 42%,
+    #000 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(0, 0, 0, 0.45) 42%,
+    #000 100%
+  );
+}
+
+.joinImg {
+  position: absolute;
+  left: -20%;
+  top: -30%;
+  width: 140%;
+  height: 160%;
+  max-width: none;
+  display: block;
+  object-fit: cover;
+  /* Match sticky plate — sky-framed so grass doesn’t flash on enter */
+  object-position: center top;
+  user-select: none;
+}
+
+.bg {
+  position: sticky;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  width: 100%;
+  /* One viewport — matches Awards pin; doesn’t overspill past the tiger */
+  height: 100vh;
+  height: 100svh;
+  margin-bottom: -100vh;
+  margin-bottom: -100svh;
+  pointer-events: none;
+  overflow: hidden;
+  background: transparent;
+}
+
+.bgImg {
+  position: absolute;
+  left: -20%;
+  /*
+    Tall plate: Conservation frames the upper sky only; Conservation.tsx
+    pans y upward near pin end so meadow grass enters for Awards.
+  */
+  top: 0;
+  width: 140%;
+  height: 168%;
+  max-width: none;
+  display: block;
+  object-fit: cover;
+  object-position: center top;
+  will-change: transform;
+  user-select: none;
+}
+
+/*
+  Same plate box as .bgImg so Figma % seats stay aligned at rest,
+  then diverge via a faster scrub x (Story clouds rate).
+*/
+.clouds {
+  position: absolute;
+  left: -20%;
+  top: 0;
+  width: 140%;
+  height: 168%;
+  pointer-events: none;
+  will-change: transform;
+  z-index: 1;
+}
+
+.cloud {
+  position: absolute;
+  /* Larger fluffy cutouts — size set per-cloud via --cloud-w */
+  width: var(--cloud-w, 18%);
+  height: auto;
+  aspect-ratio: 979 / 521;
+  overflow: hidden;
+  pointer-events: none;
+  /* Black plate in source PNG drops out on the sky */
+  mix-blend-mode: screen;
+  opacity: 0.95;
+  will-change: transform;
+}
+
+.cloud img {
+  position: absolute;
+  /* Figma crop: left -16.25% / top -13.82% / 132.6% × 135.89% */
+  left: -16.25%;
+  top: -13.82%;
+  width: 132.6%;
+  height: 135.89%;
+  max-width: none;
+  display: block;
+  object-fit: cover;
+  object-position: center center;
+  user-select: none;
+}
+
+.content {
+  position: relative;
+  z-index: 1;
+  overflow: visible;
+}

@@ -1,0 +1,103 @@
+/*
+  /v2 only — section join: your cloud covers, then scrolls up to reveal next.
+*/
+
+.fixed {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  width: 100%;
+  height: 100%;
+  height: 100dvh;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.host {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* Soft plate so next section doesn’t flash through before cloud lifts */
+.fill {
+  position: absolute;
+  inset: 0;
+  background: #e8eef1;
+}
+
+.fillForest {
+  background: #d6e0d7;
+}
+
+.cloudLayer {
+  position: absolute;
+  inset: -20% -10%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  will-change: transform, opacity;
+}
+
+.cloud {
+  display: block;
+  /* 20% smaller than full-bleed join veil */
+  width: min(128vw, 1760px);
+  height: auto;
+  max-width: none;
+  /* Black plate in the PNG drops out — white cloud remains */
+  mix-blend-mode: screen;
+  filter: brightness(1.05) contrast(1.02);
+  pointer-events: none;
+  user-select: none;
+  transform-origin: center center;
+}
+
+.cloudAlt {
+  position: absolute;
+  width: min(96vw, 1440px);
+  mix-blend-mode: screen;
+  opacity: 0.55;
+  filter: brightness(1.1) blur(1px);
+  pointer-events: none;
+  user-select: none;
+}
+
+.homeSeam,
+.storySeam {
+  position: relative;
+  width: 100%;
+}
+
+.homeSeamPin,
+.storySeamPin {
+  position: relative;
+  width: 100%;
+}
+
+.homeSeamContent,
+.storySeamContent {
+  position: relative;
+  width: 100%;
+}
+
+.homeSeamActive,
+.storySeamActive {
+  z-index: 6;
+}
+
+.homeSeamActive .homeSeamContent,
+.storySeamActive .storySeamContent {
+  isolation: isolate;
+}
+
+.homeSeamRevealed:not(.homeSeamActive) {
+  z-index: 1;
+}
+
+.storySeamRevealed:not(.storySeamActive) {
+  z-index: 1;
+}
