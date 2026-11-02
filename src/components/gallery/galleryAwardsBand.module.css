@@ -32,8 +32,8 @@
 }
 
 /*
-  Wide + tall enough that cover still paints bottom greenery (~91% of
-  plate.png). At short ultra-wide viewports, 360% cropped the meadow off.
+  Wide + tall enough that cover still paints bottom greenery (Figma 804:2
+  lower-third meadow). Short ultra-wide viewports need ≥400% height.
 */
 .bgImg {
   position: absolute;

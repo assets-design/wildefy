@@ -193,7 +193,7 @@
   width: calc(798px * var(--fit) * 0.8);
   height: calc(560px * var(--fit) * 0.8);
   overflow: hidden;
-  color: #ffffff;
+  color: #000000;
   text-transform: capitalize;
   z-index: 2;
   pointer-events: auto;
@@ -232,7 +232,7 @@
 .title {
   margin: 0;
   width: calc(740 / 798 * 100%);
-  color: #ffffff;
+  color: #000000;
   font-family: var(--font-display);
   /* Match Awards Sustainability .susHeading */
   font-size: clamp(28px, 3.4vw, 64px);
@@ -246,7 +246,7 @@
   margin: 2.4vh 0 0;
   width: 100%;
   max-width: 36em;
-  color: #ffffff;
+  color: #000000;
   font-family: var(--font-body);
   /* Match Awards Sustainability .susCopy */
   font-size: clamp(13px, 1.02vw, 20px);

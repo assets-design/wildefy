@@ -738,12 +738,12 @@ export function AwardsScroll() {
                         x2="507"
                         y2="1014"
                       >
-                        <stop offset="0%" stopColor="#ffffff" stopOpacity="0" />
-                        <stop offset="10%" stopColor="#ffffff" stopOpacity="1" />
-                        <stop offset="90%" stopColor="#ffffff" stopOpacity="1" />
+                        <stop offset="0%" stopColor="#000000" stopOpacity="0" />
+                        <stop offset="10%" stopColor="#000000" stopOpacity="1" />
+                        <stop offset="90%" stopColor="#000000" stopOpacity="1" />
                         <stop
                           offset="100%"
-                          stopColor="#ffffff"
+                          stopColor="#000000"
                           stopOpacity="0"
                         />
                       </linearGradient>

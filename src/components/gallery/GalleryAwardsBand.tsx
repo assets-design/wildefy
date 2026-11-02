@@ -24,7 +24,7 @@ import styles from "./galleryAwardsBand.module.css";
 
 gsap.registerPlugin(ScrollTrigger);
 
-/** Optimized from public/images/plate.png (32768×26624 → web size). */
+/** Figma 804:2 plate (32768×26624 → 2800×2275 web). */
 const SHARED_PLATE = "/images/gallery-awards/shared-plate.png";
 
 /** Gallery: vertical rise only — no horizontal drift. */
@@ -42,8 +42,8 @@ const CONS_X_VW = 0.16;
 const HANDOFF_Y_VH = 0.1;
 const HANDOFF_X_VW = 0.08;
 /**
- * Awards pulls the plate’s bottom greenery into the fold (plate meadow
- * starts ~91% down the asset — needs deep Y on the tall crop).
+ * Awards pulls the plate’s bottom greenery into the fold (Figma 804:2
+ * meadow sits in the lower third — tall crop + deep Y seats it).
  */
 const AWARDS_Y_VH = 2.35;
 const AWARDS_X_VW = 0.12;
